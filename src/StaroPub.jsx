@@ -135,7 +135,7 @@ function ItemCard({ item }) {
             e.target.style.display = "none";
             e.target.nextSibling.style.display = "flex";
           }}
-          style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }}
+          style={{ width: "100%", height: "100%", objectFit: "contain", position: "absolute", inset: 0 }}
         />
         <div style={{
           display: "none", fontSize: 48, position: "absolute",
