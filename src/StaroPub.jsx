@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 const MENU = {
   beer: {
@@ -130,6 +130,7 @@ function ItemCard({ item }) {
         <img
           src={item.img}
           alt={item.name}
+          loading="lazy"
           onError={e => {
             e.target.style.display = "none";
             e.target.nextSibling.style.display = "flex";
@@ -219,10 +220,26 @@ export default function StaroPub() {
           height: 64,
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <img
+              src="images/logo.png"
+              alt="StaroPub Logo"
+              loading="lazy"
+              style={{
+                width: 40, height: 40, borderRadius: "50%",
+                objectFit: "cover",
+                boxShadow: "0 2px 12px rgba(200,120,32,0.4)",
+                border: "1px solid rgba(200,160,60,0.3)",
+              }}
+              onError={e => {
+                e.target.style.display = "none";
+                e.target.nextSibling.style.display = "flex";
+              }}
+            />
             <div style={{
+              display: "none",
               width: 40, height: 40, borderRadius: "50%",
               background: "linear-gradient(135deg,#c87820,#7a4010)",
-              display: "flex", alignItems: "center", justifyContent: "center",
+              alignItems: "center", justifyContent: "center",
               fontSize: 20, boxShadow: "0 2px 12px rgba(200,120,32,0.4)",
               border: "1px solid rgba(200,160,60,0.3)",
             }}>🍺</div>
