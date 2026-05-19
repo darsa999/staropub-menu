@@ -235,14 +235,7 @@ export default function StaroPub() {
                 e.target.nextSibling.style.display = "flex";
               }}
             />
-            <div style={{
-              display: "none",
-              width: 40, height: 40, borderRadius: "50%",
-              background: "linear-gradient(135deg,#c87820,#7a4010)",
-              alignItems: "center", justifyContent: "center",
-              fontSize: 20, boxShadow: "0 2px 12px rgba(200,120,32,0.4)",
-              border: "1px solid rgba(200,160,60,0.3)",
-            }}>🍺</div>
+
             <div>
               <div style={{ color: "#f0c060", fontSize: 18, fontWeight: 700, letterSpacing: "0.5px", lineHeight: 1.1 }}>StaroPub</div>
               <div style={{ color: "#8a6040", fontSize: 10, letterSpacing: "1px" }}>სტაროპაბი</div>
