@@ -52,11 +52,11 @@ const MENU = {
   spirits: {
     label: "🥃 ძლიერი ალკოჰოლი",
     items: [
-      { id: "sp1", name: "არაყი აბსოლუტი", desc: "შვედური პრემიუმ არაყი", price: 55.90, unit1: "0.5 ლ", img: "images/absolut.jpg" },
-      { id: "sp2", name: "არაყი ფინლანდია", desc: "ფინური სუფთა არაყი", price: 55.90, unit1: "0.5 ლ", img: "images/finlandia.jpg" },
-      { id: "sp3", name: "არაყი სტალიჩნაია", desc: "კლასიკური სლავური ტრადიცია", price: 44.90, unit1: "0.5 ლ", img: "images/stolichnaya.jpg" },
-      { id: "sp4", name: "კონიაკი სარაჯიშვილი 5★", desc: "ქართული კონიაკი — 5 ვარსკვლავი", price: 49.90, unit1: "0.5 ლ", img: "images/sarajishvili.jpg" },
-      { id: "sp5", name: "სოფლის ჭაჭა", desc: "ქართული სოფლის ჭაჭა", price: 9.90, price2: 19.90, unit1: "0.250 ლ", unit2: "0.5 ლ", img: "images/chacha.jpg" },
+      { id: "sp1", name: "არაყი აბსოლუტი", desc: "შვედური პრემიუმ არაყი", price: 55.90, unit1: "0.5 ლ", img: "images/absolut.png" },
+      { id: "sp2", name: "არაყი ფინლანდია", desc: "ფინური სუფთა არაყი", price: 55.90, unit1: "0.5 ლ", img: "images/finlandia.png" },
+      { id: "sp3", name: "არაყი სტალიჩნაია", desc: "კლასიკური სლავური ტრადიცია", price: 44.90, unit1: "0.5 ლ", img: "images/stolichnaya.png" },
+      { id: "sp4", name: "კონიაკი სარაჯიშვილი 5★", desc: "ქართული კონიაკი — 5 ვარსკვლავი", price: 49.90, unit1: "0.5 ლ", img: "images/sarajishvili.png" },
+      { id: "sp5", name: "სოფლის ჭაჭა", desc: "ქართული სოფლის ჭაჭა", price: 9.90, price2: 19.90, unit1: "0.250 ლ", unit2: "0.5 ლ", img: "images/chacha.png" },
     ],
   },
 };
