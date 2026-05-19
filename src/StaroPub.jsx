@@ -223,6 +223,7 @@ export default function StaroPub() {
             <img
               src="images/logo.jpg"
               alt="StaroPub Logo"
+              loading={"lazy"}
 
               style={{
                 width: 40, height: 40, borderRadius: "50%",
