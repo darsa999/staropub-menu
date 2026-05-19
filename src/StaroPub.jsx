@@ -221,9 +221,9 @@ export default function StaroPub() {
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <img
-              src="images/logo.png"
+              src="public/images/logo.jpg"
               alt="StaroPub Logo"
-              loading="lazy"
+
               style={{
                 width: 40, height: 40, borderRadius: "50%",
                 objectFit: "cover",
