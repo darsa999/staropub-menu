@@ -41,12 +41,12 @@ const MENU = {
   hotdrinks: {
     label: "☕ ცხელი სასმელები",
     items: [
-      { id: "hd1", name: "ესპრესო", desc: "კლასიკური ესპრესო — კონცენტრირებული და ძლიერი", price: 5.00, img: "images/espresso.jpg" },
-      { id: "hd2", name: "ამერიკანო", desc: "ესპრესო გაწყლიანებული — რბილი და სასიამოვნო", price: 5.00, img: "images/americano.jpg" },
-      { id: "hd3", name: "კაპუჩინო", desc: "ესპრესო ნაფოთქი რძით — ნაზი ქაფი", price: 7.00, img: "images/cappuccino.jpg" },
-      { id: "hd4", name: "ლატე", desc: "ესპრესო ცხელ რძესთან — კრემისებური ტექსტურა", price: 7.00, img: "images/latte.jpg" },
-      { id: "hd5", name: "თურქული ყავა", desc: "ტრადიციული მოხარშული ყავა — ნამდვილი გემო", price: 6.00, img: "images/turkish-coffee.jpg" },
-      { id: "hd6", name: "ჩაი", desc: "სხვადასხვა სახეობის ჩაი — შავი, მწვანე, ბალახოვანი", price: 4.00, img: "images/tea.jpg" },
+      { id: "hd1", name: "ესპრესო", desc: "კლასიკური ესპრესო — კონცენტრირებული და ძლიერი", price: 5.00, img: "images/espresso.png" },
+      { id: "hd2", name: "ამერიკანო", desc: "ესპრესო გაწყლიანებული — რბილი და სასიამოვნო", price: 5.00, img: "images/americano.png" },
+      { id: "hd3", name: "კაპუჩინო", desc: "ესპრესო ნაფოთქი რძით — ნაზი ქაფი", price: 7.00, img: "images/cappuccino.png" },
+      { id: "hd4", name: "ლატე", desc: "ესპრესო ცხელ რძესთან — კრემისებური ტექსტურა", price: 7.00, img: "images/latte.webp" },
+      { id: "hd5", name: "თურქული ყავა", desc: "ტრადიციული მოხარშული ყავა — ნამდვილი გემო", price: 6.00, img: "images/turkish-coffee.png" },
+      { id: "hd6", name: "ჩაი", desc: "სხვადასხვა სახეობის ჩაი — შავი, მწვანე, ბალახოვანი", price: 4.00, img: "images/tea.png" },
     ],
   },
   spirits: {
