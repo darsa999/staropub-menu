@@ -4,7 +4,7 @@ import Papa from "papaparse";
 // ──────────────────────────────────────────────────────────────────────────────
 // 👇 ჩასვი შენი Google Sheets CSV ბმული აქ
 // ──────────────────────────────────────────────────────────────────────────────
-const SPREADSHEET_URL = "YOUR_GOOGLE_SHEETS_CSV_URL_HERE";
+const SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTb9meX1aqFVREVH0ybAXHfgXVUombtxAJV-Out0Uf3jo4XQJoK_TXlxG_twhKtL8Kog_QotnHC3Qp6/pub?output=csv";
 // მაგალითად:
 // "https://docs.google.com/spreadsheets/d/XXXXXX/export?format=csv&gid=0"
 // ──────────────────────────────────────────────────────────────────────────────
