@@ -668,7 +668,7 @@ function SiteFooter({ lang }) {
   };
   return (
     <footer style={{
-      position: "sticky", bottom: 0, zIndex: 50,
+        position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 50,
       background: "linear-gradient(0deg, rgba(8,4,1,0.99) 0%, rgba(12,6,1,0.97) 100%)",
       borderTop: "1px solid rgba(180,120,40,0.2)",
       padding: "10px 24px 12px",
