@@ -9,23 +9,41 @@ const SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTb9meX
 // "https://docs.google.com/spreadsheets/d/XXXXXX/export?format=csv&gid=0"
 // ──────────────────────────────────────────────────────────────────────────────
 
-// ─── კატეგორიების თარგმანი ───────────────────────────────────────────────────
+// ─── Timing constants ─────────────────────────────────────────────────────────
+const POUR_DURATION_MS  = 2000;   // Phase 1: beer pour animation
+const SKELETON_DELAY_MS = 1500;   // Phase 2: skeleton hold after data arrives
+
+// ─── Loading text (updated per spec) ─────────────────────────────────────────
+const LOADING_TEXT = {
+  ka: "მენიუ იტვირთება...",
+  en: "The menu is loading...",
+  ru: "Меню загружается...",
+};
+
+// ─── Category labels ──────────────────────────────────────────────────────────
 const CATEGORY_LABELS = {
-  grill:     { ka: "🔥 გრილი",              en: "🔥 Grill",        ru: "🔥 Гриль" },
-  khinkali:  { ka: "🥟 ხინკალი",            en: "🥟 Khinkali",     ru: "🥟 Хинкали" },
-  hot_dish:  { ka: "🍲 ცხელი კერძები",      en: "🍲 Hot Dishes",   ru: "🍲 Горячие блюда" },
-  soup:      { ka: "🍜 წვნიანი კერძები",    en: "🍜 Soups",        ru: "🍜 Супы" },
-  salad:     { ka: "🥗 სალათები",           en: "🥗 Salads",       ru: "🥗 Салаты" },
-  cheese:    { ka: "🧀 ყველი",              en: "🧀 Cheese",       ru: "🧀 Сыр" },
-  bakery:    { ka: "🫓 ცომეული",            en: "🫓 Bakery",       ru: "🫓 Выпечка" },
-  fish:      { ka: "🐟 თევზეული",           en: "🐟 Fish",         ru: "🐟 Рыба" },
-  side:      { ka: "🍚 გარნირი",            en: "🍚 Side Dishes",  ru: "🍚 Гарниры" },
-  beer:      { ka: "🍺 ლუდი",              en: "🍺 Beer",         ru: "🍺 Пиво" },
-  hot_drink: { ka: "☕ ცხელი სასმელები",    en: "☕ Hot Drinks",   ru: "☕ Горячие напитки" },
-  alcohol:   { ka: "🥃 სპირტიანი სასმელები",en: "🥃 Spirits",      ru: "🥃 Крепкие напитки" },
-  spirits:   { ka: "🥃 სპირტიანი სასმელები",en: "🥃 Spirits",      ru: "🥃 Крепкие напитки" },
-  sauces:    { ka: "🫙 სოუსები",            en: "🫙 Sauces",       ru: "🫙 Соусы" },
-  snacks:    { ka: "🍟 წასახემსებელი",      en: "🍟 Snacks",       ru: "🍟 Закуски" },
+  grill:     { ka: "🔥 გრილი",               en: "🔥 Grill",        ru: "🔥 Гриль" },
+  khinkali:  { ka: "🥟 ხინკალი",             en: "🥟 Khinkali",     ru: "🥟 Хинкали" },
+  hot_dishes:  { ka: "🍲 ცხელი კერძები",       en: "🍲 Hot Dishes",   ru: "🍲 Горячие блюда" },
+  soup:      { ka: "🍜 წვნიანი კერძები",     en: "🍜 Soups",        ru: "🍜 Супы" },
+  salad:     { ka: "🥗 სალათები",            en: "🥗 Salads",       ru: "🥗 Салаты" },
+  cheese:    { ka: "🧀 ყველი",               en: "🧀 Cheese",       ru: "🧀 Сыр" },
+  bakery:    { ka: "🫓 ცომეული",             en: "🫓 Bakery",       ru: "🫓 Выпечка" },
+  fish:      { ka: "🐟 თევზეული",            en: "🐟 Fish",         ru: "🐟 Рыба" },
+  side:      { ka: "🍚 გარნირი",             en: "🍚 Side Dishes",  ru: "🍚 Гарниры" },
+  beer:      { ka: "🍺 ლუდი",               en: "🍺 Beer",         ru: "🍺 Пиво" },
+  hot_drink: { ka: "☕ ცხელი სასმელები",     en: "☕ Hot Drinks",   ru: "☕ Горячие напитки" },
+  alcohol:   { ka: "🥃 სპირტიანი სასმელები", en: "🥃 Spirits",      ru: "🥃 Крепкие напитки" },
+  spirits:   { ka: "🥃 სპირტიანი სასმელები", en: "🥃 Spirits",      ru: "🥃 Крепкие напитки" },
+  sauces:    { ka: "🫙 სოუსები",             en: "🫙 Sauces",       ru: "🫙 Соусы" },
+  snacks:    { ka: "🍟 წასახემსებელი",       en: "🍟 Snacks",       ru: "🍟 Закуски" },
+    cold_dishes: { ka: "🥗 ცივი კერძები",     en: "🥗 Cold Dishes",  ru: "🥗 Холодные закуски" },
+};
+
+const CATEGORY_ICONS = {
+  grill: "🔥", khinkali: "🥟", hot_dish: "🍲", soup: "🍜", salad: "🥗",
+  cheese: "🧀", bakery: "🫓", fish: "🐟", side: "🍚", beer: "🍺",
+  hot_drink: "☕", alcohol: "🥃", spirits: "🥃", sauces: "🫙", snacks: "🍟",
 };
 
 const FOOTER_TEXT = {
@@ -41,156 +59,410 @@ const FOOTER_TEXT = {
   },
 };
 
-// ─── SVG: Facebook ────────────────────────────────────────────────────────────
-function IconFacebook({ size = 18 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
-    </svg>
-  );
-}
-
-// ─── SVG: Instagram ───────────────────────────────────────────────────────────
-function IconInstagram({ size = 18 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-      <circle cx="12" cy="12" r="4"/>
-      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
-    </svg>
-  );
-}
-
-// ─── Footer ───────────────────────────────────────────────────────────────────
-function SiteFooter({ lang }) {
-  const socialBtnStyle = {
-    display: "inline-flex", alignItems: "center", gap: 6,
-    color: "#c8903a", textDecoration: "none",
-    padding: "5px 9px", borderRadius: 7,
-    border: "1px solid rgba(180,120,40,0.2)",
-    background: "rgba(255,255,255,0.03)",
-    fontSize: 11, fontWeight: 600,
-    transition: "all 0.2s",
-  };
-
-  return (
-    <footer style={{
-      position: "sticky", bottom: 0, zIndex: 50,
-      background: "linear-gradient(0deg, rgba(8,4,1,0.99) 0%, rgba(12,6,1,0.97) 100%)",
-      borderTop: "1px solid rgba(180,120,40,0.2)",
-      padding: "10px 24px 12px",
-      backdropFilter: "blur(12px)",
-      WebkitBackdropFilter: "blur(12px)",
-    }}>
-      <style>{`
-        .footer-grid {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 10px;
-          max-width: 1200px;
-          margin: 0 auto;
-          text-align: center;
-          align-items: center;
-        }
-        @media (min-width: 640px) {
-          .footer-grid { grid-template-columns: 1fr 1fr 1fr; text-align: left; gap: 0; }
-          .footer-center { text-align: center !important; }
-          .footer-right  { text-align: right !important; }
-        }
-        .social-link:hover { background: rgba(180,120,40,0.12) !important; color: #f0c060 !important; border-color: rgba(200,140,40,0.5) !important; }
-      `}</style>
-
-      <div className="footer-grid">
-        {/* მარცხენა — სოციალური ქსელები */}
-        <div style={{ display: "flex", gap: 8, justifyContent: "center", alignItems: "center", flexWrap: "wrap" }}>
-          <a
-            href="https://www.facebook.com/StaroPub1"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={socialBtnStyle}
-            className="social-link"
-          >
-            <IconFacebook size={15} /> Facebook
-          </a>
-          <a
-            href="https://www.instagram.com/staropub/"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={socialBtnStyle}
-            className="social-link"
-          >
-            <IconInstagram size={15} /> Instagram
-          </a>
-        </div>
-
-        {/* ცენტრი — სლოგანი */}
-        <div className="footer-center" style={{ textAlign: "center" }}>
-          <div style={{ color: "#c8a050", fontSize: 12, fontWeight: 700, fontFamily: "'Georgia',serif", lineHeight: 1.4 }}>
-            {FOOTER_TEXT.tagline[lang]}
-          </div>
-          <div style={{ marginTop: 3, color: "#4a3018", fontSize: 9, letterSpacing: "1px" }}>
-            StaroPub · სტაროპაბი · QR მენიუ
-          </div>
-        </div>
-
-        {/* მარჯვენა — copyright მხოლოდ */}
-        <div className="footer-right" style={{ textAlign: "center" }}>
-          <p style={{ color: "#4a3018", fontSize: 10, lineHeight: 1.5, margin: 0 }}>
-            {FOOTER_TEXT.copyright[lang]}
-          </p>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
-const CATEGORY_ICONS = {
-  grill: "🔥", khinkali: "🥟", hot_dish: "🍲", soup: "🍜", salad: "🥗",
-  cheese: "🧀", bakery: "🫓", fish: "🐟", side: "🍚", beer: "🍺",
-  hot_drink: "☕", alcohol: "🥃", spirits: "🥃", sauces: "🫙", snacks: "🍟",
-};
-
 const LANG_LABELS = { ka: "ქარ", en: "ENG", ru: "РУС" };
 
-// ─── ფასის ფორმატი ────────────────────────────────────────────────────────────
 function formatPrice(p) {
   const n = parseFloat(p);
-  if (isNaN(n)) return p; // შეინახე ორიგინალი თუ რიცხვი არ არის
+  if (isNaN(n)) return p;
   return `₾${n.toFixed(2)}`;
 }
 
-// ─── ბარათის ფასის ბლოკი ─────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// PHASE 1 — BEER POUR SCREEN (redesigned tap + stream)
+// ══════════════════════════════════════════════════════════════════════════════
+function MasterPourScreen({ lang = "ka" }) {
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 9999,
+      background: "radial-gradient(ellipse at 50% 30%, #1e0f02 0%, #0d0602 55%, #000 100%)",
+      display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center",
+    }}>
+      <style>{`
+        /* ── Beer fill (2s pour) ── */
+        @keyframes masterFill {
+          0%   { height: 0%; }
+          12%  { height: 10%; }
+          50%  { height: 56%; }
+          80%  { height: 72%; }
+          100% { height: 76%; }
+        }
+        .master-fill { animation: masterFill ${POUR_DURATION_MS}ms cubic-bezier(0.38,0,0.18,1) forwards; }
+
+        /* ── Foam follows fill ── */
+        @keyframes masterFoam {
+          0%   { height: 0px;  bottom: 0%;  opacity: 0; }
+          12%  { height: 5px;  bottom: 9%;  opacity: 0.9; }
+          50%  { height: 20px; bottom: 55%; opacity: 1; }
+          80%  { height: 30px; bottom: 71%; opacity: 1; }
+          100% { height: 32px; bottom: 75%; opacity: 1; }
+        }
+        .master-foam { animation: masterFoam ${POUR_DURATION_MS}ms cubic-bezier(0.38,0,0.18,1) forwards; }
+
+        /* ── Stream: width oscillates to mimic flowing liquid ── */
+        @keyframes streamFlow {
+          0%,100% { transform: scaleX(1);    }
+          25%      { transform: scaleX(0.72); }
+          50%      { transform: scaleX(1.08); }
+          75%      { transform: scaleX(0.80); }
+        }
+        .stream-body { animation: streamFlow 0.52s ease-in-out infinite; transform-origin: center top; }
+
+        /* ── Amber shimmer traveling down the stream ── */
+        @keyframes streamShimmer {
+          0%   { background-position: 0% 0%; }
+          100% { background-position: 0% 300%; }
+        }
+        .stream-shimmer {
+          background: linear-gradient(
+            180deg,
+            #fbbf24 0%,
+            #f59e0b 18%,
+            #d97706 36%,
+            #fbbf24 50%,
+            #d97706 68%,
+            #b45309 85%,
+            transparent 100%
+          );
+          background-size: 100% 300%;
+          animation: streamShimmer 0.45s linear infinite;
+        }
+
+        /* ── Bubble rise ── */
+        @keyframes bubbleRise {
+          0%   { transform: translateY(0)     scale(1);   opacity: 0.8; }
+          80%  { transform: translateY(-58px) scale(1.1); opacity: 0.3; }
+          100% { transform: translateY(-68px) scale(0.7); opacity: 0; }
+        }
+        .b0 { animation: bubbleRise 2.0s 0.1s ease-in infinite; }
+        .b1 { animation: bubbleRise 1.7s 0.8s ease-in infinite; }
+        .b2 { animation: bubbleRise 2.3s 1.4s ease-in infinite; }
+        .b3 { animation: bubbleRise 1.5s 0.4s ease-in infinite; }
+
+        /* ── Foam surface bubbles ── */
+        @keyframes foamBubble {
+          0%,100% { transform: scale(1);   opacity: 0.9; }
+          50%      { transform: scale(1.6); opacity: 0.35; }
+        }
+        .fb0 { animation: foamBubble 1.0s 0.00s ease-in-out infinite; }
+        .fb1 { animation: foamBubble 1.0s 0.33s ease-in-out infinite; }
+        .fb2 { animation: foamBubble 1.0s 0.66s ease-in-out infinite; }
+        .fb3 { animation: foamBubble 1.0s 1.00s ease-in-out infinite; }
+
+        /* ── Liquid sheen ── */
+        @keyframes liquidSheen {
+          0%,100% { opacity: 0.12; transform: translateX(-100%); }
+          50%      { opacity: 0.30; transform: translateX(100%); }
+        }
+        .liquid-sheen { animation: liquidSheen 1.9s ease-in-out infinite; }
+
+        /* ── Title reveal ── */
+        @keyframes titleReveal {
+          from { opacity: 0; letter-spacing: 6px; transform: translateY(6px); }
+          to   { opacity: 1; letter-spacing: 3px; transform: translateY(0); }
+        }
+        .pour-title { animation: titleReveal 1.0s 0.25s ease-out both; }
+
+        /* ── Loading glow ── */
+        @keyframes loadGlow {
+          0%,100% { opacity: 0.55; text-shadow: 0 0 8px rgba(200,150,50,0.25); }
+          50%      { opacity: 1;   text-shadow: 0 0 22px rgba(200,150,50,0.75); }
+        }
+        .load-text { animation: loadGlow 1.8s ease-in-out infinite; }
+
+        /* ── Sparkle ── */
+        @keyframes twinkle {
+          0%,100% { opacity: 0; transform: scale(0.3); }
+          50%      { opacity: 1; transform: scale(1.3); }
+        }
+        .sp0 { animation: twinkle 1.9s 0.1s ease-in-out infinite; }
+        .sp1 { animation: twinkle 1.9s 0.9s ease-in-out infinite; }
+        .sp2 { animation: twinkle 1.9s 1.5s ease-in-out infinite; }
+
+        /* ── Tap handle subtle pulse ── */
+        @keyframes handlePulse {
+          0%,100% { box-shadow: 0 0 0 0 rgba(200,160,60,0); }
+          50%      { box-shadow: 0 0 12px 3px rgba(200,160,60,0.12); }
+        }
+        .tap-handle { animation: handlePulse 2.2s ease-in-out infinite; }
+      `}</style>
+
+      {/* Brand */}
+      <div className="pour-title" style={{
+        color: "#f0c060", fontSize: 28, fontWeight: 700,
+        fontFamily: "'Georgia', serif", letterSpacing: "3px",
+        marginBottom: 5,
+        textShadow: "0 2px 28px rgba(240,180,60,0.55)",
+      }}>
+        StaroPub
+      </div>
+      <div className="pour-title" style={{
+        color: "#7a5a30", fontSize: 11, letterSpacing: "4px",
+        marginBottom: 36, fontFamily: "'Georgia', serif",
+        animationDelay: "0.5s",
+      }}>
+        სტაროპაბი
+      </div>
+
+      {/* ─── REDESIGNED TAP + STREAM ─── */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+
+        {/* Tap handle — tall classic lever shape */}
+        <div className="tap-handle" style={{
+          width: 22, height: 56,
+          background: "linear-gradient(160deg, #4b5563 0%, #374151 40%, #1f2937 70%, #374151 100%)",
+          borderRadius: "10px 10px 4px 4px",
+          boxShadow: "0 4px 16px rgba(0,0,0,0.7), inset 1px 2px 4px rgba(255,255,255,0.18), inset -1px 0 3px rgba(0,0,0,0.4)",
+          position: "relative",
+        }}>
+          {/* Grip ridges on the handle */}
+          {[12, 22, 32].map((top, i) => (
+            <div key={i} style={{
+              position: "absolute", top, left: 3, right: 3, height: 2,
+              background: "rgba(255,255,255,0.1)", borderRadius: 1,
+            }} />
+          ))}
+          {/* Highlight stripe */}
+          <div style={{
+            position: "absolute", top: 4, left: 5, width: 4, bottom: 10,
+            background: "linear-gradient(180deg, rgba(255,255,255,0.22), transparent)",
+            borderRadius: 3,
+          }} />
+        </div>
+
+        {/* Tap base collar */}
+        <div style={{
+          width: 48, height: 14,
+          background: "linear-gradient(180deg, #6b7280 0%, #4b5563 50%, #374151 100%)",
+          borderRadius: "4px 4px 6px 6px",
+          boxShadow: "0 3px 10px rgba(0,0,0,0.6), inset 0 1px 3px rgba(255,255,255,0.2)",
+          position: "relative",
+        }}>
+          <div style={{
+            position: "absolute", top: 3, left: 8, width: 12, height: 3,
+            background: "rgba(255,255,255,0.3)", borderRadius: 2,
+          }} />
+          {/* Nozzle tip */}
+          <div style={{
+            position: "absolute", bottom: -7, left: "50%", transform: "translateX(-50%)",
+            width: 16, height: 8,
+            background: "linear-gradient(180deg, #4b5563, #2d2d2d)",
+            borderRadius: "2px 2px 6px 6px",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.5)",
+          }} />
+        </div>
+
+        {/* ── Flowing amber stream ── */}
+        <div style={{ marginTop: 1, display: "flex", justifyContent: "center" }}>
+          <div className="stream-body" style={{
+            width: 11, height: 72,
+            borderRadius: "2px 2px 5px 5px",
+            overflow: "hidden",
+          }}>
+            <div className="stream-shimmer" style={{ width: "100%", height: "100%" }} />
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Beer mug ─── */}
+      <div style={{ position: "relative", width: 130, height: 185, marginTop: -2 }}>
+
+        {/* Glass body */}
+        <div style={{
+          position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)",
+          width: 110, height: 170,
+          background: "linear-gradient(160deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 100%)",
+          borderRadius: "8px 8px 18px 18px",
+          border: "2.5px solid rgba(255,255,255,0.16)",
+          overflow: "hidden",
+          boxShadow: "0 8px 44px rgba(0,0,0,0.75), inset 0 2px 0 rgba(255,255,255,0.1), inset -2px 0 10px rgba(0,0,0,0.2)",
+        }}>
+
+          {/* Beer fill column */}
+          <div className="master-fill" style={{
+            position: "absolute", bottom: 0, left: 0, right: 0,
+            background: "linear-gradient(180deg, #d08820 0%, #b86510 35%, #9a5008 70%, #7a3c04 100%)",
+            boxShadow: "inset 0 4px 14px rgba(255,180,30,0.2)",
+          }}>
+            <div className="liquid-sheen" style={{
+              position: "absolute", inset: 0,
+              background: "linear-gradient(90deg, transparent, rgba(255,220,100,0.38), transparent)",
+            }} />
+            {/* Rising bubbles */}
+            {[
+              { left: "18%", size: 5, cls: "b0" },
+              { left: "48%", size: 4, cls: "b1" },
+              { left: "74%", size: 6, cls: "b2" },
+              { left: "33%", size: 3, cls: "b3" },
+            ].map(({ left, size, cls }, i) => (
+              <div key={i} className={cls} style={{
+                position: "absolute", bottom: 4, left,
+                width: size, height: size,
+                background: "rgba(255,210,80,0.7)", borderRadius: "50%",
+              }} />
+            ))}
+            {/* Sparkle glints */}
+            {[
+              { top: "28%", left: "22%", cls: "sp0", size: 5 },
+              { top: "54%", left: "65%", cls: "sp1", size: 4 },
+              { top: "40%", left: "44%", cls: "sp2", size: 3 },
+            ].map(({ top, left, cls, size }, i) => (
+              <div key={i} className={cls} style={{
+                position: "absolute", top, left,
+                width: size, height: size,
+                background: "rgba(255,230,100,0.9)", borderRadius: "50%",
+                boxShadow: "0 0 5px rgba(255,220,80,0.8)",
+              }} />
+            ))}
+          </div>
+
+          {/* Foam head */}
+          <div className="master-foam" style={{
+            position: "absolute", left: -1, right: -1,
+            background: "linear-gradient(180deg, #ffffff 0%, #f8f2e4 55%, #eeddb8 100%)",
+            borderRadius: "6px 6px 0 0",
+            boxShadow: "0 -2px 14px rgba(255,255,255,0.28)",
+          }}>
+            {[12, 30, 52, 74].map((left, i) => (
+              <div key={i} className={`fb${i}`} style={{
+                position: "absolute", bottom: 3, left,
+                width: 7, height: 7,
+                background: "rgba(255,255,255,0.95)", borderRadius: "50%",
+                boxShadow: "0 0 4px rgba(255,255,255,0.6)",
+              }} />
+            ))}
+            {[18, 56, 88].map((left, i) => (
+              <div key={i} style={{
+                position: "absolute", top: -3, left,
+                width: 5, height: 8,
+                background: "rgba(255,255,255,0.65)",
+                borderRadius: "50% 50% 0 0",
+              }} />
+            ))}
+          </div>
+
+          {/* Glass highlight */}
+          <div style={{
+            position: "absolute", top: 0, left: 6, width: 8, bottom: 0,
+            background: "linear-gradient(180deg, rgba(255,255,255,0.1), transparent)",
+            pointerEvents: "none",
+          }} />
+        </div>
+
+        {/* Handle */}
+        <div style={{
+          position: "absolute", right: 0, top: 28, height: 80, width: 22,
+          border: "3px solid rgba(255,255,255,0.16)",
+          borderLeft: "none",
+          borderRadius: "0 14px 14px 0",
+          boxShadow: "3px 0 10px rgba(0,0,0,0.3)",
+        }} />
+
+        {/* Base */}
+        <div style={{
+          position: "absolute", bottom: -5, left: "50%", transform: "translateX(-50%)",
+          width: 124, height: 8,
+          background: "linear-gradient(180deg, rgba(255,255,255,0.08), transparent)",
+          borderRadius: "0 0 12px 12px",
+          border: "1.5px solid rgba(255,255,255,0.1)",
+          borderTop: "none",
+        }} />
+      </div>
+
+      {/* Loading text */}
+      <div style={{ marginTop: 32, textAlign: "center" }}>
+        <p className="load-text" style={{
+          color: "#c8a050", fontSize: 14, fontWeight: 700,
+          fontFamily: "'Georgia', serif", letterSpacing: "0.4px",
+          margin: 0,
+        }}>
+          {LOADING_TEXT[lang] || LOADING_TEXT.ka}
+        </p>
+        <p style={{ color: "#3a2810", fontSize: 10, letterSpacing: "1.5px", marginTop: 8 }}>
+          StaroPub · QR მენიუ
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PHASE 2 — SKELETON GRID
+// ══════════════════════════════════════════════════════════════════════════════
+function SkeletonCard() {
+  return (
+    <div style={{
+      background: "linear-gradient(145deg, #1e1209, #271508)",
+      border: "1px solid rgba(100,60,20,0.3)",
+      borderRadius: 12, overflow: "hidden",
+      display: "flex", flexDirection: "column",
+    }}>
+      <div className="sk-pulse" style={{ width: "100%", height: 160, background: "#2e1a0a" }} />
+      <div style={{ padding: "14px 16px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+        <div className="sk-pulse" style={{ height: 14, borderRadius: 6, width: "70%", background: "#3a2010" }} />
+        <div className="sk-pulse" style={{ height: 10, borderRadius: 6, width: "90%", background: "#2e1a0a" }} />
+        <div className="sk-pulse" style={{ height: 10, borderRadius: 6, width: "60%", background: "#2e1a0a" }} />
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 6 }}>
+          <div className="sk-pulse" style={{ height: 18, borderRadius: 6, width: "36%", background: "#3a2010" }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SkeletonGrid() {
+  return (
+    <>
+      <style>{`
+        @keyframes skPulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        .sk-pulse { animation: skPulse 1.1s ease-in-out infinite; }
+        .skeleton-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+        @media(min-width:768px)  { .skeleton-grid { grid-template-columns:repeat(4,1fr)!important; } }
+        @media(min-width:1024px) { .skeleton-grid { grid-template-columns:repeat(5,1fr)!important; } }
+      `}</style>
+      <div className="skeleton-grid">
+        {Array.from({ length: 10 }).map((_, i) => <SkeletonCard key={i} />)}
+      </div>
+    </>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PHASE 3 — ITEM CARD with slow shimmer (6–8s cycle)
+// ══════════════════════════════════════════════════════════════════════════════
 function PriceBlock({ item }) {
-  // Google Sheets-ის ფასი პირდაპირ გამოჩნდება
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
-      <span style={{
-        color: "#e8a030", fontFamily: "'Georgia', serif",
-        fontSize: 17, fontWeight: 700,
-      }}>
+      <span style={{ color: "#e8a030", fontFamily: "'Georgia', serif", fontSize: 17, fontWeight: 700 }}>
         {formatPrice(item.price)}
       </span>
     </div>
   );
 }
 
-// ─── პროდუქტის ბარათი ────────────────────────────────────────────────────────
 function ItemCard({ item, lang }) {
-  const name = item[`name_${lang}`] || item.name_ka || "";
-  const desc = item[`desc_${lang}`] || item.desc_ka || "";
-  const imgSrc = item.image ? `Images/${item.image}` : "";
+  const name    = item[`name_${lang}`] || item.name_ka || "";
+  const desc    = item[`desc_${lang}`] || item.desc_ka || "";
+  const imgSrc  = item.image ? `Images/${item.image}` : "";
   const fallback = CATEGORY_ICONS[item.category] || "🍽️";
+
+  // Stable random negative delay — looks already-in-motion, never synchronized
+  // useMemo pins the value so re-renders (e.g. lang switch) don't re-randomize
+  const shimmerDelay = React.useMemo(
+    () => `-${(Math.random() * 8).toFixed(2)}s`,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [item.id || item.name_ka]
+  );
 
   return (
     <div
       style={{
         background: "linear-gradient(145deg, #1e1209, #2a1a0a)",
         border: "1px solid rgba(180,120,40,0.2)",
-        borderRadius: 12,
-        overflow: "hidden",
-        display: "flex",
-        flexDirection: "column",
+        borderRadius: 12, overflow: "hidden",
+        display: "flex", flexDirection: "column",
         transition: "transform 0.2s, box-shadow 0.2s",
+        position: "relative",
       }}
       onMouseEnter={e => {
         e.currentTarget.style.transform = "translateY(-4px)";
@@ -201,7 +473,7 @@ function ItemCard({ item, lang }) {
         e.currentTarget.style.boxShadow = "";
       }}
     >
-      {/* სურათი */}
+      {/* Image */}
       <div style={{
         width: "100%", height: 160,
         background: "linear-gradient(135deg, #2d1a08 0%, #3d2410 50%, #1a0e04 100%)",
@@ -209,20 +481,13 @@ function ItemCard({ item, lang }) {
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
         {imgSrc && (
-          <img
-            src={imgSrc}
-            alt={name}
-            loading="lazy"
-            onError={e => {
-              e.target.style.display = "none";
-              e.target.nextSibling.style.display = "flex";
-            }}
+          <img src={imgSrc} alt={name} loading="lazy"
+            onError={e => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex"; }}
             style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }}
           />
         )}
         <div style={{
-          display: imgSrc ? "none" : "flex",
-          fontSize: 48, position: "absolute",
+          display: imgSrc ? "none" : "flex", fontSize: 48, position: "absolute",
           flexDirection: "column", alignItems: "center", gap: 4,
         }}>
           <span>{fallback}</span>
@@ -233,25 +498,39 @@ function ItemCard({ item, lang }) {
         }} />
       </div>
 
-      {/* ტექსტი */}
+      {/* Text */}
       <div style={{ padding: "14px 16px 16px", flex: 1, display: "flex", flexDirection: "column" }}>
-        <h3 style={{
-          margin: "0 0 6px", color: "#f0c060",
-          fontFamily: "'Georgia', serif", fontSize: 15, fontWeight: 700, lineHeight: 1.3,
-        }}>{name}</h3>
+        <h3 style={{ margin: "0 0 6px", color: "#f0c060", fontFamily: "'Georgia', serif", fontSize: 15, fontWeight: 700, lineHeight: 1.3 }}>
+          {name}
+        </h3>
         {desc && (
-          <p style={{
-            margin: "0 0 12px", color: "#a08060",
-            fontSize: 12, lineHeight: 1.5, flex: 1,
-          }}>{desc}</p>
+          <p style={{ margin: "0 0 12px", color: "#a08060", fontSize: 12, lineHeight: 1.5, flex: 1 }}>
+            {desc}
+          </p>
         )}
         <PriceBlock item={item} />
+      </div>
+
+      {/* Diagonal glare — fast sweep, long pause, 5s cycle */}
+      <div style={{
+        position: "absolute", inset: 0, borderRadius: 12,
+        pointerEvents: "none", zIndex: 3, overflow: "hidden",
+      }}>
+        <div style={{
+          position: "absolute",
+          top: "-50%", left: "-50%",
+          width: "55%", height: "200%",
+          background: "linear-gradient(135deg, transparent 20%, rgba(255,245,200,0.05) 38%, rgba(255,255,255,0.11) 50%, rgba(255,245,200,0.05) 62%, transparent 80%)",
+          animation: `diagGleam 8s ${shimmerDelay} linear infinite`,
+        }} />
       </div>
     </div>
   );
 }
 
-// ─── ენის გადამრთველი ─────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// LANGUAGE SWITCHER
+// ══════════════════════════════════════════════════════════════════════════════
 function LangSwitcher({ lang, setLang }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -266,44 +545,31 @@ function LangSwitcher({ lang, setLang }) {
 
   return (
     <div ref={ref} style={{ position: "relative", marginLeft: "auto" }}>
-      <button
-        onClick={() => setOpen(o => !o)}
-        style={{
-          background: "rgba(255,255,255,0.06)",
-          border: "1px solid rgba(180,120,40,0.3)",
-          borderRadius: 8, color: "#e0b050",
-          padding: "6px 12px", fontSize: 12, fontWeight: 700,
-          cursor: "pointer", display: "flex", alignItems: "center", gap: 5,
-          transition: "all 0.2s",
-        }}
-      >
+      <button onClick={() => setOpen(o => !o)} style={{
+        background: "rgba(255,255,255,0.06)", border: "1px solid rgba(180,120,40,0.3)",
+        borderRadius: 8, color: "#e0b050", padding: "6px 12px",
+        fontSize: 12, fontWeight: 700, cursor: "pointer",
+        display: "flex", alignItems: "center", gap: 5, transition: "all 0.2s",
+      }}>
         🌐 {LANG_LABELS[lang]}
         <span style={{ fontSize: 9, opacity: 0.7 }}>{open ? "▲" : "▼"}</span>
       </button>
-
       {open && (
         <div style={{
           position: "absolute", top: "calc(100% + 6px)", right: 0,
           background: "linear-gradient(180deg, #1e1005, #140b03)",
-          border: "1px solid rgba(180,120,40,0.35)",
-          borderRadius: 10, overflow: "hidden",
-          boxShadow: "0 8px 24px rgba(0,0,0,0.7)",
-          minWidth: 90, zIndex: 200,
+          border: "1px solid rgba(180,120,40,0.35)", borderRadius: 10, overflow: "hidden",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.7)", minWidth: 90, zIndex: 200,
         }}>
           {Object.entries(LANG_LABELS).map(([code, label]) => (
-            <button
-              key={code}
-              onClick={() => { setLang(code); setOpen(false); }}
-              style={{
-                width: "100%", padding: "9px 14px",
-                background: lang === code ? "rgba(184,101,32,0.25)" : "transparent",
-                border: "none",
-                borderBottom: "1px solid rgba(180,120,40,0.1)",
-                color: lang === code ? "#f0c060" : "#9a7050",
-                fontSize: 12, fontWeight: lang === code ? 700 : 500,
-                cursor: "pointer", textAlign: "left",
-                transition: "background 0.15s",
-              }}
+            <button key={code} onClick={() => { setLang(code); setOpen(false); }} style={{
+              width: "100%", padding: "9px 14px",
+              background: lang === code ? "rgba(184,101,32,0.25)" : "transparent",
+              border: "none", borderBottom: "1px solid rgba(180,120,40,0.1)",
+              color: lang === code ? "#f0c060" : "#9a7050",
+              fontSize: 12, fontWeight: lang === code ? 700 : 500,
+              cursor: "pointer", textAlign: "left", transition: "background 0.15s",
+            }}
               onMouseEnter={e => { if (lang !== code) e.target.style.background = "rgba(255,255,255,0.05)"; }}
               onMouseLeave={e => { if (lang !== code) e.target.style.background = "transparent"; }}
             >
@@ -316,110 +582,169 @@ function LangSwitcher({ lang, setLang }) {
   );
 }
 
-// ─── Skeleton ბარათი ─────────────────────────────────────────────────────────
-function SkeletonCard() {
+// ══════════════════════════════════════════════════════════════════════════════
+// FOOTER
+// ══════════════════════════════════════════════════════════════════════════════
+function IconFacebook({ size = 18 }) {
   return (
-    <div style={{
-      background: "linear-gradient(145deg, #2c1a0a, #3a2210)",
-      border: "1px solid rgba(180,120,40,0.25)",
-      borderRadius: 12, overflow: "hidden",
-      display: "flex", flexDirection: "column",
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+    </svg>
+  );
+}
+
+function IconInstagram({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+      <circle cx="12" cy="12" r="4"/>
+      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+    </svg>
+  );
+}
+
+function SiteFooter({ lang }) {
+  const socialBtnStyle = {
+    display: "inline-flex", alignItems: "center", gap: 6,
+    color: "#c8903a", textDecoration: "none",
+    padding: "5px 9px", borderRadius: 7,
+    border: "1px solid rgba(180,120,40,0.2)",
+    background: "rgba(255,255,255,0.03)",
+    fontSize: 11, fontWeight: 600, transition: "all 0.2s",
+  };
+  return (
+    <footer style={{
+      position: "sticky", bottom: 0, zIndex: 50,
+      background: "linear-gradient(0deg, rgba(8,4,1,0.99) 0%, rgba(12,6,1,0.97) 100%)",
+      borderTop: "1px solid rgba(180,120,40,0.2)",
+      padding: "10px 24px 12px",
+      backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
     }}>
-      {/* სურათის ადგილი */}
-      <div className="sk-pulse" style={{
-        width: "100%", height: 160,
-        background: "linear-gradient(135deg, #52300f, #623a12, #4e2d0c)",
-      }} />
-      {/* ტექსტის ადგილი */}
-      <div style={{ padding: "14px 16px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
-        {/* სახელი */}
-        <div className="sk-pulse" style={{ height: 14, borderRadius: 6, width: "72%", background: "#5a3414" }} />
-        {/* აღწერა — 2 ხაზი */}
-        <div className="sk-pulse" style={{ height: 11, borderRadius: 6, width: "92%", background: "#4a2c10" }} />
-        <div className="sk-pulse" style={{ height: 11, borderRadius: 6, width: "65%", background: "#4a2c10" }} />
-        {/* ფასი */}
-        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 6 }}>
-          <div className="sk-pulse" style={{ height: 20, borderRadius: 6, width: "38%", background: "#5a3414" }} />
+      <style>{`
+        .footer-grid { display:grid; grid-template-columns:1fr; gap:10px; max-width:1200px; margin:0 auto; text-align:center; align-items:center; }
+        @media(min-width:640px) {
+          .footer-grid { grid-template-columns:1fr 1fr 1fr; text-align:left; gap:0; }
+          .footer-center { text-align:center!important; }
+          .footer-right  { text-align:right!important; }
+        }
+        .social-link:hover { background:rgba(180,120,40,0.12)!important; color:#f0c060!important; border-color:rgba(200,140,40,0.5)!important; }
+      `}</style>
+      <div className="footer-grid">
+        <div style={{ display:"flex", gap:8, justifyContent:"center", alignItems:"center", flexWrap:"wrap" }}>
+          <a href="https://www.facebook.com/StaroPub1" target="_blank" rel="noopener noreferrer" style={socialBtnStyle} className="social-link">
+            <IconFacebook size={15} /> Facebook
+          </a>
+          <a href="https://www.instagram.com/staropub/" target="_blank" rel="noopener noreferrer" style={socialBtnStyle} className="social-link">
+            <IconInstagram size={15} /> Instagram
+          </a>
+        </div>
+        <div className="footer-center" style={{ textAlign:"center" }}>
+          <div style={{ color:"#c8a050", fontSize:12, fontWeight:700, fontFamily:"'Georgia',serif", lineHeight:1.4 }}>
+            {FOOTER_TEXT.tagline[lang]}
+          </div>
+          <div style={{ marginTop:3, color:"#4a3018", fontSize:9, letterSpacing:"1px" }}>
+            StaroPub · სტაროპაბი · QR მენიუ
+          </div>
+        </div>
+        <div className="footer-right" style={{ textAlign:"center" }}>
+          <p style={{ color:"#4a3018", fontSize:10, lineHeight:1.5, margin:0 }}>
+            {FOOTER_TEXT.copyright[lang]}
+          </p>
         </div>
       </div>
-    </div>
+    </footer>
   );
 }
 
-// ─── Skeleton Grid ────────────────────────────────────────────────────────────
-function SkeletonGrid() {
-  return (
-    <>
-      <style>{`
-        @keyframes skPulse {
-          0%, 100% { opacity: 1; }
-          50%       { opacity: 0.25; }
-        }
-        .sk-pulse { animation: skPulse 1.0s ease-in-out infinite; }
-        .skeleton-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; }
-        @media (min-width: 768px)  { .skeleton-grid { grid-template-columns: repeat(4,1fr) !important; } }
-        @media (min-width: 1024px) { .skeleton-grid { grid-template-columns: repeat(5,1fr) !important; } }
-      `}</style>
-      <div className="skeleton-grid">
-        {Array.from({ length: 10 }).map((_, i) => <SkeletonCard key={i} />)}
-      </div>
-    </>
-  );
-}
-
-// ─── მთავარი კომპონენტი ───────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// MAIN COMPONENT — fixed sequential state machine
+// ══════════════════════════════════════════════════════════════════════════════
 export default function StaroPub() {
-  const [lang, setLang] = useState("ka");
-  const [allItems, setAllItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [lang, setLang]           = useState("ka");
+  const [allItems, setAllItems]   = useState([]);
   const [activeTab, setActiveTab] = useState(null);
-  const tabsRef = useRef(null);
+  const [error, setError]         = useState(null);
 
-  // ─── Google Sheets CSV ჩატვირთვა ─────────────────────────────────────────
+  // phases: "pour" → "skeleton" → "menu"
+  const [phase, setPhase] = useState("pour");
+
+  // Stores fetched rows until we're ready to display them
+  const fetchedRows = useRef(null);
+  const tabsRef     = useRef(null);
+
+  // ─── Phase 1: Pour timer — always runs for exactly POUR_DURATION_MS ────────
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (fetchedRows.current !== null) {
+        // Data already arrived while pour was running → go straight to menu
+        setAllItems(fetchedRows.current);
+        if (fetchedRows.current.length > 0) {
+          setActiveTab(fetchedRows.current[0].category);
+        }
+        setPhase("menu");
+      } else {
+        // Data not yet here → show skeleton while we wait
+        setPhase("skeleton");
+      }
+    }, POUR_DURATION_MS);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ─── Fetch data ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!SPREADSHEET_URL || SPREADSHEET_URL === "YOUR_GOOGLE_SHEETS_CSV_URL_HERE") {
-      setError("SPREADSHEET_URL არ არის დაყენებული. გთხოვ, StaroPub.jsx-ში ჩასვი შენი Google Sheets CSV ბმული.");
-      setLoading(false);
+      setError("SPREADSHEET_URL არ არის დაყენებული.");
+      fetchedRows.current = [];
+      // If pour is already done, jump to menu to show the error
+      setPhase(prev => prev === "skeleton" ? "menu" : prev);
       return;
     }
 
     Papa.parse(SPREADSHEET_URL, {
-      download: true,
-      header: true,
-      skipEmptyLines: true,
+      download: true, header: true, skipEmptyLines: true,
       complete: (results) => {
         const rows = results.data.filter(r => r.id && r.category && r.name_ka);
-        // 1000ms ხელოვნური დაყოვნება skeleton-ის ჩვენებისთვის
-        setTimeout(() => {
-          setAllItems(rows);
-          if (rows.length > 0) {
-            setActiveTab(rows[0].category);
+        fetchedRows.current = rows;
+
+        setPhase(prev => {
+          if (prev === "skeleton") {
+            // Pour already done — hold skeleton for SKELETON_DELAY_MS then reveal
+            setTimeout(() => {
+              setAllItems(rows);
+              if (rows.length > 0) setActiveTab(rows[0].category);
+              setPhase("menu");
+            }, SKELETON_DELAY_MS);
+            return "skeleton"; // stay in skeleton during the hold
           }
-          setLoading(false);
-        }, 1000);
+          // Still in "pour" phase — data will be consumed when pour timer fires
+          return prev;
+        });
       },
       error: (err) => {
-        setError(`CSV ჩატვირთვის შეცდომა: ${err.message}`);
-        setLoading(false);
+        setError(`CSV შეცდომა: ${err.message}`);
+        fetchedRows.current = [];
+        setPhase(prev => {
+          if (prev === "skeleton") {
+            setTimeout(() => setPhase("menu"), 300);
+          }
+          return prev;
+        });
       },
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ─── კატეგორიების სია (მხოლოდ ისეთები, რაც მონაცემებშია) ─────────────────
+  // ─── Derived state ─────────────────────────────────────────────────────────
   const categories = React.useMemo(() => {
     const seen = new Set();
-    const result = [];
-    allItems.forEach(item => {
-      if (!seen.has(item.category)) {
-        seen.add(item.category);
-        result.push(item.category);
-      }
-    });
-    return result;
+    return allItems.reduce((acc, item) => {
+      if (!seen.has(item.category)) { seen.add(item.category); acc.push(item.category); }
+      return acc;
+    }, []);
   }, [allItems]);
 
-  // ─── ამ კატეგორიის ელემენტები ────────────────────────────────────────────
   const items = React.useMemo(
     () => allItems.filter(it => it.category === activeTab),
     [allItems, activeTab]
@@ -433,131 +758,133 @@ export default function StaroPub() {
     }
   }, []);
 
-  // ─── UI ───────────────────────────────────────────────────────────────────
+  const isPour     = phase === "pour";
+  const isSkeleton = phase === "skeleton";
+  const isMenu     = phase === "menu";
+
+  // ─── Render ────────────────────────────────────────────────────────────────
   return (
     <div style={{
       minHeight: "100vh",
       background: "radial-gradient(ellipse at top, #1a0e04 0%, #0d0602 60%, #000 100%)",
       fontFamily: "'Georgia', 'DejaVu Serif', serif",
-      color: "#c8a878",
-      position: "relative",
+      color: "#c8a878", position: "relative",
     }}>
       <style>{`
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(180,120,40,0.3); border-radius: 2px; }
-        .tabs-row::-webkit-scrollbar { display: none; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+        /* Luxury soft wave — 2.5s diagonal sweep, 5.5s rest, 8s total loop */
+        @keyframes diagGleam {
+          0%   { transform: translateX(-180%) translateY(180%); opacity: 0; }
+          6%   { opacity: 1; }
+          31%  { transform: translateX(180%) translateY(-180%); opacity: 1; }
+          37%  { opacity: 0; }
+          100% { transform: translateX(180%) translateY(-180%); opacity: 0; }
+        }
+
+        ::-webkit-scrollbar { width:4px; height:4px; }
+        ::-webkit-scrollbar-track { background:transparent; }
+        ::-webkit-scrollbar-thumb { background:rgba(180,120,40,0.3); border-radius:2px; }
+        .tabs-row::-webkit-scrollbar { display:none; }
+        @media(min-width:768px)  { .menu-grid { grid-template-columns:repeat(4,1fr)!important; } }
+        @media(min-width:1024px) { .menu-grid { grid-template-columns:repeat(5,1fr)!important; } }
       `}</style>
 
-      {/* ─── დეკორატიული ფონი ─── */}
-      <div style={{ position: "fixed", top: -120, right: -80, width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(120,60,10,0.15), transparent 70%)", pointerEvents: "none" }} />
-      <div style={{ position: "fixed", bottom: -100, left: -60, width: 320, height: 320, borderRadius: "50%", background: "radial-gradient(circle, rgba(80,40,5,0.12), transparent 70%)", pointerEvents: "none" }} />
+      {/* Phase 1: Full-screen beer pour */}
+      {isPour && <MasterPourScreen lang={lang} />}
 
-      {/* ─── Header ─── */}
-      <header style={{
-        position: "sticky", top: 0, zIndex: 100,
-        background: "linear-gradient(180deg, rgba(15,8,2,0.98) 0%, rgba(10,5,1,0.95) 100%)",
-        borderBottom: "1px solid rgba(180,120,40,0.25)",
-        backdropFilter: "blur(12px)",
-        padding: "0 16px",
-      }}>
-        <div style={{
-          maxWidth: 1200, margin: "0 auto",
-          display: "flex", alignItems: "center",
-          height: 64, gap: 12,
+      {/* Decorative bg orbs (phases 2 & 3) */}
+      {!isPour && <>
+        <div style={{ position:"fixed", top:-120, right:-80, width:400, height:400, borderRadius:"50%", background:"radial-gradient(circle,rgba(120,60,10,0.15),transparent 70%)", pointerEvents:"none" }} />
+        <div style={{ position:"fixed", bottom:-100, left:-60, width:320, height:320, borderRadius:"50%", background:"radial-gradient(circle,rgba(80,40,5,0.12),transparent 70%)", pointerEvents:"none" }} />
+      </>}
+
+      {/* Header (hidden during pour) */}
+      {!isPour && (
+        <header style={{
+          position:"sticky", top:0, zIndex:100,
+          background:"linear-gradient(180deg,rgba(15,8,2,0.98) 0%,rgba(10,5,1,0.95) 100%)",
+          borderBottom:"1px solid rgba(180,120,40,0.25)",
+          backdropFilter:"blur(12px)", padding:"0 16px",
         }}>
-          {/* ლოგო */}
-          <img
-            src="Images/logo.jpg"
-            alt="StaroPub Logo"
-            loading="lazy"
-            style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", boxShadow: "0 2px 12px rgba(200,120,32,0.4)", border: "1px solid rgba(200,160,60,0.3)", flexShrink: 0 }}
-            onError={e => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex"; }}
-          />
-          <div style={{ display: "none", width: 40, height: 40, borderRadius: "50%", background: "linear-gradient(135deg,#c87820,#7a4010)", alignItems: "center", justifyContent: "center", fontSize: 20, boxShadow: "0 2px 12px rgba(200,120,32,0.4)", border: "1px solid rgba(200,160,60,0.3)", flexShrink: 0 }}>🍺</div>
-
-          {/* სახელი */}
-          <div style={{ flex: 1 }}>
-            <div style={{ color: "#f0c060", fontSize: 18, fontWeight: 700, letterSpacing: "0.5px", lineHeight: 1.1 }}>StaroPub</div>
-            <div style={{ color: "#8a6040", fontSize: 10, letterSpacing: "1px" }}>სტაროპაბი</div>
+          <div style={{ maxWidth:1200, margin:"0 auto", display:"flex", alignItems:"center", height:64, gap:12 }}>
+            <img src="Images/logo.jpg" alt="StaroPub Logo" loading="lazy"
+              style={{ width:40, height:40, borderRadius:"50%", objectFit:"cover", boxShadow:"0 2px 12px rgba(200,120,32,0.4)", border:"1px solid rgba(200,160,60,0.3)", flexShrink:0 }}
+              onError={e => { e.target.style.display="none"; e.target.nextSibling.style.display="flex"; }}
+            />
+            <div style={{ display:"none", width:40, height:40, borderRadius:"50%", background:"linear-gradient(135deg,#c87820,#7a4010)", alignItems:"center", justifyContent:"center", fontSize:20, boxShadow:"0 2px 12px rgba(200,120,32,0.4)", border:"1px solid rgba(200,160,60,0.3)", flexShrink:0 }}>🍺</div>
+            <div style={{ flex:1 }}>
+              <div style={{ color:"#f0c060", fontSize:18, fontWeight:700, letterSpacing:"0.5px", lineHeight:1.1 }}>StaroPub</div>
+              <div style={{ color:"#8a6040", fontSize:10, letterSpacing:"1px" }}>სტაროპაბი</div>
+            </div>
+            <LangSwitcher lang={lang} setLang={setLang} />
           </div>
 
-          {/* ენის გადამრთველი */}
-          <LangSwitcher lang={lang} setLang={setLang} />
-        </div>
-
-        {/* ─── ტაბები ─── */}
-        {!loading && !error && categories.length > 0 && (
-          <div ref={tabsRef} className="tabs-row" style={{
-            display: "flex", gap: 4, overflowX: "auto", padding: "8px 0 10px",
-            maxWidth: 1200, margin: "0 auto", scrollbarWidth: "none",
-          }}>
-            {categories.map(cat => {
-              const catObj = CATEGORY_LABELS[cat];
-              const label = catObj ? catObj[lang] : cat;
-              const active = activeTab === cat;
-              return (
-                <button
-                  key={cat}
-                  data-key={cat}
-                  onClick={() => scrollTab(cat)}
-                  style={{
-                    whiteSpace: "nowrap", flexShrink: 0,
+          {isMenu && categories.length > 0 && (
+            <div ref={tabsRef} className="tabs-row" style={{
+              display:"flex", gap:4, overflowX:"auto", padding:"8px 0 10px",
+              maxWidth:1200, margin:"0 auto", scrollbarWidth:"none",
+            }}>
+              {categories.map(cat => {
+                const catObj = CATEGORY_LABELS[cat];
+                const label  = catObj ? catObj[lang] : cat;
+                const active = activeTab === cat;
+                return (
+                  <button key={cat} data-key={cat} onClick={() => scrollTab(cat)} style={{
+                    whiteSpace:"nowrap", flexShrink:0,
                     background: active ? "linear-gradient(135deg,#b86520,#7a3a08)" : "rgba(255,255,255,0.04)",
-                    border: `1px solid ${active ? "rgba(200,120,40,0.6)" : "rgba(180,120,40,0.15)"}`,
+                    border:`1px solid ${active ? "rgba(200,120,40,0.6)" : "rgba(180,120,40,0.15)"}`,
                     color: active ? "#fff" : "#8a6040",
-                    borderRadius: 20, padding: "7px 14px",
-                    fontSize: 12, fontWeight: active ? 700 : 500,
-                    cursor: "pointer", transition: "all 0.25s",
+                    borderRadius:20, padding:"7px 14px",
+                    fontSize:12, fontWeight: active ? 700 : 500,
+                    cursor:"pointer", transition:"all 0.25s",
                     boxShadow: active ? "0 2px 12px rgba(184,101,32,0.4)" : "none",
-                  }}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </header>
+                  }}>
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </header>
+      )}
 
-      {/* ─── მთავარი კონტენტი ─── */}
-      <main style={{ maxWidth: 1200, margin: "0 auto", padding: "16px 16px 40px" }}>
-        {loading && <SkeletonGrid />}
+      {/* Main content */}
+      {!isPour && (
+        <main style={{ maxWidth:1200, margin:"0 auto", padding:"16px 16px 40px" }}>
 
-        {error && (
-          <div style={{
-            margin: "40px auto", maxWidth: 480, padding: "20px 24px",
-            background: "rgba(180,40,40,0.12)", border: "1px solid rgba(180,40,40,0.3)",
-            borderRadius: 12, color: "#e08080", fontSize: 13, lineHeight: 1.6,
-          }}>
-            ⚠️ {error}
-          </div>
-        )}
+          {/* Phase 2: Skeleton */}
+          {isSkeleton && <SkeletonGrid />}
 
-        {!loading && !error && (
-          <div
-            key={activeTab}
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, 1fr)",
-              gap: 12,
-              animation: "fadeIn 0.3s ease-out",
-            }}
-            className="menu-grid"
-          >
-            <style>{`
-              @media (min-width: 768px)  { .menu-grid { grid-template-columns: repeat(4, 1fr) !important; } }
-              @media (min-width: 1024px) { .menu-grid { grid-template-columns: repeat(5, 1fr) !important; } }
-            `}</style>
-            {items.map(item => (
-              <ItemCard key={item.id || `${item.category}-${item.name_ka}`} item={item} lang={lang} />
-            ))}
-          </div>
-        )}
-      </main>
+          {/* Error state */}
+          {isMenu && error && (
+            <div style={{
+              margin:"40px auto", maxWidth:480, padding:"20px 24px",
+              background:"rgba(180,40,40,0.12)", border:"1px solid rgba(180,40,40,0.3)",
+              borderRadius:12, color:"#e08080", fontSize:13, lineHeight:1.6,
+            }}>
+              ⚠️ {error}
+            </div>
+          )}
 
-      <SiteFooter lang={lang} />
+          {/* Phase 3: Menu grid */}
+          {isMenu && !error && (
+            <div key={activeTab} className="menu-grid" style={{
+              display:"grid", gridTemplateColumns:"repeat(2,1fr)",
+              gap:12, animation:"fadeIn 0.4s ease-out",
+            }}>
+              {items.map((item) => (
+                <ItemCard
+                  key={item.id || `${item.category}-${item.name_ka}`}
+                  item={item} lang={lang}
+                />
+              ))}
+            </div>
+          )}
+        </main>
+      )}
+
+      {!isPour && <SiteFooter lang={lang} />}
     </div>
   );
 }
