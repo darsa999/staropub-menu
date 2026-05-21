@@ -28,7 +28,123 @@ const CATEGORY_LABELS = {
   snacks:    { ka: "🍟 წასახემსებელი",      en: "🍟 Snacks",       ru: "🍟 Закуски" },
 };
 
-const CATEGORY_FALLBACK_EMOJI = {
+const FOOTER_TEXT = {
+  tagline: {
+    ka: "სტაროპაბიში შეკრების დროა",
+    en: "It's time to gather at StaroPub",
+    ru: "Время собираться в СтароПаб",
+  },
+  copyright: {
+    ka: "© 2026 სტაროპაბი. ყველა უფლება დაცულია.",
+    en: "© 2026 StaroPub. All rights reserved.",
+    ru: "© 2026 СтароПаб. Все права защищены.",
+  },
+};
+
+// ─── SVG: Facebook ────────────────────────────────────────────────────────────
+function IconFacebook({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+    </svg>
+  );
+}
+
+// ─── SVG: Instagram ───────────────────────────────────────────────────────────
+function IconInstagram({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+      <circle cx="12" cy="12" r="4"/>
+      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+    </svg>
+  );
+}
+
+// ─── Footer ───────────────────────────────────────────────────────────────────
+function SiteFooter({ lang }) {
+  const socialBtnStyle = {
+    display: "inline-flex", alignItems: "center", gap: 6,
+    color: "#c8903a", textDecoration: "none",
+    padding: "5px 9px", borderRadius: 7,
+    border: "1px solid rgba(180,120,40,0.2)",
+    background: "rgba(255,255,255,0.03)",
+    fontSize: 11, fontWeight: 600,
+    transition: "all 0.2s",
+  };
+
+  return (
+    <footer style={{
+      position: "sticky", bottom: 0, zIndex: 50,
+      background: "linear-gradient(0deg, rgba(8,4,1,0.99) 0%, rgba(12,6,1,0.97) 100%)",
+      borderTop: "1px solid rgba(180,120,40,0.2)",
+      padding: "10px 24px 12px",
+      backdropFilter: "blur(12px)",
+      WebkitBackdropFilter: "blur(12px)",
+    }}>
+      <style>{`
+        .footer-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 10px;
+          max-width: 1200px;
+          margin: 0 auto;
+          text-align: center;
+          align-items: center;
+        }
+        @media (min-width: 640px) {
+          .footer-grid { grid-template-columns: 1fr 1fr 1fr; text-align: left; gap: 0; }
+          .footer-center { text-align: center !important; }
+          .footer-right  { text-align: right !important; }
+        }
+        .social-link:hover { background: rgba(180,120,40,0.12) !important; color: #f0c060 !important; border-color: rgba(200,140,40,0.5) !important; }
+      `}</style>
+
+      <div className="footer-grid">
+        {/* მარცხენა — სოციალური ქსელები */}
+        <div style={{ display: "flex", gap: 8, justifyContent: "center", alignItems: "center", flexWrap: "wrap" }}>
+          <a
+            href="https://www.facebook.com/StaroPub1"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={socialBtnStyle}
+            className="social-link"
+          >
+            <IconFacebook size={15} /> Facebook
+          </a>
+          <a
+            href="https://www.instagram.com/staropub/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={socialBtnStyle}
+            className="social-link"
+          >
+            <IconInstagram size={15} /> Instagram
+          </a>
+        </div>
+
+        {/* ცენტრი — სლოგანი */}
+        <div className="footer-center" style={{ textAlign: "center" }}>
+          <div style={{ color: "#c8a050", fontSize: 12, fontWeight: 700, fontFamily: "'Georgia',serif", lineHeight: 1.4 }}>
+            {FOOTER_TEXT.tagline[lang]}
+          </div>
+          <div style={{ marginTop: 3, color: "#4a3018", fontSize: 9, letterSpacing: "1px" }}>
+            StaroPub · სტაროპაბი · QR მენიუ
+          </div>
+        </div>
+
+        {/* მარჯვენა — copyright მხოლოდ */}
+        <div className="footer-right" style={{ textAlign: "center" }}>
+          <p style={{ color: "#4a3018", fontSize: 10, lineHeight: 1.5, margin: 0 }}>
+            {FOOTER_TEXT.copyright[lang]}
+          </p>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+const CATEGORY_ICONS = {
   grill: "🔥", khinkali: "🥟", hot_dish: "🍲", soup: "🍜", salad: "🥗",
   cheese: "🧀", bakery: "🫓", fish: "🐟", side: "🍚", beer: "🍺",
   hot_drink: "☕", alcohol: "🥃", spirits: "🥃", sauces: "🫙", snacks: "🍟",
@@ -63,7 +179,7 @@ function ItemCard({ item, lang }) {
   const name = item[`name_${lang}`] || item.name_ka || "";
   const desc = item[`desc_${lang}`] || item.desc_ka || "";
   const imgSrc = item.image ? `Images/${item.image}` : "";
-  const fallback = CATEGORY_FALLBACK_EMOJI[item.category] || "🍽️";
+  const fallback = CATEGORY_ICONS[item.category] || "🍽️";
 
   return (
     <div
@@ -200,18 +316,54 @@ function LangSwitcher({ lang, setLang }) {
   );
 }
 
-// ─── ჩატვირთვის ინდიკატორი ───────────────────────────────────────────────────
-function LoadingSpinner() {
+// ─── Skeleton ბარათი ─────────────────────────────────────────────────────────
+function SkeletonCard() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "80px 0", gap: 16 }}>
-      <div style={{
-        width: 48, height: 48, borderRadius: "50%",
-        border: "3px solid rgba(180,120,40,0.2)",
-        borderTop: "3px solid #e8a030",
-        animation: "spin 0.8s linear infinite",
+    <div style={{
+      background: "linear-gradient(145deg, #2c1a0a, #3a2210)",
+      border: "1px solid rgba(180,120,40,0.25)",
+      borderRadius: 12, overflow: "hidden",
+      display: "flex", flexDirection: "column",
+    }}>
+      {/* სურათის ადგილი */}
+      <div className="sk-pulse" style={{
+        width: "100%", height: 160,
+        background: "linear-gradient(135deg, #52300f, #623a12, #4e2d0c)",
       }} />
-      <span style={{ color: "#7a5a38", fontSize: 13 }}>მენიუ იტვირთება...</span>
+      {/* ტექსტის ადგილი */}
+      <div style={{ padding: "14px 16px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+        {/* სახელი */}
+        <div className="sk-pulse" style={{ height: 14, borderRadius: 6, width: "72%", background: "#5a3414" }} />
+        {/* აღწერა — 2 ხაზი */}
+        <div className="sk-pulse" style={{ height: 11, borderRadius: 6, width: "92%", background: "#4a2c10" }} />
+        <div className="sk-pulse" style={{ height: 11, borderRadius: 6, width: "65%", background: "#4a2c10" }} />
+        {/* ფასი */}
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 6 }}>
+          <div className="sk-pulse" style={{ height: 20, borderRadius: 6, width: "38%", background: "#5a3414" }} />
+        </div>
+      </div>
     </div>
+  );
+}
+
+// ─── Skeleton Grid ────────────────────────────────────────────────────────────
+function SkeletonGrid() {
+  return (
+    <>
+      <style>{`
+        @keyframes skPulse {
+          0%, 100% { opacity: 1; }
+          50%       { opacity: 0.25; }
+        }
+        .sk-pulse { animation: skPulse 1.0s ease-in-out infinite; }
+        .skeleton-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; }
+        @media (min-width: 768px)  { .skeleton-grid { grid-template-columns: repeat(4,1fr) !important; } }
+        @media (min-width: 1024px) { .skeleton-grid { grid-template-columns: repeat(5,1fr) !important; } }
+      `}</style>
+      <div className="skeleton-grid">
+        {Array.from({ length: 10 }).map((_, i) => <SkeletonCard key={i} />)}
+      </div>
+    </>
   );
 }
 
@@ -238,12 +390,14 @@ export default function StaroPub() {
       skipEmptyLines: true,
       complete: (results) => {
         const rows = results.data.filter(r => r.id && r.category && r.name_ka);
-        setAllItems(rows);
-        if (rows.length > 0) {
-          // პირველი კატეგორია გახდება active
-          setActiveTab(rows[0].category);
-        }
-        setLoading(false);
+        // 1000ms ხელოვნური დაყოვნება skeleton-ის ჩვენებისთვის
+        setTimeout(() => {
+          setAllItems(rows);
+          if (rows.length > 0) {
+            setActiveTab(rows[0].category);
+          }
+          setLoading(false);
+        }, 1000);
       },
       error: (err) => {
         setError(`CSV ჩატვირთვის შეცდომა: ${err.message}`);
@@ -290,7 +444,6 @@ export default function StaroPub() {
     }}>
       <style>{`
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes spin   { to { transform: rotate(360deg); } }
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(180,120,40,0.3); border-radius: 2px; }
@@ -369,8 +522,8 @@ export default function StaroPub() {
       </header>
 
       {/* ─── მთავარი კონტენტი ─── */}
-      <main style={{ maxWidth: 1200, margin: "0 auto", padding: "16px 16px 100px" }}>
-        {loading && <LoadingSpinner />}
+      <main style={{ maxWidth: 1200, margin: "0 auto", padding: "16px 16px 40px" }}>
+        {loading && <SkeletonGrid />}
 
         {error && (
           <div style={{
@@ -404,17 +557,7 @@ export default function StaroPub() {
         )}
       </main>
 
-      {/* ─── Footer ─── */}
-      <footer style={{
-        position: "fixed", bottom: 0, left: 0, right: 0,
-        background: "linear-gradient(0deg, rgba(10,5,1,0.98), rgba(10,5,1,0.9))",
-        borderTop: "1px solid rgba(180,120,40,0.15)",
-        padding: "10px 16px 14px",
-        textAlign: "center", fontSize: 10, color: "#4a3020",
-        backdropFilter: "blur(8px)",
-      }}>
-        StaroPub · სტაროპაბი · QR მენიუ
-      </footer>
+      <SiteFooter lang={lang} />
     </div>
   );
 }
