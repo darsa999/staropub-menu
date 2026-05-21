@@ -4,7 +4,7 @@ import Papa from "papaparse";
 // ──────────────────────────────────────────────────────────────────────────────
 // 👇 ჩასვი შენი Google Sheets CSV ბმული აქ
 // ──────────────────────────────────────────────────────────────────────────────
-const SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTb9meX1aqFVREVH0ybAXHfgXVUombtxAJV-Out0Uf3jo4XQJoK_TXlxG_twhKtL8Kog_QotnHC3Qp6/pub?output=csv";
+const SPREADSHEET_URL = "YOUR_GOOGLE_SHEETS_CSV_URL_HERE";
 // მაგალითად:
 // "https://docs.google.com/spreadsheets/d/XXXXXX/export?format=csv&gid=0"
 // ──────────────────────────────────────────────────────────────────────────────
@@ -24,7 +24,7 @@ const LOADING_TEXT = {
 const CATEGORY_LABELS = {
   grill:     { ka: "🔥 გრილი",               en: "🔥 Grill",        ru: "🔥 Гриль" },
   khinkali:  { ka: "🥟 ხინკალი",             en: "🥟 Khinkali",     ru: "🥟 Хинкали" },
-  hot_dishes:  { ka: "🍲 ცხელი კერძები",       en: "🍲 Hot Dishes",   ru: "🍲 Горячие блюда" },
+  hot_dish:  { ka: "🍲 ცხელი კერძები",       en: "🍲 Hot Dishes",   ru: "🍲 Горячие блюда" },
   soup:      { ka: "🍜 წვნიანი კერძები",     en: "🍜 Soups",        ru: "🍜 Супы" },
   salad:     { ka: "🥗 სალათები",            en: "🥗 Salads",       ru: "🥗 Салаты" },
   cheese:    { ka: "🧀 ყველი",               en: "🧀 Cheese",       ru: "🧀 Сыр" },
@@ -37,7 +37,6 @@ const CATEGORY_LABELS = {
   spirits:   { ka: "🥃 სპირტიანი სასმელები", en: "🥃 Spirits",      ru: "🥃 Крепкие напитки" },
   sauces:    { ka: "🫙 სოუსები",             en: "🫙 Sauces",       ru: "🫙 Соусы" },
   snacks:    { ka: "🍟 წასახემსებელი",       en: "🍟 Snacks",       ru: "🍟 Закуски" },
-    cold_dishes: { ka: "🥗 ცივი კერძები",     en: "🥗 Cold Dishes",  ru: "🥗 Холодные закуски" },
 };
 
 const CATEGORY_ICONS = {
@@ -430,7 +429,61 @@ function SkeletonGrid() {
 // ══════════════════════════════════════════════════════════════════════════════
 // PHASE 3 — ITEM CARD with slow shimmer (6–8s cycle)
 // ══════════════════════════════════════════════════════════════════════════════
+// ─── Price helpers ─────────────────────────────────────────────────────────────
+// Parses a multi-line price string like "0.4ლ 9.20₾ \n 1ლ 18.9₾"
+// Returns an array of { size, price } objects, or null for single prices.
+function parseMultiPrice(raw) {
+  if (!raw || typeof raw !== "string") return null;
+  const lines = raw.split(/\\n|\n/).map(l => l.trim()).filter(Boolean);
+  if (lines.length < 2) return null;
+
+  return lines.map(line => {
+    // Match an optional leading size token (e.g. "0.4ლ", "1ლ", "500მლ")
+    // then a price portion (digits / ₾ / ლ scattered anywhere in the rest)
+    const sizeMatch  = line.match(/^([\d.,]+\s*[ლმლმ][\w]*)/u);
+    const size  = sizeMatch ? sizeMatch[1].trim() : "";
+    const rest  = sizeMatch ? line.slice(sizeMatch[0].length).trim() : line;
+
+    // Extract numeric price from whatever remains
+    const numMatch = rest.match(/([\d.,]+)/);
+    const num = numMatch ? parseFloat(numMatch[1].replace(",", ".")) : NaN;
+    const priceStr = isNaN(num) ? rest : `₾${num.toFixed(2)}`;
+
+    return { size, price: priceStr };
+  });
+}
+
 function PriceBlock({ item }) {
+  const multi = parseMultiPrice(item.price);
+
+  if (multi) {
+    // Multi-line: size on left, price on right for each row
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 5, width: "100%" }}>
+        {multi.map(({ size, price }, i) => (
+          <div key={i} style={{
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+            width: "100%",
+          }}>
+            <span style={{
+              color: "#a08060", fontFamily: "'Georgia', serif",
+              fontSize: 12, fontWeight: 600, letterSpacing: "0.3px",
+            }}>
+              {size}
+            </span>
+            <span style={{
+              color: "#e8a030", fontFamily: "'Georgia', serif",
+              fontSize: 15, fontWeight: 700,
+            }}>
+              {price}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Single price — original layout unchanged
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
       <span style={{ color: "#e8a030", fontFamily: "'Georgia', serif", fontSize: 17, fontWeight: 700 }}>
@@ -614,7 +667,7 @@ function SiteFooter({ lang }) {
   };
   return (
     <footer style={{
-        position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 50,
+      position: "sticky", bottom: 0, zIndex: 50,
       background: "linear-gradient(0deg, rgba(8,4,1,0.99) 0%, rgba(12,6,1,0.97) 100%)",
       borderTop: "1px solid rgba(180,120,40,0.2)",
       padding: "10px 24px 12px",
