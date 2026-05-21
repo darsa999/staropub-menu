@@ -316,7 +316,7 @@ export default function StaroPub() {
         }}>
           {/* ლოგო */}
           <img
-            src="images/logo.jpg"
+            src="Images/logo.jpg"
             alt="StaroPub Logo"
             loading="lazy"
             style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", boxShadow: "0 2px 12px rgba(200,120,32,0.4)", border: "1px solid rgba(200,160,60,0.3)", flexShrink: 0 }}
