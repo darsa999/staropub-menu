@@ -924,6 +924,7 @@ export default function StaroPub() {
   const [activeTab, setActiveTab] = useState(null);
   const [error, setError]         = useState(null);
   const [selectedDish, setSelectedDish] = useState(null);
+  const [searchQuery, setSearchQuery]   = useState("");
 
   // ─── Smart footer scroll logic ───────────────────────────────────────────────
   const [isFooterVisible, setIsFooterVisible] = useState(true);
@@ -1033,10 +1034,22 @@ export default function StaroPub() {
     }, []);
   }, [allItems]);
 
-  const items = React.useMemo(
-    () => allItems.filter(it => it.category === activeTab),
-    [allItems, activeTab]
-  );
+  const items = React.useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      // Global search — ignore active category, scan entire menu
+      return allItems.filter(it =>
+        (it.name_ka || "").toLowerCase().includes(q) ||
+        (it.name_en || "").toLowerCase().includes(q) ||
+        (it.name_ru || "").toLowerCase().includes(q)
+      );
+    }
+    // No query — standard category filter
+    return allItems.filter(it => !activeTab || it.category === activeTab);
+  }, [allItems, activeTab, searchQuery]);
+
+  const NO_RESULTS_TEXT = { ka: "კერძი ვერ მოიძებნა", en: "No items found", ru: "Ничего не найдено" };
+  const SEARCH_PLACEHOLDER = { ka: "მოძებნე კერძი...", en: "Search dish...", ru: "Найти блюдо..." };
 
   const scrollTab = useCallback((key) => {
     setActiveTab(key);
@@ -1109,6 +1122,62 @@ export default function StaroPub() {
           </div>
 
           {isMenu && categories.length > 0 && (
+            <div style={{ maxWidth:1200, margin:"0 auto", padding:"8px 0 4px" }}>
+              <div style={{ position:"relative" }}>
+                {/* Magnifying glass icon */}
+                <span style={{
+                  position:"absolute", left:14, top:"50%", transform:"translateY(-50%)",
+                  color:"rgba(245,158,11,0.45)", fontSize:15, pointerEvents:"none",
+                  lineHeight:1,
+                }}>
+                  🔍
+                </span>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder={SEARCH_PLACEHOLDER[lang]}
+                  style={{
+                    width:"100%", boxSizing:"border-box",
+                    background:"#141210",
+                    border:"1px solid rgba(245,158,11,0.20)",
+                    borderRadius:12,
+                    padding:"10px 14px 10px 40px",
+                    color:"#f0c060",
+                    fontSize:14,
+                    fontFamily:"'Georgia','DejaVu Serif',serif",
+                    outline:"none",
+                    transition:"border-color 0.2s, box-shadow 0.2s",
+                    caretColor:"#f59e0b",
+                  }}
+                  onFocus={e => {
+                    e.target.style.borderColor = "rgba(245,158,11,0.55)";
+                    e.target.style.boxShadow   = "0 0 0 2px rgba(245,158,11,0.08)";
+                  }}
+                  onBlur={e => {
+                    e.target.style.borderColor = "rgba(245,158,11,0.20)";
+                    e.target.style.boxShadow   = "none";
+                  }}
+                />
+                {/* Clear button — visible only when there's text */}
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    style={{
+                      position:"absolute", right:12, top:"50%", transform:"translateY(-50%)",
+                      background:"none", border:"none", color:"rgba(245,158,11,0.5)",
+                      cursor:"pointer", fontSize:14, lineHeight:1, padding:2,
+                    }}
+                    aria-label="Clear search"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {isMenu && categories.length > 0 && (
             <div ref={tabsRef} className="tabs-row" style={{
               display:"flex", gap:4, overflowX:"auto", padding:"8px 0 10px",
               maxWidth:1200, margin:"0 auto", scrollbarWidth:"none",
@@ -1157,18 +1226,37 @@ export default function StaroPub() {
 
           {/* Phase 3: Menu grid */}
           {isMenu && !error && (
-            <div key={activeTab} className="menu-grid" style={{
-              display:"grid", gridTemplateColumns:"repeat(2,1fr)",
-              gap:12, animation:"fadeIn 0.4s ease-out",
-            }}>
-              {items.map((item) => (
-                <ItemCard
-                  key={item.id || `${item.category}-${item.name_ka}`}
-                  item={item} lang={lang}
-                  onOpen={setSelectedDish}
-                />
-              ))}
-            </div>
+            items.length === 0 ? (
+              <div style={{
+                display:"flex", flexDirection:"column",
+                alignItems:"center", justifyContent:"center",
+                minHeight:260, gap:14,
+                animation:"fadeIn 0.3s ease-out",
+              }}>
+                <span style={{ fontSize:48, opacity:0.35 }}>🔍</span>
+                <p style={{
+                  color:"rgba(180,120,40,0.6)",
+                  fontFamily:"'Georgia','DejaVu Serif',serif",
+                  fontSize:15, fontWeight:600, letterSpacing:"0.3px",
+                  margin:0, textAlign:"center",
+                }}>
+                  {NO_RESULTS_TEXT[lang]}
+                </p>
+              </div>
+            ) : (
+              <div key={`${activeTab}-${searchQuery}`} className="menu-grid" style={{
+                display:"grid", gridTemplateColumns:"repeat(2,1fr)",
+                gap:12, animation:"fadeIn 0.4s ease-out",
+              }}>
+                {items.map((item) => (
+                  <ItemCard
+                    key={item.id || `${item.category}-${item.name_ka}`}
+                    item={item} lang={lang}
+                    onOpen={setSelectedDish}
+                  />
+                ))}
+              </div>
+            )
           )}
         </main>
       )}
