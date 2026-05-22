@@ -857,7 +857,7 @@ function IconInstagram({ size = 18 }) {
   );
 }
 
-function SiteFooter({ lang }) {
+function SiteFooter({ lang, visible }) {
   const socialBtnStyle = {
     display: "inline-flex", alignItems: "center", gap: 6,
     color: "#c8903a", textDecoration: "none",
@@ -868,11 +868,16 @@ function SiteFooter({ lang }) {
   };
   return (
     <footer style={{
-        position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 50,
+      position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 50,
       background: "linear-gradient(0deg, rgba(8,4,1,0.99) 0%, rgba(12,6,1,0.97) 100%)",
       borderTop: "1px solid rgba(180,120,40,0.2)",
       padding: "10px 24px 12px",
       backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+      // Smooth hide/show driven by visible prop
+      transform: visible ? "translateY(0)" : "translateY(100%)",
+      opacity: visible ? 1 : 0,
+      pointerEvents: visible ? "auto" : "none",
+      transition: "transform 0.32s ease-in-out, opacity 0.32s ease-in-out",
     }}>
       <style>{`
         .footer-grid { display:grid; grid-template-columns:1fr; gap:10px; max-width:1200px; margin:0 auto; text-align:center; align-items:center; }
@@ -919,6 +924,34 @@ export default function StaroPub() {
   const [activeTab, setActiveTab] = useState(null);
   const [error, setError]         = useState(null);
   const [selectedDish, setSelectedDish] = useState(null);
+
+  // ─── Smart footer scroll logic ───────────────────────────────────────────────
+  const [isFooterVisible, setIsFooterVisible] = useState(true);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      const atBottom =
+        window.innerHeight + currentY >= document.documentElement.scrollHeight - 10;
+      const atTop = currentY <= 10;
+
+      if (atBottom || atTop) {
+        // Always show at page extremes
+        setIsFooterVisible(true);
+      } else if (currentY > lastScrollY.current) {
+        // Scrolling down — hide footer
+        setIsFooterVisible(false);
+      } else {
+        // Scrolling up — reveal footer
+        setIsFooterVisible(true);
+      }
+      lastScrollY.current = currentY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // phases: "pour" → "skeleton" → "menu"
   const [phase, setPhase] = useState("pour");
@@ -1106,7 +1139,7 @@ export default function StaroPub() {
 
       {/* Main content */}
       {!isPour && (
-        <main style={{ maxWidth:1200, margin:"0 auto", padding:"16px 16px 40px" }}>
+        <main style={{ maxWidth:1200, margin:"0 auto", padding:"16px 16px 112px" }}>
 
           {/* Phase 2: Skeleton */}
           {isSkeleton && <SkeletonGrid />}
@@ -1140,7 +1173,7 @@ export default function StaroPub() {
         </main>
       )}
 
-      {!isPour && <SiteFooter lang={lang} />}
+      {!isPour && <SiteFooter lang={lang} visible={isFooterVisible} />}
 
       {/* ── Dish Detail Modal ── */}
       {selectedDish && (
