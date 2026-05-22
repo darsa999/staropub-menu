@@ -454,27 +454,25 @@ function parseMultiPrice(raw) {
   });
 }
 
-function PriceBlock({ item }) {
+function PriceBlock({ item, modal = false }) {
   const multi = parseMultiPrice(item.price);
 
   if (multi) {
-    // Multi-line: size on left, price on right for each row
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 5, width: "100%" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: modal ? 10 : 5, width: "100%" }}>
         {multi.map(({ size, price }, i) => (
           <div key={i} style={{
-            display: "flex", justifyContent: "space-between", alignItems: "center",
-            width: "100%",
+            display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%",
           }}>
             <span style={{
               color: "#a08060", fontFamily: "'Georgia', serif",
-              fontSize: 12, fontWeight: 600, letterSpacing: "0.3px",
+              fontSize: modal ? 14 : 12, fontWeight: 600, letterSpacing: "0.3px",
             }}>
               {size}
             </span>
             <span style={{
               color: "#e8a030", fontFamily: "'Georgia', serif",
-              fontSize: 15, fontWeight: 700,
+              fontSize: modal ? 22 : 15, fontWeight: 700,
             }}>
               {price}
             </span>
@@ -484,17 +482,20 @@ function PriceBlock({ item }) {
     );
   }
 
-  // Single price — original layout unchanged
+  // Single price
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
-      <span style={{ color: "#e8a030", fontFamily: "'Georgia', serif", fontSize: 17, fontWeight: 700 }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: modal ? "flex-start" : "flex-end" }}>
+      <span style={{
+        color: "#e8a030", fontFamily: "'Georgia', serif",
+        fontSize: modal ? 28 : 17, fontWeight: 700,
+      }}>
         {formatPrice(item.price)}
       </span>
     </div>
   );
 }
 
-function ItemCard({ item, lang }) {
+function ItemCard({ item, lang, onOpen }) {
   const name    = item[`name_${lang}`] || item.name_ka || "";
   const desc    = item[`desc_${lang}`] || item.desc_ka || "";
   const imgSrc  = item.image ? `Images/${item.image}` : "";
@@ -510,6 +511,7 @@ function ItemCard({ item, lang }) {
 
   return (
     <div
+      onClick={() => onOpen && onOpen(item)}
       style={{
         background: "linear-gradient(145deg, #1e1209, #2a1a0a)",
         border: "1px solid rgba(180,120,40,0.2)",
@@ -517,6 +519,7 @@ function ItemCard({ item, lang }) {
         display: "flex", flexDirection: "column",
         transition: "transform 0.2s, box-shadow 0.2s",
         position: "relative",
+        cursor: "pointer",
       }}
       onMouseEnter={e => {
         e.currentTarget.style.transform = "translateY(-4px)";
@@ -579,6 +582,203 @@ function ItemCard({ item, lang }) {
         }} />
       </div>
     </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DISH DETAIL MODAL
+// ══════════════════════════════════════════════════════════════════════════════
+function DishModal({ item, lang, onClose }) {
+  const name     = item[`name_${lang}`] || item.name_ka || "";
+  const desc     = item[`desc_${lang}`] || item.desc_ka || "";
+  const imgSrc   = item.image ? `Images/${item.image}` : "";
+  const fallback = CATEGORY_ICONS[item.category] || "🍽️";
+  const catObj   = CATEGORY_LABELS[item.category];
+  const catLabel = catObj ? catObj[lang] : item.category || "";
+
+  const PRICE_LABEL = { ka: "ფასი", en: "Price", ru: "Цена" };
+
+  // Escape key + body scroll lock
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [onClose]);
+
+  return (
+    <>
+      <style>{`
+        @keyframes modalBdIn  { from{opacity:0} to{opacity:1} }
+        @keyframes modalCardIn {
+          from { opacity:0; transform:scale(0.95) translateY(14px); }
+          to   { opacity:1; transform:scale(1)    translateY(0); }
+        }
+        .modal-close:hover { background:rgba(255,255,255,0.16)!important; color:#fff!important; }
+        .modal-scroll { overflow-y:auto; max-height:90vh; }
+        @media(min-width:640px){
+          .modal-grid   { grid-template-columns:1fr 1fr!important; }
+          .modal-img    { min-height:340px!important; }
+          .modal-scroll { max-height:none; overflow-y:visible; }
+          .modal-right  { overflow-y:auto; max-height:90vh; }
+        }
+      `}</style>
+
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        style={{
+          position:"fixed", inset:0, zIndex:1000,
+          background:"rgba(0,0,0,0.82)",
+          backdropFilter:"blur(7px)", WebkitBackdropFilter:"blur(7px)",
+          display:"flex", alignItems:"center", justifyContent:"center",
+          padding:"12px",
+          animation:"modalBdIn 0.22s ease-out",
+        }}
+      >
+        {/* Card */}
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{
+            width:"100%", maxWidth:860,
+            background:"linear-gradient(160deg,#18100a 0%,#110c06 100%)",
+            border:"1px solid rgba(245,158,11,0.22)",
+            borderRadius:20, overflow:"hidden",
+            boxShadow:"0 32px 80px rgba(0,0,0,0.9), 0 0 0 1px rgba(200,160,60,0.05)",
+            position:"relative",
+            animation:"modalCardIn 0.28s cubic-bezier(0.34,1.15,0.64,1)",
+          }}
+        >
+          {/* Responsive grid */}
+          <div
+            className="modal-grid modal-scroll"
+            style={{
+              display:"grid",
+              gridTemplateColumns:"1fr",
+            }}
+          >
+            {/* LEFT — Image */}
+            <div
+              className="modal-img"
+              style={{
+                minHeight:220,
+                background:"linear-gradient(135deg,#2d1a08,#3d2410,#1a0e04)",
+                position:"relative", overflow:"hidden",
+                display:"flex", alignItems:"center", justifyContent:"center",
+              }}
+            >
+              {imgSrc && (
+                <img
+                  src={imgSrc} alt={name} loading="lazy"
+                  onError={e => { e.target.style.display="none"; e.target.nextSibling.style.display="flex"; }}
+                  style={{ width:"100%", height:"100%", objectFit:"cover", position:"absolute", inset:0 }}
+                />
+              )}
+              <div style={{
+                display: imgSrc ? "none" : "flex",
+                fontSize:80, position:"absolute", inset:0,
+                flexDirection:"column", alignItems:"center", justifyContent:"center",
+              }}>
+                <span>{fallback}</span>
+              </div>
+              {/* Bottom fade */}
+              <div style={{
+                position:"absolute", bottom:0, left:0, right:0, height:80,
+                background:"linear-gradient(transparent,rgba(17,10,4,0.88))",
+                pointerEvents:"none",
+              }} />
+              {/* Category pill */}
+              {catLabel && (
+                <div style={{
+                  position:"absolute", top:14, left:14,
+                  background:"rgba(0,0,0,0.62)",
+                  border:"1px solid rgba(180,120,40,0.35)",
+                  backdropFilter:"blur(8px)",
+                  borderRadius:20, padding:"4px 13px",
+                  color:"#c8a050", fontSize:11, fontWeight:600,
+                }}>
+                  {catLabel}
+                </div>
+              )}
+            </div>
+
+            {/* RIGHT — Content */}
+            <div
+              className="modal-right"
+              style={{ padding:"28px 28px 30px", display:"flex", flexDirection:"column" }}
+            >
+              {/* Name — leave space for the X button */}
+              <h2 style={{
+                margin:"0 0 12px", color:"#ffffff",
+                fontFamily:"'Georgia',serif",
+                fontSize:"clamp(19px,3vw,27px)",
+                fontWeight:700, lineHeight:1.25,
+                paddingRight:44,
+              }}>
+                {name}
+              </h2>
+
+              {/* Amber divider */}
+              <div style={{
+                height:1,
+                background:"linear-gradient(90deg,rgba(245,158,11,0.45),transparent)",
+                marginBottom:16,
+              }} />
+
+              {/* Description */}
+              {desc ? (
+                <p style={{
+                  margin:"0 0 22px", color:"#a1a1aa",
+                  fontSize:14, lineHeight:1.75, flex:1,
+                }}>
+                  {desc}
+                </p>
+              ) : <div style={{ flex:1 }} />}
+
+              {/* Price section */}
+              <div style={{
+                padding:"16px 18px",
+                background:"rgba(255,255,255,0.025)",
+                border:"1px solid rgba(180,120,40,0.22)",
+                borderRadius:14, marginTop:"auto",
+              }}>
+                <div style={{
+                  color:"#7a5a38", fontSize:10,
+                  letterSpacing:"1.5px", textTransform:"uppercase",
+                  marginBottom:10,
+                }}>
+                  {PRICE_LABEL[lang] || "ფასი"}
+                </div>
+                <PriceBlock item={item} modal={true} />
+              </div>
+            </div>
+          </div>
+
+          {/* Close button — absolute top-right */}
+          <button
+            onClick={onClose}
+            className="modal-close"
+            style={{
+              position:"absolute", top:14, right:14, zIndex:10,
+              width:36, height:36, borderRadius:10,
+              background:"rgba(255,255,255,0.07)",
+              border:"1px solid rgba(255,255,255,0.11)",
+              color:"#909090",
+              display:"flex", alignItems:"center", justifyContent:"center",
+              cursor:"pointer", fontSize:17, lineHeight:1,
+              transition:"all 0.2s",
+            }}
+            aria-label="Close"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -718,6 +918,7 @@ export default function StaroPub() {
   const [allItems, setAllItems]   = useState([]);
   const [activeTab, setActiveTab] = useState(null);
   const [error, setError]         = useState(null);
+  const [selectedDish, setSelectedDish] = useState(null);
 
   // phases: "pour" → "skeleton" → "menu"
   const [phase, setPhase] = useState("pour");
@@ -931,6 +1132,7 @@ export default function StaroPub() {
                 <ItemCard
                   key={item.id || `${item.category}-${item.name_ka}`}
                   item={item} lang={lang}
+                  onOpen={setSelectedDish}
                 />
               ))}
             </div>
@@ -939,6 +1141,15 @@ export default function StaroPub() {
       )}
 
       {!isPour && <SiteFooter lang={lang} />}
+
+      {/* ── Dish Detail Modal ── */}
+      {selectedDish && (
+        <DishModal
+          item={selectedDish}
+          lang={lang}
+          onClose={() => setSelectedDish(null)}
+        />
+      )}
     </div>
   );
 }
