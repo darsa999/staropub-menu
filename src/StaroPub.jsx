@@ -61,6 +61,70 @@ const FOOTER_TEXT = {
 
 const LANG_LABELS = { ka: "ქარ", en: "ENG", ru: "РУС" };
 
+// ─── Theme palettes ───────────────────────────────────────────────────────────
+const THEME = {
+  dark: {
+    appBg:          "radial-gradient(ellipse at top, #1a0e04 0%, #0d0602 60%, #000 100%)",
+    headerBg:       "linear-gradient(180deg,rgba(15,8,2,0.98) 0%,rgba(10,5,1,0.95) 100%)",
+    headerBorder:   "1px solid rgba(180,120,40,0.25)",
+    cardBg:         "linear-gradient(145deg, #1e1209, #2a1a0a)",
+    cardBorder:     "1px solid rgba(180,120,40,0.2)",
+    cardName:       "#f0c060",
+    cardDesc:       "#a08060",
+    tabInactiveBg:  "rgba(255,255,255,0.04)",
+    tabInactiveBdr: "rgba(180,120,40,0.15)",
+    tabInactiveClr: "#8a6040",
+    searchBg:       "#141210",
+    searchBorder:   "rgba(245,158,11,0.20)",
+    searchColor:    "#f0c060",
+    searchPlaceholder: "rgba(200,150,60,0.45)",
+    imgFallbackBg:  "linear-gradient(135deg, #2d1a08 0%, #3d2410 50%, #1a0e04 100%)",
+    modalBg:        "linear-gradient(160deg,#18100a 0%,#110c06 100%)",
+    modalBorder:    "rgba(245,158,11,0.22)",
+    modalName:      "#ffffff",
+    modalDesc:      "#a1a1aa",
+    modalPriceBg:   "rgba(255,255,255,0.025)",
+    modalPriceBdr:  "rgba(180,120,40,0.22)",
+    modalPriceLbl:  "#7a5a38",
+    footerBg:       "linear-gradient(0deg, rgba(8,4,1,0.99) 0%, rgba(12,6,1,0.97) 100%)",
+    footerBorder:   "rgba(180,120,40,0.2)",
+    bodyText:       "#c8a878",
+    brandName:      "#f0c060",
+    brandSub:       "#8a6040",
+    noResultsColor: "rgba(180,120,40,0.6)",
+  },
+  light: {
+    appBg:          "linear-gradient(180deg, #fcfbf7 0%, #f5f0e8 100%)",
+    headerBg:       "linear-gradient(180deg, rgba(252,248,240,0.98) 0%, rgba(248,243,232,0.97) 100%)",
+    headerBorder:   "1px solid rgba(180,120,40,0.18)",
+    cardBg:         "linear-gradient(145deg, #f4f1eb, #ede8de)",
+    cardBorder:     "1px solid rgba(160,100,30,0.18)",
+    cardName:       "#1c1510",
+    cardDesc:       "#57534e",
+    tabInactiveBg:  "rgba(0,0,0,0.04)",
+    tabInactiveBdr: "rgba(160,100,30,0.2)",
+    tabInactiveClr: "#78634a",
+    searchBg:       "#f0ebe0",
+    searchBorder:   "rgba(180,120,30,0.30)",
+    searchColor:    "#1c1510",
+    searchPlaceholder: "rgba(100,70,30,0.55)",
+    imgFallbackBg:  "linear-gradient(135deg, #e8dcc8 0%, #d8ccb0 50%, #efe5cf 100%)",
+    modalBg:        "linear-gradient(160deg,#faf7f0 0%,#f0ebe0 100%)",
+    modalBorder:    "rgba(180,120,30,0.25)",
+    modalName:      "#1c1510",
+    modalDesc:      "#57534e",
+    modalPriceBg:   "rgba(0,0,0,0.025)",
+    modalPriceBdr:  "rgba(160,100,30,0.22)",
+    modalPriceLbl:  "#9a7040",
+    footerBg:       "linear-gradient(0deg, rgba(240,230,210,0.99) 0%, rgba(245,238,222,0.97) 100%)",
+    footerBorder:   "rgba(160,100,30,0.2)",
+    bodyText:       "#3d2e1a",
+    brandName:      "#b86010",
+    brandSub:       "#9a7040",
+    noResultsColor: "rgba(140,90,30,0.65)",
+  },
+};
+
 function formatPrice(p) {
   const n = parseFloat(p);
   if (isNaN(n)) return p;
@@ -454,7 +518,8 @@ function parseMultiPrice(raw) {
   });
 }
 
-function PriceBlock({ item, modal = false }) {
+function PriceBlock({ item, modal = false, th }) {
+  const t = th || THEME.dark;
   const multi = parseMultiPrice(item.price);
 
   if (multi) {
@@ -465,7 +530,7 @@ function PriceBlock({ item, modal = false }) {
             display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%",
           }}>
             <span style={{
-              color: "#a08060", fontFamily: "'Georgia', serif",
+              color: modal ? t.modalPriceLbl : "#a08060", fontFamily: "'Georgia', serif",
               fontSize: modal ? 14 : 12, fontWeight: 600, letterSpacing: "0.3px",
             }}>
               {size}
@@ -482,7 +547,6 @@ function PriceBlock({ item, modal = false }) {
     );
   }
 
-  // Single price
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: modal ? "flex-start" : "flex-end" }}>
       <span style={{
@@ -495,14 +559,13 @@ function PriceBlock({ item, modal = false }) {
   );
 }
 
-function ItemCard({ item, lang, onOpen }) {
+function ItemCard({ item, lang, onOpen, th }) {
+  const t = th || THEME.dark;
   const name    = item[`name_${lang}`] || item.name_ka || "";
   const desc    = item[`desc_${lang}`] || item.desc_ka || "";
   const imgSrc  = item.image ? `Images/${item.image}` : "";
   const fallback = CATEGORY_ICONS[item.category] || "🍽️";
 
-  // Stable random negative delay — looks already-in-motion, never synchronized
-  // useMemo pins the value so re-renders (e.g. lang switch) don't re-randomize
   const shimmerDelay = React.useMemo(
     () => `-${(Math.random() * 8).toFixed(2)}s`,
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -513,17 +576,17 @@ function ItemCard({ item, lang, onOpen }) {
     <div
       onClick={() => onOpen && onOpen(item)}
       style={{
-        background: "linear-gradient(145deg, #1e1209, #2a1a0a)",
-        border: "1px solid rgba(180,120,40,0.2)",
+        background: t.cardBg,
+        border: t.cardBorder,
         borderRadius: 12, overflow: "hidden",
         display: "flex", flexDirection: "column",
-        transition: "transform 0.2s, box-shadow 0.2s",
+        transition: "transform 0.2s, box-shadow 0.2s, background 0.3s",
         position: "relative",
         cursor: "pointer",
       }}
       onMouseEnter={e => {
         e.currentTarget.style.transform = "translateY(-4px)";
-        e.currentTarget.style.boxShadow = "0 12px 32px rgba(0,0,0,0.6)";
+        e.currentTarget.style.boxShadow = "0 12px 32px rgba(0,0,0,0.25)";
       }}
       onMouseLeave={e => {
         e.currentTarget.style.transform = "";
@@ -533,7 +596,7 @@ function ItemCard({ item, lang, onOpen }) {
       {/* Image */}
       <div style={{
         width: "100%", height: 160,
-        background: "linear-gradient(135deg, #2d1a08 0%, #3d2410 50%, #1a0e04 100%)",
+        background: t.imgFallbackBg,
         position: "relative", overflow: "hidden",
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
@@ -551,24 +614,24 @@ function ItemCard({ item, lang, onOpen }) {
         </div>
         <div style={{
           position: "absolute", bottom: 0, left: 0, right: 0,
-          background: "linear-gradient(transparent, rgba(0,0,0,0.7))", height: 60,
+          background: "linear-gradient(transparent, rgba(0,0,0,0.5))", height: 60,
         }} />
       </div>
 
       {/* Text */}
       <div style={{ padding: "14px 16px 16px", flex: 1, display: "flex", flexDirection: "column" }}>
-        <h3 style={{ margin: "0 0 6px", color: "#f0c060", fontFamily: "'Georgia', serif", fontSize: 15, fontWeight: 700, lineHeight: 1.3 }}>
+        <h3 style={{ margin: "0 0 6px", color: t.cardName, fontFamily: "'Georgia', serif", fontSize: 15, fontWeight: 700, lineHeight: 1.3, transition: "color 0.3s" }}>
           {name}
         </h3>
         {desc && (
-          <p style={{ margin: "0 0 12px", color: "#a08060", fontSize: 12, lineHeight: 1.5, flex: 1 }}>
+          <p style={{ margin: "0 0 12px", color: t.cardDesc, fontSize: 12, lineHeight: 1.5, flex: 1, transition: "color 0.3s" }}>
             {desc}
           </p>
         )}
-        <PriceBlock item={item} />
+        <PriceBlock item={item} th={t} />
       </div>
 
-      {/* Diagonal glare — fast sweep, long pause, 5s cycle */}
+      {/* Diagonal glare shimmer */}
       <div style={{
         position: "absolute", inset: 0, borderRadius: 12,
         pointerEvents: "none", zIndex: 3, overflow: "hidden",
@@ -588,7 +651,8 @@ function ItemCard({ item, lang, onOpen }) {
 // ══════════════════════════════════════════════════════════════════════════════
 // DISH DETAIL MODAL
 // ══════════════════════════════════════════════════════════════════════════════
-function DishModal({ item, lang, onClose }) {
+function DishModal({ item, lang, onClose, th }) {
+  const t = th || THEME.dark;
   const name     = item[`name_${lang}`] || item.name_ka || "";
   const desc     = item[`desc_${lang}`] || item.desc_ka || "";
   const imgSrc   = item.image ? `Images/${item.image}` : "";
@@ -645,12 +709,13 @@ function DishModal({ item, lang, onClose }) {
           onClick={e => e.stopPropagation()}
           style={{
             width:"100%", maxWidth:860,
-            background:"linear-gradient(160deg,#18100a 0%,#110c06 100%)",
-            border:"1px solid rgba(245,158,11,0.22)",
+            background: t.modalBg,
+            border:`1px solid ${t.modalBorder}`,
             borderRadius:20, overflow:"hidden",
-            boxShadow:"0 32px 80px rgba(0,0,0,0.9), 0 0 0 1px rgba(200,160,60,0.05)",
+            boxShadow:"0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(200,160,60,0.05)",
             position:"relative",
             animation:"modalCardIn 0.28s cubic-bezier(0.34,1.15,0.64,1)",
+            transition:"background 0.3s",
           }}
         >
           {/* Responsive grid */}
@@ -713,11 +778,11 @@ function DishModal({ item, lang, onClose }) {
             >
               {/* Name — leave space for the X button */}
               <h2 style={{
-                margin:"0 0 12px", color:"#ffffff",
+                margin:"0 0 12px", color: t.modalName,
                 fontFamily:"'Georgia',serif",
                 fontSize:"clamp(19px,3vw,27px)",
                 fontWeight:700, lineHeight:1.25,
-                paddingRight:44,
+                paddingRight:44, transition:"color 0.3s",
               }}>
                 {name}
               </h2>
@@ -732,8 +797,8 @@ function DishModal({ item, lang, onClose }) {
               {/* Description */}
               {desc ? (
                 <p style={{
-                  margin:"0 0 22px", color:"#a1a1aa",
-                  fontSize:14, lineHeight:1.75, flex:1,
+                  margin:"0 0 22px", color: t.modalDesc,
+                  fontSize:14, lineHeight:1.75, flex:1, transition:"color 0.3s",
                 }}>
                   {desc}
                 </p>
@@ -742,18 +807,18 @@ function DishModal({ item, lang, onClose }) {
               {/* Price section */}
               <div style={{
                 padding:"16px 18px",
-                background:"rgba(255,255,255,0.025)",
-                border:"1px solid rgba(180,120,40,0.22)",
+                background: t.modalPriceBg,
+                border:`1px solid ${t.modalPriceBdr}`,
                 borderRadius:14, marginTop:"auto",
               }}>
                 <div style={{
-                  color:"#7a5a38", fontSize:10,
+                  color: t.modalPriceLbl, fontSize:10,
                   letterSpacing:"1.5px", textTransform:"uppercase",
                   marginBottom:10,
                 }}>
                   {PRICE_LABEL[lang] || "ფასი"}
                 </div>
-                <PriceBlock item={item} modal={true} />
+                <PriceBlock item={item} modal={true} th={t} />
               </div>
             </div>
           </div>
@@ -785,7 +850,8 @@ function DishModal({ item, lang, onClose }) {
 // ══════════════════════════════════════════════════════════════════════════════
 // LANGUAGE SWITCHER
 // ══════════════════════════════════════════════════════════════════════════════
-function LangSwitcher({ lang, setLang }) {
+function LangSwitcher({ lang, setLang, th }) {
+  const t = th || THEME.dark;
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -798,9 +864,9 @@ function LangSwitcher({ lang, setLang }) {
   }, []);
 
   return (
-    <div ref={ref} style={{ position: "relative", marginLeft: "auto" }}>
+    <div ref={ref} style={{ position: "relative" }}>
       <button onClick={() => setOpen(o => !o)} style={{
-        background: "rgba(255,255,255,0.06)", border: "1px solid rgba(180,120,40,0.3)",
+        background: "rgba(180,120,40,0.10)", border: "1px solid rgba(180,120,40,0.3)",
         borderRadius: 8, color: "#e0b050", padding: "6px 12px",
         fontSize: 12, fontWeight: 700, cursor: "pointer",
         display: "flex", alignItems: "center", gap: 5, transition: "all 0.2s",
@@ -811,20 +877,20 @@ function LangSwitcher({ lang, setLang }) {
       {open && (
         <div style={{
           position: "absolute", top: "calc(100% + 6px)", right: 0,
-          background: "linear-gradient(180deg, #1e1005, #140b03)",
+          background: t === THEME.dark ? "linear-gradient(180deg, #1e1005, #140b03)" : "linear-gradient(180deg, #faf6ec, #f0e8d4)",
           border: "1px solid rgba(180,120,40,0.35)", borderRadius: 10, overflow: "hidden",
-          boxShadow: "0 8px 24px rgba(0,0,0,0.7)", minWidth: 90, zIndex: 200,
+          boxShadow: "0 8px 24px rgba(0,0,0,0.3)", minWidth: 90, zIndex: 200,
         }}>
           {Object.entries(LANG_LABELS).map(([code, label]) => (
             <button key={code} onClick={() => { setLang(code); setOpen(false); }} style={{
               width: "100%", padding: "9px 14px",
               background: lang === code ? "rgba(184,101,32,0.25)" : "transparent",
               border: "none", borderBottom: "1px solid rgba(180,120,40,0.1)",
-              color: lang === code ? "#f0c060" : "#9a7050",
+              color: lang === code ? "#e0a030" : t.tabInactiveClr,
               fontSize: 12, fontWeight: lang === code ? 700 : 500,
               cursor: "pointer", textAlign: "left", transition: "background 0.15s",
             }}
-              onMouseEnter={e => { if (lang !== code) e.target.style.background = "rgba(255,255,255,0.05)"; }}
+              onMouseEnter={e => { if (lang !== code) e.target.style.background = "rgba(180,120,40,0.08)"; }}
               onMouseLeave={e => { if (lang !== code) e.target.style.background = "transparent"; }}
             >
               {label}
@@ -857,27 +923,27 @@ function IconInstagram({ size = 18 }) {
   );
 }
 
-function SiteFooter({ lang, visible }) {
+function SiteFooter({ lang, visible, th }) {
+  const t = th || THEME.dark;
   const socialBtnStyle = {
     display: "inline-flex", alignItems: "center", gap: 6,
     color: "#c8903a", textDecoration: "none",
     padding: "5px 9px", borderRadius: 7,
     border: "1px solid rgba(180,120,40,0.2)",
-    background: "rgba(255,255,255,0.03)",
+    background: "rgba(180,120,40,0.06)",
     fontSize: 11, fontWeight: 600, transition: "all 0.2s",
   };
   return (
     <footer style={{
       position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 50,
-      background: "linear-gradient(0deg, rgba(8,4,1,0.99) 0%, rgba(12,6,1,0.97) 100%)",
-      borderTop: "1px solid rgba(180,120,40,0.2)",
+      background: t.footerBg,
+      borderTop: `1px solid ${t.footerBorder}`,
       padding: "10px 24px 12px",
       backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
-      // Smooth hide/show driven by visible prop
       transform: visible ? "translateY(0)" : "translateY(100%)",
       opacity: visible ? 1 : 0,
       pointerEvents: visible ? "auto" : "none",
-      transition: "transform 0.32s ease-in-out, opacity 0.32s ease-in-out",
+      transition: "transform 0.32s ease-in-out, opacity 0.32s ease-in-out, background 0.3s",
     }}>
       <style>{`
         .footer-grid { display:grid; grid-template-columns:1fr; gap:10px; max-width:1200px; margin:0 auto; text-align:center; align-items:center; }
@@ -925,6 +991,9 @@ export default function StaroPub() {
   const [error, setError]         = useState(null);
   const [selectedDish, setSelectedDish] = useState(null);
   const [searchQuery, setSearchQuery]   = useState("");
+  const [isDark, setIsDark]             = useState(true);
+
+  const t = isDark ? THEME.dark : THEME.light;
 
   // ─── Smart footer scroll logic ───────────────────────────────────────────────
   const [isFooterVisible, setIsFooterVisible] = useState(true);
@@ -1067,9 +1136,11 @@ export default function StaroPub() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "radial-gradient(ellipse at top, #1a0e04 0%, #0d0602 60%, #000 100%)",
+      background: t.appBg,
       fontFamily: "'Georgia', 'DejaVu Serif', serif",
-      color: "#c8a878", position: "relative",
+      color: t.bodyText,
+      position: "relative",
+      transition: "background 0.35s, color 0.35s",
     }}>
       <style>{`
         @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
@@ -1095,7 +1166,7 @@ export default function StaroPub() {
       {isPour && <MasterPourScreen lang={lang} />}
 
       {/* Decorative bg orbs (phases 2 & 3) */}
-      {!isPour && <>
+      {!isPour && isDark && <>
         <div style={{ position:"fixed", top:-120, right:-80, width:400, height:400, borderRadius:"50%", background:"radial-gradient(circle,rgba(120,60,10,0.15),transparent 70%)", pointerEvents:"none" }} />
         <div style={{ position:"fixed", bottom:-100, left:-60, width:320, height:320, borderRadius:"50%", background:"radial-gradient(circle,rgba(80,40,5,0.12),transparent 70%)", pointerEvents:"none" }} />
       </>}
@@ -1104,9 +1175,10 @@ export default function StaroPub() {
       {!isPour && (
         <header style={{
           position:"sticky", top:0, zIndex:100,
-          background:"linear-gradient(180deg,rgba(15,8,2,0.98) 0%,rgba(10,5,1,0.95) 100%)",
-          borderBottom:"1px solid rgba(180,120,40,0.25)",
+          background: t.headerBg,
+          borderBottom: t.headerBorder,
           backdropFilter:"blur(12px)", padding:"0 16px",
+          transition: "background 0.3s, border-color 0.3s",
         }}>
           <div style={{ maxWidth:1200, margin:"0 auto", display:"flex", alignItems:"center", height:64, gap:12 }}>
             <img src="Images/logo.jpg" alt="StaroPub Logo" loading="lazy"
@@ -1115,10 +1187,27 @@ export default function StaroPub() {
             />
             <div style={{ display:"none", width:40, height:40, borderRadius:"50%", background:"linear-gradient(135deg,#c87820,#7a4010)", alignItems:"center", justifyContent:"center", fontSize:20, boxShadow:"0 2px 12px rgba(200,120,32,0.4)", border:"1px solid rgba(200,160,60,0.3)", flexShrink:0 }}>🍺</div>
             <div style={{ flex:1 }}>
-              <div style={{ color:"#f0c060", fontSize:18, fontWeight:700, letterSpacing:"0.5px", lineHeight:1.1 }}>StaroPub</div>
-              <div style={{ color:"#8a6040", fontSize:10, letterSpacing:"1px" }}>სტაროპაბი</div>
+              <div style={{ color: t.brandName, fontSize:18, fontWeight:700, letterSpacing:"0.5px", lineHeight:1.1, transition:"color 0.3s" }}>StaroPub</div>
+              <div style={{ color: t.brandSub, fontSize:10, letterSpacing:"1px", transition:"color 0.3s" }}>სტაროპაბი</div>
             </div>
-            <LangSwitcher lang={lang} setLang={setLang} />
+            {/* ── Theme toggle button ── */}
+            <button
+              onClick={() => setIsDark(d => !d)}
+              title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              style={{
+                background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
+                border: "1px solid rgba(180,120,40,0.28)",
+                borderRadius: 8, padding: "6px 10px",
+                cursor: "pointer", fontSize: 16, lineHeight: 1,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                transition: "all 0.25s",
+                flexShrink: 0,
+              }}
+              aria-label="Toggle theme"
+            >
+              {isDark ? "☀️" : "🌙"}
+            </button>
+            <LangSwitcher lang={lang} setLang={setLang} th={t} />
           </div>
 
           {isMenu && categories.length > 0 && (
@@ -1139,15 +1228,15 @@ export default function StaroPub() {
                   placeholder={SEARCH_PLACEHOLDER[lang]}
                   style={{
                     width:"100%", boxSizing:"border-box",
-                    background:"#141210",
-                    border:"1px solid rgba(245,158,11,0.20)",
+                    background: t.searchBg,
+                    border:`1px solid ${t.searchBorder}`,
                     borderRadius:12,
                     padding:"10px 14px 10px 40px",
-                    color:"#f0c060",
+                    color: t.searchColor,
                     fontSize:14,
                     fontFamily:"'Georgia','DejaVu Serif',serif",
                     outline:"none",
-                    transition:"border-color 0.2s, box-shadow 0.2s",
+                    transition:"border-color 0.2s, box-shadow 0.2s, background 0.3s, color 0.3s",
                     caretColor:"#f59e0b",
                   }}
                   onFocus={e => {
@@ -1155,7 +1244,7 @@ export default function StaroPub() {
                     e.target.style.boxShadow   = "0 0 0 2px rgba(245,158,11,0.08)";
                   }}
                   onBlur={e => {
-                    e.target.style.borderColor = "rgba(245,158,11,0.20)";
+                    e.target.style.borderColor = t.searchBorder;
                     e.target.style.boxShadow   = "none";
                   }}
                 />
@@ -1189,9 +1278,9 @@ export default function StaroPub() {
                 return (
                   <button key={cat} data-key={cat} onClick={() => scrollTab(cat)} style={{
                     whiteSpace:"nowrap", flexShrink:0,
-                    background: active ? "linear-gradient(135deg,#b86520,#7a3a08)" : "rgba(255,255,255,0.04)",
-                    border:`1px solid ${active ? "rgba(200,120,40,0.6)" : "rgba(180,120,40,0.15)"}`,
-                    color: active ? "#fff" : "#8a6040",
+                    background: active ? "linear-gradient(135deg,#b86520,#7a3a08)" : t.tabInactiveBg,
+                    border:`1px solid ${active ? "rgba(200,120,40,0.6)" : t.tabInactiveBdr}`,
+                    color: active ? "#fff" : t.tabInactiveClr,
                     borderRadius:20, padding:"7px 14px",
                     fontSize:12, fontWeight: active ? 700 : 500,
                     cursor:"pointer", transition:"all 0.25s",
@@ -1235,7 +1324,7 @@ export default function StaroPub() {
               }}>
                 <span style={{ fontSize:48, opacity:0.35 }}>🔍</span>
                 <p style={{
-                  color:"rgba(180,120,40,0.6)",
+                  color: t.noResultsColor,
                   fontFamily:"'Georgia','DejaVu Serif',serif",
                   fontSize:15, fontWeight:600, letterSpacing:"0.3px",
                   margin:0, textAlign:"center",
@@ -1253,6 +1342,7 @@ export default function StaroPub() {
                     key={item.id || `${item.category}-${item.name_ka}`}
                     item={item} lang={lang}
                     onOpen={setSelectedDish}
+                    th={t}
                   />
                 ))}
               </div>
@@ -1261,7 +1351,7 @@ export default function StaroPub() {
         </main>
       )}
 
-      {!isPour && <SiteFooter lang={lang} visible={isFooterVisible} />}
+      {!isPour && <SiteFooter lang={lang} visible={isFooterVisible} th={t} />}
 
       {/* ── Dish Detail Modal ── */}
       {selectedDish && (
@@ -1269,6 +1359,7 @@ export default function StaroPub() {
           item={selectedDish}
           lang={lang}
           onClose={() => setSelectedDish(null)}
+          th={t}
         />
       )}
     </div>
