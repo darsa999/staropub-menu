@@ -923,16 +923,335 @@ function IconInstagram({ size = 18 }) {
   );
 }
 
-function SiteFooter({ lang, visible, th }) {
+// ══════════════════════════════════════════════════════════════════════════════
+// ABOUT-VIEW TRANSLATIONS
+// ══════════════════════════════════════════════════════════════════════════════
+const ABOUT_TEXT = {
+  aboutUs:    { ka: "ჩვენს შესახებ",   en: "About Us",        ru: "О нас" },
+  backHome:   { ka: "მთავარი გვერდი",  en: "Home",            ru: "На главную" },
+  open:       { ka: "ღიაა",            en: "Open",            ru: "Открыто" },
+  closed:     { ka: "დაკეტილია",       en: "Closed",          ru: "Закрыто" },
+  hours:      { ka: "სამუშაო საათები:", en: "Working Hours:",  ru: "Часы работы:" },
+  matchDay:   {
+    ka: "მატჩის დღეებში პაბი მუშაობს მატჩის ბოლომდე",
+    en: "On match days, the pub is open until the end of the match",
+    ru: "В дни матчей паб работает до конца матча",
+  },
+  location:   { ka: "ადგილმდებარეობა", en: "Location",        ru: "Адрес" },
+  phone:      { ka: "ტელეფონი",        en: "Phone",           ru: "Телефон" },
+  email:      { ka: "მაილი",           en: "Email",           ru: "E-mail" },
+  wolt:       { ka: "გვიპოვეთ ვოლტზე", en: "Find us on Wolt", ru: "Найдите нас на Wolt" },
+};
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ANIMATED BEER MUG (open = filled & fizzing, closed = empty & dimmed)
+// ══════════════════════════════════════════════════════════════════════════════
+function AboutBeerMug({ isOpen }) {
+  return (
+    <>
+      <style>{`
+        @keyframes aboutBubble {
+          0%   { transform: translateY(0)    scale(1);   opacity: 0.8; }
+          80%  { transform: translateY(-38px) scale(1.1); opacity: 0.25; }
+          100% { transform: translateY(-46px) scale(0.6); opacity: 0; }
+        }
+        @keyframes aboutFoamPulse {
+          0%,100% { transform: scale(1);   opacity: 0.9; }
+          50%      { transform: scale(1.5); opacity: 0.35; }
+        }
+        @keyframes aboutSheen {
+          0%,100% { opacity: 0.1; transform: translateX(-100%); }
+          50%      { opacity: 0.28; transform: translateX(100%); }
+        }
+        .ab0 { animation: aboutBubble 1.9s 0.1s ease-in infinite; }
+        .ab1 { animation: aboutBubble 1.6s 0.7s ease-in infinite; }
+        .ab2 { animation: aboutBubble 2.1s 1.3s ease-in infinite; }
+        .afb0 { animation: aboutFoamPulse 1.0s 0.0s ease-in-out infinite; }
+        .afb1 { animation: aboutFoamPulse 1.0s 0.33s ease-in-out infinite; }
+        .afb2 { animation: aboutFoamPulse 1.0s 0.66s ease-in-out infinite; }
+        .about-sheen { animation: aboutSheen 2.0s ease-in-out infinite; }
+      `}</style>
+      <div style={{
+        position: "relative", width: 64, height: 90,
+        opacity: isOpen ? 1 : 0.35,
+        transition: "opacity 0.5s",
+        flexShrink: 0,
+      }}>
+        {/* Glass body */}
+        <div style={{
+          position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)",
+          width: 50, height: 80,
+          background: "linear-gradient(160deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 100%)",
+          borderRadius: "5px 5px 12px 12px",
+          border: "2px solid rgba(255,255,255,0.14)",
+          overflow: "hidden",
+          boxShadow: "0 4px 18px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)",
+        }}>
+          {/* Beer fill */}
+          {isOpen && (
+            <div style={{
+              position: "absolute", bottom: 0, left: 0, right: 0, height: "72%",
+              background: "linear-gradient(180deg, #c07818 0%, #a05808 40%, #7a3c04 100%)",
+              boxShadow: "inset 0 3px 10px rgba(255,170,20,0.18)",
+            }}>
+              {/* Liquid sheen */}
+              <div className="about-sheen" style={{
+                position: "absolute", inset: 0,
+                background: "linear-gradient(90deg, transparent, rgba(255,220,100,0.32), transparent)",
+              }} />
+              {/* Bubbles */}
+              {[{ left:"20%", cls:"ab0" }, { left:"50%", cls:"ab1" }, { left:"75%", cls:"ab2" }].map(({ left, cls }, i) => (
+                <div key={i} className={cls} style={{
+                  position: "absolute", bottom: 3, left,
+                  width: 4, height: 4,
+                  background: "rgba(255,210,80,0.75)", borderRadius: "50%",
+                }} />
+              ))}
+            </div>
+          )}
+          {/* Foam */}
+          {isOpen && (
+            <div style={{
+              position: "absolute", left: -1, right: -1, bottom: "70%", height: 14,
+              background: "linear-gradient(180deg, #fff 0%, #f4edd8 100%)",
+              borderRadius: "4px 4px 0 0",
+              boxShadow: "0 -1px 8px rgba(255,255,255,0.25)",
+            }}>
+              {[6, 20, 36].map((left, i) => (
+                <div key={i} className={`afb${i}`} style={{
+                  position: "absolute", bottom: 2, left,
+                  width: 5, height: 5,
+                  background: "rgba(255,255,255,0.95)", borderRadius: "50%",
+                }} />
+              ))}
+            </div>
+          )}
+          {/* Glass highlight */}
+          <div style={{
+            position: "absolute", top: 0, left: 4, width: 5, bottom: 0,
+            background: "linear-gradient(180deg, rgba(255,255,255,0.08), transparent)",
+            pointerEvents: "none",
+          }} />
+        </div>
+        {/* Handle */}
+        <div style={{
+          position: "absolute", right: 0, top: 14, height: 40, width: 14,
+          border: "2.5px solid rgba(255,255,255,0.13)",
+          borderLeft: "none",
+          borderRadius: "0 10px 10px 0",
+        }} />
+        {/* Base */}
+        <div style={{
+          position: "absolute", bottom: -3, left: "50%", transform: "translateX(-50%)",
+          width: 56, height: 5,
+          background: "rgba(255,255,255,0.06)",
+          borderRadius: "0 0 8px 8px",
+          border: "1px solid rgba(255,255,255,0.08)",
+          borderTop: "none",
+        }} />
+      </div>
+    </>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ABOUT VIEW
+// ══════════════════════════════════════════════════════════════════════════════
+function AboutView({ lang, th }) {
   const t = th || THEME.dark;
+  const isDark = t === THEME.dark;
+
+  const currentHour = new Date().getHours();
+  const isMatchDay  = false; // manual override
+  const isOpen      = isMatchDay || (currentHour >= 10 && currentHour < 23);
+
+  const cardBg     = isDark ? "linear-gradient(145deg, #1e1209, #2a1a0a)" : "linear-gradient(145deg, #f4f1eb, #ede8de)";
+  const cardBorder = isDark ? "rgba(180,120,40,0.2)" : "rgba(160,100,30,0.18)";
+  const labelColor = isDark ? "#8a6040" : "#9a7040";
+  const valueColor = isDark ? "#f0c060" : "#1c1510";
+  const bodyColor  = isDark ? "#c8a878" : "#3d2e1a";
+
   const socialBtnStyle = {
     display: "inline-flex", alignItems: "center", gap: 6,
     color: "#c8903a", textDecoration: "none",
-    padding: "5px 9px", borderRadius: 7,
-    border: "1px solid rgba(180,120,40,0.2)",
-    background: "rgba(180,120,40,0.06)",
-    fontSize: 11, fontWeight: 600, transition: "all 0.2s",
+    padding: "7px 14px", borderRadius: 8,
+    border: "1px solid rgba(180,120,40,0.25)",
+    background: isDark ? "rgba(180,120,40,0.07)" : "rgba(180,120,40,0.08)",
+    fontSize: 13, fontWeight: 600, transition: "all 0.2s",
   };
+
+  return (
+    <div style={{ maxWidth: 600, margin: "0 auto", padding: "0 16px 120px" }}>
+      <style>{`
+        @keyframes statusGlow {
+          0%,100% { box-shadow: 0 0 0 0 rgba(74,222,128,0.25); }
+          50%      { box-shadow: 0 0 0 8px rgba(74,222,128,0); }
+        }
+        .status-open  { animation: statusGlow 2.0s ease-in-out infinite; }
+        .about-social-link:hover { background:rgba(180,120,40,0.14)!important; color:#f0c060!important; border-color:rgba(200,140,40,0.5)!important; }
+      `}</style>
+
+      {/* ── Cover image ── */}
+      <div style={{
+        width: "100%", height: 220,
+        borderRadius: "0 0 20px 20px",
+        overflow: "hidden",
+        background: "linear-gradient(135deg, #2d1a08, #3d2410, #1a0e04)",
+        position: "relative",
+        marginBottom: 24,
+      }}>
+        <img
+          src="Images/staropub.webp"
+          alt="StaroPub"
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          onError={e => { e.target.style.display = "none"; }}
+        />
+        {/* Gradient overlay */}
+        <div style={{
+          position: "absolute", inset: 0,
+          background: "linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.72) 100%)",
+        }} />
+        {/* Pub name overlay */}
+        <div style={{
+          position: "absolute", bottom: 20, left: 20,
+        }}>
+          <div style={{ color: "#f0c060", fontSize: 26, fontWeight: 700, fontFamily: "'Georgia', serif", letterSpacing: "0.5px", textShadow: "0 2px 16px rgba(0,0,0,0.7)" }}>
+            StaroPub
+          </div>
+          <div style={{ color: "rgba(240,192,96,0.65)", fontSize: 11, letterSpacing: "2px" }}>სტაროპაბი</div>
+        </div>
+      </div>
+
+      {/* ── Status card ── */}
+      <div style={{
+        background: cardBg,
+        border: `1px solid ${cardBorder}`,
+        borderRadius: 16,
+        padding: "20px 22px",
+        marginBottom: 16,
+      }}>
+        {/* Status badge + mug row */}
+        <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+          <div style={{ flex: 1 }}>
+            {/* Badge */}
+            <div style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "6px 16px",
+              borderRadius: 30,
+              background: isOpen ? "rgba(74,222,128,0.12)" : "rgba(180,40,40,0.12)",
+              border: `1px solid ${isOpen ? "rgba(74,222,128,0.35)" : "rgba(180,40,40,0.35)"}`,
+              marginBottom: 12,
+            }} className={isOpen ? "status-open" : ""}>
+              <span style={{
+                width: 9, height: 9, borderRadius: "50%",
+                background: isOpen ? "#4ade80" : "#c04040",
+                display: "inline-block",
+                boxShadow: isOpen ? "0 0 7px rgba(74,222,128,0.7)" : "none",
+              }} />
+              <span style={{
+                fontSize: 14, fontWeight: 700, fontFamily: "'Georgia', serif",
+                color: isOpen ? "#4ade80" : "#e06060",
+                letterSpacing: "0.3px",
+              }}>
+                {ABOUT_TEXT[isOpen ? "open" : "closed"][lang]}
+              </span>
+            </div>
+            {/* Hours */}
+            <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+              <span style={{ color: labelColor, fontSize: 11, fontWeight: 600, letterSpacing: "0.5px" }}>
+                {ABOUT_TEXT.hours[lang]}
+              </span>
+              <span style={{ color: valueColor, fontSize: 15, fontWeight: 700, fontFamily: "'Georgia', serif" }}>
+                10:00 – 23:00
+              </span>
+            </div>
+            {/* Match day note */}
+            <p style={{ color: isDark ? "#7a5a38" : "#9a7040", fontSize: 11, lineHeight: 1.55, margin: "8px 0 0" }}>
+              {ABOUT_TEXT.matchDay[lang]}
+            </p>
+          </div>
+          {/* Animated mug */}
+          <AboutBeerMug isOpen={isOpen} />
+        </div>
+      </div>
+
+      {/* ── Contact info card ── */}
+      <div style={{
+        background: cardBg,
+        border: `1px solid ${cardBorder}`,
+        borderRadius: 16,
+        padding: "20px 22px",
+        marginBottom: 16,
+        display: "flex", flexDirection: "column", gap: 16,
+      }}>
+        {/* Location */}
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+          <span style={{ fontSize: 20, lineHeight: 1, marginTop: 1, flexShrink: 0 }}>📍</span>
+          <div>
+            <div style={{ color: labelColor, fontSize: 10, letterSpacing: "1px", textTransform: "uppercase", marginBottom: 3 }}>
+              {ABOUT_TEXT.location[lang]}
+            </div>
+            <div style={{ color: valueColor, fontSize: 14, fontWeight: 600 }}>
+              ილია ვეკუას 20
+            </div>
+          </div>
+        </div>
+
+        <div style={{ height: 1, background: isDark ? "rgba(180,120,40,0.1)" : "rgba(160,100,30,0.1)" }} />
+
+        {/* Phone */}
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+          <span style={{ fontSize: 20, lineHeight: 1, marginTop: 1, flexShrink: 0 }}>📞</span>
+          <div>
+            <div style={{ color: labelColor, fontSize: 10, letterSpacing: "1px", textTransform: "uppercase", marginBottom: 3 }}>
+              {ABOUT_TEXT.phone[lang]}
+            </div>
+            <a href="tel:595931119" style={{ color: "#e8a030", fontSize: 16, fontWeight: 700, fontFamily: "'Georgia', serif", textDecoration: "none" }}>
+              595 93 11 19
+            </a>
+          </div>
+        </div>
+
+        <div style={{ height: 1, background: isDark ? "rgba(180,120,40,0.1)" : "rgba(160,100,30,0.1)" }} />
+
+        {/* Email */}
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+          <span style={{ fontSize: 20, lineHeight: 1, marginTop: 1, flexShrink: 0 }}>✉️</span>
+          <div>
+            <div style={{ color: labelColor, fontSize: 10, letterSpacing: "1px", textTransform: "uppercase", marginBottom: 3 }}>
+              {ABOUT_TEXT.email[lang]}
+            </div>
+            <a href="mailto:staropub25@gmail.com" style={{ color: "#e8a030", fontSize: 13, fontWeight: 600, textDecoration: "none", wordBreak: "break-all" }}>
+              staropub25@gmail.com
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Social links card ── */}
+      <div style={{
+        background: cardBg,
+        border: `1px solid ${cardBorder}`,
+        borderRadius: 16,
+        padding: "18px 22px",
+        display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap",
+      }}>
+        <a href="https://www.facebook.com/StaroPub1" target="_blank" rel="noopener noreferrer" style={socialBtnStyle} className="about-social-link">
+          <IconFacebook size={16} /> Facebook
+        </a>
+        <a href="https://www.instagram.com/staropub/" target="_blank" rel="noopener noreferrer" style={socialBtnStyle} className="about-social-link">
+          <IconInstagram size={16} /> Instagram
+        </a>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FOOTER (updated: view-aware, no social on menu view)
+// ══════════════════════════════════════════════════════════════════════════════
+function SiteFooter({ lang, visible, th, currentView, setCurrentView }) {
+  const t = th || THEME.dark;
   return (
     <footer style={{
       position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 50,
@@ -952,17 +1271,35 @@ function SiteFooter({ lang, visible, th }) {
           .footer-center { text-align:center!important; }
           .footer-right  { text-align:right!important; }
         }
-        .social-link:hover { background:rgba(180,120,40,0.12)!important; color:#f0c060!important; border-color:rgba(200,140,40,0.5)!important; }
+        .footer-nav-link { color: #8a6040; text-decoration: none; font-size: 12px; font-weight: 600; letter-spacing: 0.3px; transition: color 0.2s; cursor: pointer; background: none; border: none; padding: 0; font-family: 'Georgia', serif; }
+        .footer-nav-link:hover { color: #f0c060; }
+        .footer-wolt-link { color: #8a6040; text-decoration: none; font-size: 11px; font-weight: 600; transition: color 0.2s; letter-spacing: 0.3px; }
+        .footer-wolt-link:hover { color: #009de0; }
       `}</style>
       <div className="footer-grid">
-        <div style={{ display:"flex", gap:8, justifyContent:"center", alignItems:"center", flexWrap:"wrap" }}>
-          <a href="https://www.facebook.com/StaroPub1" target="_blank" rel="noopener noreferrer" style={socialBtnStyle} className="social-link">
-            <IconFacebook size={15} /> Facebook
-          </a>
-          <a href="https://www.instagram.com/staropub/" target="_blank" rel="noopener noreferrer" style={socialBtnStyle} className="social-link">
-            <IconInstagram size={15} /> Instagram
-          </a>
+        {/* Left: plain text nav link + wolt */}
+        <div style={{ display:"flex", flexDirection:"column", gap:5, justifyContent:"center", alignItems:"center" }}>
+          <button
+            className="footer-nav-link"
+            onClick={() => setCurrentView(currentView === "menu" ? "about" : "menu")}
+          >
+            {currentView === "menu"
+              ? ABOUT_TEXT.aboutUs[lang]
+              : ABOUT_TEXT.backHome[lang]
+            }
+          </button>
+          {currentView === "menu" && (
+            <a
+              href="https://wolt.com/ka/geo/tbilisi/restaurant/staropub1"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="footer-wolt-link"
+            >
+              {ABOUT_TEXT.wolt[lang]}
+            </a>
+          )}
         </div>
+        {/* Center */}
         <div className="footer-center" style={{ textAlign:"center" }}>
           <div style={{ color:"#c8a050", fontSize:12, fontWeight:700, fontFamily:"'Georgia',serif", lineHeight:1.4 }}>
             {FOOTER_TEXT.tagline[lang]}
@@ -971,6 +1308,7 @@ function SiteFooter({ lang, visible, th }) {
             StaroPub · სტაროპაბი · QR მენიუ
           </div>
         </div>
+        {/* Right: copyright */}
         <div className="footer-right" style={{ textAlign:"center" }}>
           <p style={{ color:"#4a3018", fontSize:10, lineHeight:1.5, margin:0 }}>
             {FOOTER_TEXT.copyright[lang]}
@@ -981,9 +1319,6 @@ function SiteFooter({ lang, visible, th }) {
   );
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// MAIN COMPONENT — fixed sequential state machine
-// ══════════════════════════════════════════════════════════════════════════════
 export default function StaroPub() {
   const [lang, setLang]           = useState("ka");
   const [allItems, setAllItems]   = useState([]);
@@ -992,6 +1327,7 @@ export default function StaroPub() {
   const [selectedDish, setSelectedDish] = useState(null);
   const [searchQuery, setSearchQuery]   = useState("");
   const [isDark, setIsDark]             = useState(true);
+  const [currentView, setCurrentView]   = useState("menu"); // "menu" | "about"
 
   const t = isDark ? THEME.dark : THEME.light;
 
@@ -1136,12 +1472,21 @@ export default function StaroPub() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: t.appBg,
+      backgroundImage: "url('Images/staropub_main.jpg')",
+      backgroundAttachment: "fixed",
+      backgroundSize: "cover",
+      backgroundPosition: "center",
       fontFamily: "'Georgia', 'DejaVu Serif', serif",
       color: t.bodyText,
       position: "relative",
-      transition: "background 0.35s, color 0.35s",
+      transition: "color 0.35s",
     }}>
+      {/* Theme overlay: dark mode = near-opaque dark; light mode = warm cream at 88% */}
+      <div style={{
+        position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none",
+        background: isDark ? "rgba(8,4,1,0.88)" : "rgba(252,247,241,0.88)",
+        transition: "background 0.4s",
+      }} />
       <style>{`
         @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
 
@@ -1167,8 +1512,8 @@ export default function StaroPub() {
 
       {/* Decorative bg orbs (phases 2 & 3) */}
       {!isPour && isDark && <>
-        <div style={{ position:"fixed", top:-120, right:-80, width:400, height:400, borderRadius:"50%", background:"radial-gradient(circle,rgba(120,60,10,0.15),transparent 70%)", pointerEvents:"none" }} />
-        <div style={{ position:"fixed", bottom:-100, left:-60, width:320, height:320, borderRadius:"50%", background:"radial-gradient(circle,rgba(80,40,5,0.12),transparent 70%)", pointerEvents:"none" }} />
+        <div style={{ position:"fixed", top:-120, right:-80, width:400, height:400, borderRadius:"50%", background:"radial-gradient(circle,rgba(120,60,10,0.15),transparent 70%)", pointerEvents:"none", zIndex:1 }} />
+        <div style={{ position:"fixed", bottom:-100, left:-60, width:320, height:320, borderRadius:"50%", background:"radial-gradient(circle,rgba(80,40,5,0.12),transparent 70%)", pointerEvents:"none", zIndex:1 }} />
       </>}
 
       {/* Header (hidden during pour) */}
@@ -1210,7 +1555,7 @@ export default function StaroPub() {
             <LangSwitcher lang={lang} setLang={setLang} th={t} />
           </div>
 
-          {isMenu && categories.length > 0 && (
+          {isMenu && categories.length > 0 && currentView === "menu" && (
             <div style={{ maxWidth:1200, margin:"0 auto", padding:"8px 0 4px" }}>
               <div style={{ position:"relative" }}>
                 {/* Magnifying glass icon */}
@@ -1266,7 +1611,7 @@ export default function StaroPub() {
             </div>
           )}
 
-          {isMenu && categories.length > 0 && (
+          {isMenu && categories.length > 0 && currentView === "menu" && (
             <div ref={tabsRef} className="tabs-row" style={{
               display:"flex", gap:4, overflowX:"auto", padding:"8px 0 10px",
               maxWidth:1200, margin:"0 auto", scrollbarWidth:"none",
@@ -1296,8 +1641,8 @@ export default function StaroPub() {
       )}
 
       {/* Main content */}
-      {!isPour && (
-        <main style={{ maxWidth:1200, margin:"0 auto", padding:"16px 16px 112px" }}>
+      {!isPour && currentView === "menu" && (
+        <main style={{ maxWidth:1200, margin:"0 auto", padding:"16px 16px 112px", position:"relative", zIndex:1 }}>
 
           {/* Phase 2: Skeleton */}
           {isSkeleton && <SkeletonGrid />}
@@ -1351,7 +1696,14 @@ export default function StaroPub() {
         </main>
       )}
 
-      {!isPour && <SiteFooter lang={lang} visible={isFooterVisible} th={t} />}
+      {/* About view */}
+      {!isPour && currentView === "about" && (
+        <main style={{ maxWidth:1200, margin:"0 auto", padding:"16px 0 112px", animation:"fadeIn 0.3s ease-out", position:"relative", zIndex:1 }}>
+          <AboutView lang={lang} th={t} />
+        </main>
+      )}
+
+      {!isPour && <SiteFooter lang={lang} visible={isFooterVisible} th={t} currentView={currentView} setCurrentView={setCurrentView} />}
 
       {/* ── Dish Detail Modal ── */}
       {selectedDish && (
