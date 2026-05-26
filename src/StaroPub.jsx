@@ -649,6 +649,373 @@ function ItemCard({ item, lang, onOpen, th }) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// DAILY SPECIALS CAROUSEL
+// ══════════════════════════════════════════════════════════════════════════════
+const DAILY_SPECIAL_TEXT = {
+  title: { ka: "დღის შეთავაზება", en: "Daily Specials", ru: "Блюда дня" },
+  badge: { ka: "🔥 სპეციალური", en: "🔥 Special", ru: "🔥 Спешиал" },
+};
+
+function DailySpecialsCarousel({ dishes, lang, onOpen, th }) {
+  const t = th || THEME.dark;
+  const isDark = t === THEME.dark;
+  const grillSpecials = React.useMemo(
+    () => dishes.filter(d => d.category_ka === "გრილი" || d.category === "grill"),
+    [dishes]
+  );
+
+  const [current, setCurrent] = useState(0);
+  const [animDir, setAnimDir] = useState(null); // "left" | "right" | null
+  const [isAnimating, setIsAnimating] = useState(false);
+  const intervalRef = useRef(null);
+  const touchStartX = useRef(null);
+  const containerRef = useRef(null);
+
+  const total = grillSpecials.length;
+
+  const goTo = useCallback((idx, dir) => {
+    if (isAnimating || total === 0) return;
+    const next = (idx + total) % total;
+    if (next === current) return;
+    setAnimDir(dir);
+    setIsAnimating(true);
+    setTimeout(() => {
+      setCurrent(next);
+      setAnimDir(null);
+      setIsAnimating(false);
+    }, 480);
+  }, [current, isAnimating, total]);
+
+  const goNext = useCallback(() => goTo(current + 1, "left"), [current, goTo]);
+  const goPrev = useCallback(() => goTo(current - 1, "right"), [current, goTo]);
+
+  // Auto-play
+  useEffect(() => {
+    if (total <= 1) return;
+    intervalRef.current = setInterval(goNext, 4200);
+    return () => clearInterval(intervalRef.current);
+  }, [goNext, total]);
+
+  // Restart timer when user manually navigates
+  const resetTimer = useCallback(() => {
+    clearInterval(intervalRef.current);
+    if (total > 1) intervalRef.current = setInterval(goNext, 4200);
+  }, [goNext, total]);
+
+  const handlePrev = () => { goPrev(); resetTimer(); };
+  const handleNext = () => { goNext(); resetTimer(); };
+  const handleDot  = (i) => { goTo(i, i > current ? "left" : "right"); resetTimer(); };
+
+  // Touch swipe
+  const onTouchStart = (e) => { touchStartX.current = e.touches[0].clientX; };
+  const onTouchEnd   = (e) => {
+    if (touchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(dx) > 44) { dx < 0 ? handleNext() : handlePrev(); }
+    touchStartX.current = null;
+  };
+
+  if (total === 0) return null;
+
+  const item     = grillSpecials[current];
+  const name     = item[`name_${lang}`] || item.name_ka || "";
+  const desc     = item[`desc_${lang}`] || item.desc_ka || "";
+  const imgSrc   = item.image ? `Images/${item.image}` : "";
+  const fallback = "🔥";
+
+  const slideClass = animDir === "left"
+    ? "carousel-slide-out-left"
+    : animDir === "right"
+    ? "carousel-slide-out-right"
+    : "carousel-slide-in";
+
+  const containerBg  = isDark
+    ? "linear-gradient(145deg,#1a0e04,#251508,#1a0d03)"
+    : "linear-gradient(145deg,#faf5ec,#f0e8d4,#ede3ca)";
+  const borderColor  = isDark ? "rgba(200,140,40,0.38)" : "rgba(160,100,30,0.3)";
+  const glowShadow   = isDark
+    ? "0 0 0 1px rgba(200,140,40,0.12), 0 8px 40px rgba(180,100,20,0.22), 0 2px 8px rgba(0,0,0,0.4)"
+    : "0 0 0 1px rgba(160,100,30,0.1), 0 8px 32px rgba(160,100,30,0.12)";
+
+  return (
+    <>
+      <style>{`
+        @keyframes carousel-in-left  { from{opacity:0;transform:translateX(52px) scale(0.97)} to{opacity:1;transform:translateX(0) scale(1)} }
+        @keyframes carousel-in-right { from{opacity:0;transform:translateX(-52px) scale(0.97)} to{opacity:1;transform:translateX(0) scale(1)} }
+        @keyframes carousel-out-left  { from{opacity:1;transform:translateX(0) scale(1)} to{opacity:0;transform:translateX(-52px) scale(0.97)} }
+        @keyframes carousel-out-right { from{opacity:1;transform:translateX(0) scale(1)} to{opacity:0;transform:translateX(52px) scale(0.97)} }
+        .carousel-slide-in        { animation: carousel-in-left  0.48s cubic-bezier(0.34,1.05,0.64,1) both; }
+        .carousel-slide-out-left  { animation: carousel-out-left  0.48s cubic-bezier(0.34,1.05,0.64,1) both; }
+        .carousel-slide-out-right { animation: carousel-out-right 0.48s cubic-bezier(0.34,1.05,0.64,1) both; }
+        @keyframes badgePulse { 0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,0.35)} 50%{box-shadow:0 0 0 7px rgba(245,158,11,0)} }
+        .carousel-badge { animation: badgePulse 2.6s ease-in-out infinite; }
+        .carousel-arrow {
+          background: rgba(0,0,0,0.45); border: 1px solid rgba(200,140,40,0.3);
+          color: #f0c060; cursor: pointer; border-radius: 50%;
+          width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+          font-size: 16px; line-height: 1; flex-shrink: 0;
+          transition: background 0.2s, border-color 0.2s, transform 0.15s;
+          backdrop-filter: blur(6px);
+        }
+        .carousel-arrow:hover { background: rgba(180,100,20,0.55); border-color: rgba(245,158,11,0.6); transform: scale(1.1); }
+        .carousel-dot {
+          width: 7px; height: 7px; border-radius: 50%; cursor: pointer;
+          transition: all 0.25s; border: none; padding: 0;
+        }
+        .carousel-dot:hover { transform: scale(1.35); }
+        @keyframes carouselSheen {
+          0%   { transform: translateX(-180%) translateY(180%); opacity: 0; }
+          8%   { opacity: 1; }
+          35%  { transform: translateX(180%) translateY(-180%); opacity: 1; }
+          43%  { opacity: 0; }
+          100% { transform: translateX(180%) translateY(-180%); opacity: 0; }
+        }
+        .carousel-sheen { animation: carouselSheen 6s 1.2s linear infinite; }
+        .carousel-item-btn { background: none; border: none; padding: 0; cursor: pointer; text-align: left; width: 100%; }
+      `}</style>
+
+      {/* Section header */}
+      <div style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{
+          height: 2, flex: 1,
+          background: isDark
+            ? "linear-gradient(90deg, transparent, rgba(200,140,40,0.4))"
+            : "linear-gradient(90deg, transparent, rgba(160,100,30,0.3))",
+          borderRadius: 1,
+        }} />
+        <span style={{
+          color: isDark ? "#f0c060" : "#b86010",
+          fontFamily: "'Georgia', serif",
+          fontSize: 14, fontWeight: 700, letterSpacing: "1.5px",
+          textTransform: "uppercase", whiteSpace: "nowrap",
+        }}>
+          {DAILY_SPECIAL_TEXT.title[lang]}
+        </span>
+        <div style={{
+          height: 2, flex: 1,
+          background: isDark
+            ? "linear-gradient(90deg, rgba(200,140,40,0.4), transparent)"
+            : "linear-gradient(90deg, rgba(160,100,30,0.3), transparent)",
+          borderRadius: 1,
+        }} />
+      </div>
+
+      {/* Carousel container */}
+      <div
+        ref={containerRef}
+        style={{
+          background: containerBg,
+          border: `1px solid ${borderColor}`,
+          borderRadius: 18,
+          boxShadow: glowShadow,
+          overflow: "hidden",
+          position: "relative",
+          marginBottom: 20,
+          userSelect: "none",
+        }}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
+        {/* Ambient glow line at top */}
+        <div style={{
+          position: "absolute", top: 0, left: 0, right: 0, height: 2, zIndex: 4,
+          background: "linear-gradient(90deg, transparent 0%, rgba(245,158,11,0.6) 35%, rgba(255,180,40,0.8) 50%, rgba(245,158,11,0.6) 65%, transparent 100%)",
+          borderRadius: "18px 18px 0 0",
+        }} />
+
+        {/* Slide layout: image left, content right on desktop */}
+        <button
+          className="carousel-item-btn"
+          onClick={() => onOpen && onOpen(item)}
+          aria-label={`Open ${name}`}
+        >
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "1fr",
+          }}
+          className="carousel-inner-grid"
+          >
+            <style>{`
+              @media(min-width:600px) { .carousel-inner-grid { grid-template-columns: 1.1fr 1fr !important; min-height: 240px; } }
+            `}</style>
+
+            {/* Image panel */}
+            <div style={{
+              position: "relative", overflow: "hidden",
+              minHeight: 220,
+              background: isDark
+                ? "linear-gradient(135deg,#2d1a08,#3d2410,#1a0e04)"
+                : "linear-gradient(135deg,#e8dcc8,#d8ccb0,#efe5cf)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <div
+                key={`img-${current}-${animDir ?? "idle"}`}
+                className={slideClass}
+                style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
+              >
+                {imgSrc ? (
+                  <img
+                    src={imgSrc} alt={name} loading="lazy"
+                    style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }}
+                    onError={e => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex"; }}
+                  />
+                ) : null}
+                <div style={{
+                  display: imgSrc ? "none" : "flex",
+                  position: "absolute", inset: 0,
+                  alignItems: "center", justifyContent: "center",
+                  fontSize: 72,
+                }}>
+                  {fallback}
+                </div>
+              </div>
+
+              {/* Bottom image fade */}
+              <div style={{
+                position: "absolute", bottom: 0, left: 0, right: 0, height: 80,
+                background: isDark
+                  ? "linear-gradient(transparent,rgba(26,14,4,0.7))"
+                  : "linear-gradient(transparent,rgba(240,230,210,0.6))",
+                pointerEvents: "none", zIndex: 2,
+              }} />
+
+              {/* Badge */}
+              <div className="carousel-badge" style={{
+                position: "absolute", top: 14, left: 14, zIndex: 3,
+                background: "linear-gradient(135deg,#b86520,#7a3a08)",
+                border: "1px solid rgba(245,158,11,0.5)",
+                borderRadius: 20, padding: "5px 13px",
+                color: "#fff", fontSize: 11, fontWeight: 700, letterSpacing: "0.5px",
+              }}>
+                {DAILY_SPECIAL_TEXT.badge[lang]}
+              </div>
+
+              {/* Diagonal sheen */}
+              <div style={{
+                position: "absolute", inset: 0, pointerEvents: "none", zIndex: 3, overflow: "hidden",
+              }}>
+                <div className="carousel-sheen" style={{
+                  position: "absolute", top: "-50%", left: "-50%",
+                  width: "55%", height: "200%",
+                  background: "linear-gradient(135deg,transparent 20%,rgba(255,245,200,0.06) 38%,rgba(255,255,255,0.13) 50%,rgba(255,245,200,0.06) 62%,transparent 80%)",
+                }} />
+              </div>
+            </div>
+
+            {/* Content panel */}
+            <div style={{
+              padding: "22px 22px 20px",
+              display: "flex", flexDirection: "column", justifyContent: "center",
+              gap: 10, minHeight: 160,
+            }}>
+              <div
+                key={`txt-${current}-${animDir ?? "idle"}`}
+                className={slideClass}
+                style={{ display: "flex", flexDirection: "column", gap: 8 }}
+              >
+                {/* Name */}
+                <h3 style={{
+                  margin: 0,
+                  color: isDark ? "#ffffff" : "#1c1510",
+                  fontFamily: "'Georgia', serif",
+                  fontSize: "clamp(16px,3.5vw,22px)",
+                  fontWeight: 700, lineHeight: 1.25,
+                  textShadow: isDark ? "0 1px 8px rgba(0,0,0,0.6)" : "none",
+                }}>
+                  {name}
+                </h3>
+
+                {/* Divider */}
+                <div style={{
+                  height: 1,
+                  background: "linear-gradient(90deg,rgba(245,158,11,0.5),transparent)",
+                  width: "60%",
+                }} />
+
+                {/* Description */}
+                {desc && (
+                  <p style={{
+                    margin: 0,
+                    color: isDark ? "#c8a878" : "#57534e",
+                    fontSize: 12, lineHeight: 1.6,
+                    display: "-webkit-box",
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                  }}>
+                    {desc}
+                  </p>
+                )}
+
+                {/* Price */}
+                <div style={{ marginTop: 4 }}>
+                  <PriceBlock item={item} th={t} />
+                </div>
+              </div>
+
+              {/* Tap hint */}
+              <div style={{
+                marginTop: "auto", paddingTop: 8,
+                color: isDark ? "rgba(200,140,40,0.4)" : "rgba(140,90,20,0.4)",
+                fontSize: 10, letterSpacing: "0.8px",
+              }}>
+                {lang === "ka" ? "დეტალებისთვის დააჭირე" : lang === "ru" ? "Нажмите для подробностей" : "Tap to view details"}
+              </div>
+            </div>
+          </div>
+        </button>
+
+        {/* Navigation row */}
+        {total > 1 && (
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "10px 16px 14px",
+            borderTop: `1px solid ${isDark ? "rgba(200,140,40,0.12)" : "rgba(160,100,30,0.1)"}`,
+          }}>
+            {/* Prev arrow */}
+            <button
+              className="carousel-arrow"
+              onClick={(e) => { e.stopPropagation(); handlePrev(); }}
+              aria-label="Previous"
+            >
+              ‹
+            </button>
+
+            {/* Dot indicators */}
+            <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
+              {grillSpecials.map((_, i) => (
+                <button
+                  key={i}
+                  className="carousel-dot"
+                  onClick={(e) => { e.stopPropagation(); handleDot(i); }}
+                  aria-label={`Go to slide ${i + 1}`}
+                  style={{
+                    background: i === current
+                      ? "linear-gradient(135deg,#f59e0b,#d97706)"
+                      : isDark ? "rgba(180,120,40,0.25)" : "rgba(160,100,30,0.2)",
+                    transform: i === current ? "scale(1.45)" : "scale(1)",
+                    boxShadow: i === current ? "0 0 7px rgba(245,158,11,0.55)" : "none",
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Next arrow */}
+            <button
+              className="carousel-arrow"
+              onClick={(e) => { e.stopPropagation(); handleNext(); }}
+              aria-label="Next"
+            >
+              ›
+            </button>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // DISH DETAIL MODAL
 // ══════════════════════════════════════════════════════════════════════════════
 function DishModal({ item, lang, onClose, th }) {
@@ -1656,6 +2023,16 @@ export default function StaroPub() {
             }}>
               ⚠️ {error}
             </div>
+          )}
+
+          {/* Daily Specials Carousel — only when not searching */}
+          {isMenu && !error && !searchQuery.trim() && (
+            <DailySpecialsCarousel
+              dishes={allItems}
+              lang={lang}
+              onOpen={setSelectedDish}
+              th={t}
+            />
           )}
 
           {/* Phase 3: Menu grid */}
