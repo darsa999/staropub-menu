@@ -966,7 +966,7 @@ function AboutView({ lang, th }) {
         {[
           { icon:"📍", label:ABOUT_TEXT.location[lang], value:<span style={{color:valueColor,fontSize:14,fontWeight:600}}>ილია ვეკუას 20</span> },
           { icon:"📞", label:ABOUT_TEXT.phone[lang],    value:<a href="tel:595931119" style={{color:"#e8a030",fontSize:16,fontWeight:700,fontFamily:"'Georgia',serif",textDecoration:"none"}}>595 93 11 19</a> },
-          { icon:"✉️", label:ABOUT_TEXT.email[lang],    value:<a href="mailto:staropub1@gmail.com" style={{color:"#e8a030",fontSize:13,fontWeight:600,textDecoration:"none",wordBreak:"break-all"}}>staropub25@gmail.com</a> },
+          { icon:"✉️", label:ABOUT_TEXT.email[lang],    value:<a href="mailto:staropub25@gmail.com" style={{color:"#e8a030",fontSize:13,fontWeight:600,textDecoration:"none",wordBreak:"break-all"}}>staropub25@gmail.com</a> },
         ].map((row, idx) => (
           <React.Fragment key={idx}>
             {idx > 0 && <div style={{ height:1, background:isDark?"rgba(180,120,40,0.1)":"rgba(160,100,30,0.1)" }} />}
