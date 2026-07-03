@@ -2346,7 +2346,7 @@ export default function StaroPub() {
           background: ${isDark ? "linear-gradient(145deg, rgba(30,41,59,0.7), rgba(15,23,42,0.5))" : "linear-gradient(145deg, rgba(244,241,235,0.8), rgba(237,232,222,0.6))"};
           border: 1px solid ${isDark ? "rgba(245,158,11,0.22)" : "rgba(180,120,40,0.22)"};
           border-radius: 16px;
-          padding: 24px;
+          padding: 0;
           text-align: center;
           cursor: pointer;
           transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
@@ -2355,14 +2355,16 @@ export default function StaroPub() {
           backdrop-filter: blur(12px);
           display: flex;
           flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          min-height: 140px;
+          align-items: stretch;
+          justify-content: flex-start;
         }
         .category-card:hover {
           transform: translateY(-8px) rotateX(4deg) rotateY(-4deg);
           border-color: ${isDark ? "rgba(245,158,11,0.6)" : "rgba(180,120,40,0.6)"};
           box-shadow: 0 16px 36px rgba(0,0,0,0.55), 0 0 15px rgba(245,158,11,0.15);
+        }
+        .category-card:hover .category-card-img {
+          transform: scale(1.08) !important;
         }
         .category-card::before {
           content: '';
@@ -2621,20 +2623,67 @@ export default function StaroPub() {
                           const labelObj = CATEGORY_LABELS[cat] || { ka: cat, en: cat, ru: cat };
                           const icon = CATEGORY_ICONS[cat] || "🍽️";
                           const count = allItems.filter(item => item.category === cat && !unavailableDishIds.includes(item.id)).length;
+                          const firstDishWithImage = allItems.find(item => item.category === cat && !unavailableDishIds.includes(item.id) && item.image);
+
                           return (
                             <div key={cat} onClick={() => scrollTab(cat)} className="category-card">
-                              <span style={{ fontSize: 40, marginBottom: 8 }}>{icon}</span>
-                              <span style={{ color: t.brandName, fontWeight: 700, fontSize: 14 }}>{labelObj[lang]}</span>
-                              <span style={{ color: t.tabInactiveClr, fontSize: 10, marginTop: 4 }}>{count} {lang === "ka" ? "კერძი" : lang === "ru" ? "блюд" : "items"}</span>
+                              {/* Top image or icon fallback */}
+                              <div style={{ width: "100%", height: 110, overflow: "hidden", position: "relative", borderBottom: t.cardBorder }}>
+                                {firstDishWithImage ? (
+                                  <img
+                                    src={`Images/${firstDishWithImage.image}`}
+                                    alt={labelObj[lang]}
+                                    style={{
+                                      width: "100%",
+                                      height: "100%",
+                                      objectFit: "cover",
+                                      transition: "transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1)"
+                                    }}
+                                    className="category-card-img"
+                                  />
+                                ) : (
+                                  <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: t.imgFallbackBg || "rgba(0,0,0,0.1)" }}>
+                                    <span style={{ fontSize: 36 }}>{icon}</span>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Bottom text block */}
+                              <div style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1 }}>
+                                <span style={{ color: t.cardName || t.brandName, fontWeight: 700, fontSize: 14, lineHeight: 1.2, textAlign: "center" }}>
+                                  {labelObj[lang]}
+                                </span>
+                                <span style={{ color: t.tabInactiveClr, fontSize: 11, marginTop: 4, fontWeight: 500 }}>
+                                  {count} {lang === "ka" ? "კერძი" : lang === "ru" ? "блюд" : "items"}
+                                </span>
+                              </div>
                             </div>
                           );
                         })}
                         {/* Custom Selection Grid Item */}
                         {customMenuEnabled && selectedDishIds.length > 0 && (
-                          <div onClick={() => setActiveTab("selection")} className="category-card" style={{ border: `1.5px dashed ${t.brandName}`, background: "rgba(245,158,11,0.06)" }}>
-                            <span style={{ fontSize: 40, marginBottom: 8, animation: "badgePulse 2s infinite" }}>🌟</span>
-                            <span style={{ color: t.brandName, fontWeight: 700, fontSize: 14 }}>{lang === "ka" ? "ჩემი არჩევანი" : lang === "ru" ? "Мой выбор" : "My Selection"}</span>
-                            <span style={{ color: t.tabInactiveClr, fontSize: 10, marginTop: 4 }}>{selectedDishIds.length} {lang === "ka" ? "კერძი" : lang === "ru" ? "блюд" : "items"}</span>
+                          <div
+                            onClick={() => setActiveTab("selection")}
+                            className="category-card"
+                            style={{
+                              border: `1.5px dashed ${t.brandName}`,
+                              background: "rgba(245,158,11,0.04)"
+                            }}
+                          >
+                            {/* Top Selection Icon Wrapper */}
+                            <div style={{ width: "100%", height: 110, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(245,158,11,0.08)", borderBottom: t.cardBorder }}>
+                              <span style={{ fontSize: 36, animation: "badgePulse 2s infinite" }}>🌟</span>
+                            </div>
+
+                            {/* Bottom Selection Title and Count */}
+                            <div style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1 }}>
+                              <span style={{ color: t.brandName, fontWeight: 700, fontSize: 14, lineHeight: 1.2, textAlign: "center" }}>
+                                {lang === "ka" ? "ჩემი არჩევანი" : lang === "ru" ? "Мой выбор" : "My Selection"}
+                              </span>
+                              <span style={{ color: t.tabInactiveClr, fontSize: 11, marginTop: 4, fontWeight: 500 }}>
+                                {selectedDishIds.length} {lang === "ka" ? "კერძი" : lang === "ru" ? "блюд" : "items"}
+                              </span>
+                            </div>
                           </div>
                         )}
                       </div>
