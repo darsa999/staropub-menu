@@ -67,43 +67,43 @@ const LANG_LABELS = { ka: "ქარ", en: "ENG", ru: "РУС" };
 // ─── Theme palettes ───────────────────────────────────────────────────────────
 const THEME = {
   dark: {
-    appBg:          "radial-gradient(ellipse at top, #1a0e04 0%, #0d0602 60%, #000 100%)",
-    headerBg:       "linear-gradient(180deg,rgba(15,8,2,0.98) 0%,rgba(10,5,1,0.95) 100%)",
-    headerBorder:   "1px solid rgba(180,120,40,0.25)",
-    cardBg:         "linear-gradient(145deg, #1e1209, #2a1a0a)",
-    cardBorder:     "1px solid rgba(180,120,40,0.2)",
-    cardName:       "#f0c060",
-    cardDesc:       "#a08060",
+    appBg:          "radial-gradient(ellipse at top, #0f172a 0%, #020617 70%, #000000 100%)",
+    headerBg:       "linear-gradient(180deg,rgba(15,23,42,0.98) 0%,rgba(9,13,26,0.95) 100%)",
+    headerBorder:   "1px solid rgba(245,158,11,0.25)",
+    cardBg:         "linear-gradient(145deg, #1e293b, #0f172a)",
+    cardBorder:     "1px solid rgba(245,158,11,0.15)",
+    cardName:       "#f59e0b",
+    cardDesc:       "#64748b",
     tabInactiveBg:  "rgba(255,255,255,0.04)",
-    tabInactiveBdr: "rgba(180,120,40,0.15)",
-    tabInactiveClr: "#8a6040",
-    searchBg:       "#141210",
+    tabInactiveBdr: "rgba(245,158,11,0.15)",
+    tabInactiveClr: "#94a3b8",
+    searchBg:       "#0b0f19",
     searchBorder:   "rgba(245,158,11,0.20)",
-    searchColor:    "#f0c060",
-    searchPlaceholder: "rgba(200,150,60,0.45)",
-    imgFallbackBg:  "linear-gradient(135deg, #2d1a08 0%, #3d2410 50%, #1a0e04 100%)",
-    modalBg:        "linear-gradient(160deg,#18100a 0%,#110c06 100%)",
+    searchColor:    "#f59e0b",
+    searchPlaceholder: "rgba(245,158,11,0.45)",
+    imgFallbackBg:  "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #020617 100%)",
+    modalBg:        "linear-gradient(160deg,#0f172a 0%,#020617 100%)",
     modalBorder:    "rgba(245,158,11,0.22)",
     modalName:      "#ffffff",
-    modalDesc:      "#a1a1aa",
+    modalDesc:      "#94a3b8",
     modalPriceBg:   "rgba(255,255,255,0.025)",
-    modalPriceBdr:  "rgba(180,120,40,0.22)",
-    modalPriceLbl:  "#7a5a38",
-    footerBg:       "linear-gradient(0deg, rgba(8,4,1,0.99) 0%, rgba(12,6,1,0.97) 100%)",
-    footerBorder:   "rgba(180,120,40,0.2)",
-    bodyText:       "#c8a878",
-    brandName:      "#f0c060",
-    brandSub:       "#8a6040",
-    noResultsColor: "rgba(180,120,40,0.6)",
-    carouselFrame:  "linear-gradient(145deg, #1a0d04, #261508, #1a0d04)",
-    carouselBorder: "rgba(200,140,40,0.22)",
-    carouselChip:   "rgba(184,101,32,0.18)",
-    carouselChipBdr:"rgba(200,130,40,0.25)",
-    carouselChipClr:"#c89040",
-    carouselDesc:   "#9a7858",
+    modalPriceBdr:  "rgba(245,158,11,0.22)",
+    modalPriceLbl:  "#d97706",
+    footerBg:       "linear-gradient(0deg, rgba(2,6,23,0.99) 0%, rgba(15,23,42,0.97) 100%)",
+    footerBorder:   "rgba(245,158,11,0.2)",
+    bodyText:       "#cbd5e1",
+    brandName:      "#f59e0b",
+    brandSub:       "#d97706",
+    noResultsColor: "rgba(245,158,11,0.6)",
+    carouselFrame:  "linear-gradient(145deg, #0f172a, #1e293b, #0f172a)",
+    carouselBorder: "rgba(245,158,11,0.22)",
+    carouselChip:   "rgba(245,158,11,0.18)",
+    carouselChipBdr:"rgba(245,158,11,0.25)",
+    carouselChipClr:"#f59e0b",
+    carouselDesc:   "#94a3b8",
   },
   light: {
-    appBg:          "linear-gradient(180deg, #fcfbf7 0%, #f5f0e8 100%)",
+    appBg:          "linear-gradient(180deg, #fcfbf9 0%, #f5f0e8 100%)",
     headerBg:       "linear-gradient(180deg, rgba(252,248,240,0.98) 0%, rgba(248,243,232,0.97) 100%)",
     headerBorder:   "1px solid rgba(180,120,40,0.18)",
     cardBg:         "linear-gradient(145deg, #f4f1eb, #ede8de)",
@@ -127,7 +127,7 @@ const THEME = {
     modalPriceLbl:  "#9a7040",
     footerBg:       "linear-gradient(0deg, rgba(240,230,210,0.99) 0%, rgba(245,238,222,0.97) 100%)",
     footerBorder:   "rgba(160,100,30,0.2)",
-    bodyText:       "#3d2e1a",
+    bodyText:       "#2b1d0c",
     brandName:      "#b86010",
     brandSub:       "#9a7040",
     noResultsColor: "rgba(140,90,30,0.65)",
@@ -202,14 +202,13 @@ function HotSteamOverlay() {
 // PHASE 1 — BEER POUR SCREEN
 // ══════════════════════════════════════════════════════════════════════════════
 function MasterPourScreen({ lang = "ka", isDark = false }) {
-  // Light mode preloader uses a warm cream background
   const pourBg = isDark
-    ? "radial-gradient(ellipse at 50% 30%, #1e0f02 0%, #0d0602 55%, #000 100%)"
+    ? "radial-gradient(ellipse at 50% 30%, #0f172a 0%, #020617 55%, #000 100%)"
     : "radial-gradient(ellipse at 50% 30%, #fdf9f2 0%, #f5eed8 55%, #ede0be 100%)";
-  const titleColor    = isDark ? "#f0c060" : "#b86010";
-  const subtitleColor = isDark ? "#7a5a30" : "#a07840";
-  const loadTextColor = isDark ? "#c8a050" : "#8a6020";
-  const taglineColor  = isDark ? "#3a2810" : "#c8a060";
+  const titleColor    = isDark ? "#f59e0b" : "#b86010";
+  const subtitleColor = isDark ? "#d97706" : "#a07840";
+  const loadTextColor = isDark ? "#f59e0b" : "#8a6020";
+  const taglineColor  = isDark ? "#1e293b" : "#c8a060";
 
   return (
     <div style={{
@@ -313,7 +312,7 @@ function MasterPourScreen({ lang = "ka", isDark = false }) {
         .tap-handle { animation: handlePulse 2.2s ease-in-out infinite; }
       `}</style>
 
-      <div className="pour-title" style={{ color: titleColor, fontSize: 28, fontWeight: 700, fontFamily: "'Georgia', serif", letterSpacing: "3px", marginBottom: 5, textShadow: isDark ? "0 2px 28px rgba(240,180,60,0.55)" : "none" }}>
+      <div className="pour-title" style={{ color: titleColor, fontSize: 28, fontWeight: 700, fontFamily: "'Georgia', serif", letterSpacing: "3px", marginBottom: 5, textShadow: isDark ? "0 2px 28px rgba(245,158,11,0.55)" : "none" }}>
         StaroPub
       </div>
       <div className="pour-title" style={{ color: subtitleColor, fontSize: 11, letterSpacing: "4px", marginBottom: 36, fontFamily: "'Georgia', serif", animationDelay: "0.5s" }}>
@@ -461,7 +460,11 @@ function PriceBlock({ item, modal = false, th }) {
 // ══════════════════════════════════════════════════════════════════════════════
 // ITEM CARD
 // ══════════════════════════════════════════════════════════════════════════════
-function ItemCard({ item, lang, onOpen, th }) {
+function ItemCard({
+  item, lang, onOpen, th,
+  customMenuEnabled = false, selected = false, onToggleSelect = null,
+  cartItems = [], onAddToCart, onUpdateQuantity
+}) {
   const t = th || THEME.light;
   const name     = item[`name_${lang}`] || item.name_ka || "";
   const desc     = item[`desc_${lang}`] || item.desc_ka || "";
@@ -474,6 +477,10 @@ function ItemCard({ item, lang, onOpen, th }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [item.id || item.name_ka]
   );
+
+  const multi = parseMultiPrice(item.price);
+  const cartEntries = cartItems.filter(x => x.dishId === item.id);
+  const totalQty = cartEntries.reduce((acc, x) => acc + x.quantity, 0);
 
   return (
     <div
@@ -500,11 +507,112 @@ function ItemCard({ item, lang, onOpen, th }) {
         </div>
         {isHot && <HotSteamOverlay />}
         <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent, rgba(0,0,0,0.5))", height: 60 }} />
+
+        {/* Custom Selection Overlay Checkbox */}
+        {customMenuEnabled && onToggleSelect && (
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleSelect(item.id);
+            }}
+            style={{
+              position: "absolute", top: 12, right: 12, zIndex: 10,
+              width: 24, height: 24, borderRadius: "50%",
+              background: selected ? "linear-gradient(135deg, #b86520, #e8a030)" : "rgba(0,0,0,0.5)",
+              border: `1.5px solid ${selected ? "#f0c060" : "rgba(255,255,255,0.6)"}`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer", transition: "all 0.2s",
+              boxShadow: selected ? "0 0 8px rgba(245,158,11,0.5)" : "none",
+            }}
+          >
+            {selected && <span style={{ color: "#fff", fontSize: 12, fontWeight: "bold" }}>✓</span>}
+          </div>
+        )}
       </div>
       <div style={{ padding: "14px 16px 16px", flex: 1, display: "flex", flexDirection: "column" }}>
         <h3 style={{ margin: "0 0 6px", color: t.cardName, fontFamily: "'Georgia', serif", fontSize: 15, fontWeight: 700, lineHeight: 1.3, transition: "color 0.3s" }}>{name}</h3>
         {desc && <p style={{ margin: "0 0 12px", color: t.cardDesc, fontSize: 12, lineHeight: 1.5, flex: 1, transition: "color 0.3s" }}>{desc}</p>}
         <PriceBlock item={item} th={t} />
+
+        {/* Inline Card Cart Selector */}
+        {totalQty === 0 ? (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (multi) {
+                onOpen && onOpen(item);
+              } else {
+                const priceNum = parseFloat(item.price) || 0;
+                onAddToCart && onAddToCart(item, "", priceNum);
+              }
+            }}
+            style={{
+              background: "linear-gradient(135deg, #b86520, #7a3a08)",
+              border: `1px solid ${t.brandName}`,
+              borderRadius: 8, color: "#fff",
+              padding: "8px 12px", fontSize: 12, fontWeight: 700,
+              cursor: "pointer", marginTop: 12, transition: "all 0.2s",
+              width: "100%", textAlign: "center", fontFamily: "'Georgia', serif",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
+            }}
+          >
+            🛒 {lang === "ka" ? "კალათაში დამატება" : lang === "ru" ? "В корзину" : "Add to Cart"}
+          </button>
+        ) : (
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              marginTop: 12, width: "100%", background: "rgba(0,0,0,0.15)",
+              border: `1.5px solid ${t.brandName}`, borderRadius: 8, padding: "4px 8px",
+              boxSizing: "border-box"
+            }}
+          >
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (multi) {
+                  const match = cartEntries[0];
+                  if (match) onUpdateQuantity && onUpdateQuantity(match.id, -1);
+                } else {
+                  onUpdateQuantity && onUpdateQuantity(`${item.id}-default`, -1);
+                }
+              }}
+              style={{
+                background: "none", border: "none", color: t.brandName,
+                fontSize: 16, fontWeight: "bold", cursor: "pointer", width: 24, height: 24,
+                display: "flex", alignItems: "center", justifyContent: "center"
+              }}
+            >
+              -
+            </button>
+            <span style={{ fontSize: 13, fontWeight: "bold", color: t.modalName }}>
+              {totalQty}
+            </span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (multi) {
+                  const match = cartEntries[0];
+                  if (match) {
+                    onUpdateQuantity && onUpdateQuantity(match.id, 1);
+                  } else {
+                    onOpen && onOpen(item);
+                  }
+                } else {
+                  onUpdateQuantity && onUpdateQuantity(`${item.id}-default`, 1);
+                }
+              }}
+              style={{
+                background: "none", border: "none", color: t.brandName,
+                fontSize: 16, fontWeight: "bold", cursor: "pointer", width: 24, height: 24,
+                display: "flex", alignItems: "center", justifyContent: "center"
+              }}
+            >
+              +
+            </button>
+          </div>
+        )}
       </div>
       <div style={{ position: "absolute", inset: 0, borderRadius: 12, pointerEvents: "none", zIndex: 3, overflow: "hidden" }}>
         <div style={{
@@ -589,9 +697,8 @@ function DailySpecialsCarousel({ items, lang, onSelectDish, th }) {
     transition: "opacity 0.38s cubic-bezier(0.4,0,0.2,1), transform 0.38s cubic-bezier(0.4,0,0.2,1)",
   };
 
-  // Theme-aware glow color
-  const glowColor1 = t === THEME.dark ? "rgba(184,101,32,0.22)" : "rgba(184,101,32,0.14)";
-  const glowColor2 = t === THEME.dark ? "rgba(232,160,48,0.32)" : "rgba(200,130,30,0.22)";
+  const glowColor1 = t === THEME.dark ? "rgba(245,158,11,0.22)" : "rgba(184,101,32,0.14)";
+  const glowColor2 = t === THEME.dark ? "rgba(245,158,11,0.32)" : "rgba(200,130,30,0.22)";
 
   return (
     <div style={{ margin: "20px 0 24px", position: "relative" }}>
@@ -664,7 +771,7 @@ function DailySpecialsCarousel({ items, lang, onSelectDish, th }) {
               {/* Steam on hot items */}
               {isHot && <HotSteamOverlay />}
               {/* Cinematic right-bleed overlay */}
-              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, transparent 60%, " + (t === THEME.dark ? "rgba(22,11,3,0.85)" : "rgba(242,237,227,0.85)") + ")", pointerEvents: "none" }} />
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, transparent 60%, " + (t === THEME.dark ? "rgba(2,6,23,0.85)" : "rgba(242,237,227,0.85)") + ")", pointerEvents: "none" }} />
               <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 60, background: "linear-gradient(transparent, rgba(0,0,0,0.45))", pointerEvents: "none" }} />
             </div>
 
@@ -734,7 +841,7 @@ function DailySpecialsCarousel({ items, lang, onSelectDish, th }) {
               style={{
                 width: i === current ? 22 : 7, height: 7, borderRadius: 4,
                 border: "none", padding: 0, cursor: "pointer",
-                background: i === current ? "linear-gradient(90deg, #b86520, #e8a030)" : (t === THEME.dark ? "rgba(180,120,40,0.25)" : "rgba(160,100,30,0.2)"),
+                background: i === current ? "linear-gradient(90deg, #b86520, #e8a030)" : (t === THEME.dark ? "rgba(245,158,11,0.25)" : "rgba(160,100,30,0.2)"),
                 transition: "all 0.3s cubic-bezier(0.4,0,0.2,1)",
                 boxShadow: i === current ? "0 0 8px rgba(232,160,48,0.5)" : "none",
               }}
@@ -750,7 +857,7 @@ function DailySpecialsCarousel({ items, lang, onSelectDish, th }) {
 // ══════════════════════════════════════════════════════════════════════════════
 // DISH DETAIL MODAL
 // ══════════════════════════════════════════════════════════════════════════════
-function DishModal({ item, lang, onClose, th }) {
+function DishModal({ item, lang, onClose, th, onAddToCart }) {
   const t = th || THEME.light;
   const name     = item[`name_${lang}`] || item.name_ka || "";
   const desc     = item[`desc_${lang}`] || item.desc_ka || "";
@@ -760,6 +867,9 @@ function DishModal({ item, lang, onClose, th }) {
   const catLabel = catObj ? catObj[lang] : item.category || "";
   const isHot    = HOT_CATEGORIES.has(item.category);
   const PRICE_LABEL = { ka: "ფასი", en: "Price", ru: "Цена" };
+
+  const multi = parseMultiPrice(item.price);
+  const [selectedOpt, setSelectedOpt] = useState(multi ? multi[0] : null);
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
@@ -790,7 +900,7 @@ function DishModal({ item, lang, onClose, th }) {
         <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:860, background: t.modalBg, border:`1px solid ${t.modalBorder}`, borderRadius:20, overflow:"hidden", boxShadow:"0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(200,160,60,0.05)", position:"relative", animation:"modalCardIn 0.28s cubic-bezier(0.34,1.15,0.64,1)", transition:"background 0.3s" }}>
           <div className="modal-grid modal-scroll" style={{ display:"grid", gridTemplateColumns:"1fr" }}>
             {/* Image */}
-            <div className="modal-img" style={{ minHeight:220, background:"linear-gradient(135deg,#2d1a08,#3d2410,#1a0e04)", position:"relative", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <div className="modal-img" style={{ minHeight:220, background:t.imgFallbackBg, position:"relative", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center" }}>
               {imgSrc && (
                 <img src={imgSrc} alt={name} loading="lazy"
                   onError={e => { e.target.style.display="none"; e.target.nextSibling.style.display="flex"; }}
@@ -802,7 +912,7 @@ function DishModal({ item, lang, onClose, th }) {
               </div>
               {/* Hot steam in modal too */}
               {isHot && <HotSteamOverlay />}
-              <div style={{ position:"absolute", bottom:0, left:0, right:0, height:80, background:"linear-gradient(transparent,rgba(17,10,4,0.88))", pointerEvents:"none" }} />
+              <div style={{ position:"absolute", bottom:0, left:0, right:0, height:80, background:t === THEME.dark ? "linear-gradient(transparent,rgba(2,6,23,0.88))" : "linear-gradient(transparent,rgba(240,230,210,0.88))", pointerEvents:"none" }} />
               {catLabel && (
                 <div style={{ position:"absolute", top:14, left:14, background:"rgba(0,0,0,0.62)", border:"1px solid rgba(180,120,40,0.35)", backdropFilter:"blur(8px)", borderRadius:20, padding:"4px 13px", color:"#c8a050", fontSize:11, fontWeight:600 }}>
                   {catLabel}
@@ -812,12 +922,55 @@ function DishModal({ item, lang, onClose, th }) {
             {/* Content */}
             <div className="modal-right" style={{ padding:"28px 28px 30px", display:"flex", flexDirection:"column" }}>
               <h2 style={{ margin:"0 0 12px", color: t.modalName, fontFamily:"'Georgia',serif", fontSize:"clamp(19px,3vw,27px)", fontWeight:700, lineHeight:1.25, paddingRight:44, transition:"color 0.3s" }}>{name}</h2>
-              <div style={{ height:1, background:"linear-gradient(90deg,rgba(245,158,11,0.45),transparent)", marginBottom:16 }} />
+              <div style={{ height:1, background:`linear-gradient(90deg,${t.brandSub},transparent)`, marginBottom:16 }} />
               {desc ? <p style={{ margin:"0 0 22px", color: t.modalDesc, fontSize:14, lineHeight:1.75, flex:1, transition:"color 0.3s" }}>{desc}</p> : <div style={{ flex:1 }} />}
               <div style={{ padding:"16px 18px", background: t.modalPriceBg, border:`1px solid ${t.modalPriceBdr}`, borderRadius:14, marginTop:"auto" }}>
                 <div style={{ color: t.modalPriceLbl, fontSize:10, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:10 }}>{PRICE_LABEL[lang] || "ფასი"}</div>
-                <PriceBlock item={item} modal={true} th={t} />
+                {multi ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {multi.map((opt, i) => (
+                      <label key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <input
+                            type="radio"
+                            name="modal-size-opt"
+                            checked={selectedOpt?.size === opt.size}
+                            onChange={() => setSelectedOpt(opt)}
+                            style={{ accentColor: "#e8a030" }}
+                          />
+                          <span style={{ color: t.modalPriceLbl, fontSize: 13, fontWeight: 600 }}>{opt.size}</span>
+                        </div>
+                        <span style={{ color: "#e8a030", fontSize: 16, fontWeight: 700 }}>{opt.price}</span>
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <PriceBlock item={item} modal={true} th={t} />
+                )}
               </div>
+              <button
+                onClick={() => {
+                  if (multi && selectedOpt) {
+                    const priceNum = parseFloat(selectedOpt.price.replace("₾", "").replace(",", ".")) || 0;
+                    onAddToCart(item, selectedOpt.size, priceNum);
+                  } else {
+                    const priceNum = parseFloat(item.price) || 0;
+                    onAddToCart(item, "", priceNum);
+                  }
+                  onClose();
+                }}
+                style={{
+                  background: "linear-gradient(135deg, #b86520, #7a3a08)",
+                  border: `1px solid ${t.brandName}`,
+                  borderRadius: 12, color: "#fff",
+                  padding: "12px 24px", fontSize: 14, fontWeight: 700,
+                  cursor: "pointer", transition: "all 0.2s",
+                  width: "100%", marginTop: 16, fontFamily: "'Georgia', serif",
+                  boxShadow: "0 4px 14px rgba(184,101,32,0.4)"
+                }}
+              >
+                🛒 {lang === "ka" ? "კალათაში დამატება" : lang === "ru" ? "Добавить в корзину" : "Add to Cart"}
+              </button>
             </div>
           </div>
           <button onClick={onClose} className="modal-close" style={{ position:"absolute", top:14, right:14, zIndex:10, width:36, height:36, borderRadius:10, background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.11)", color:"#909090", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:17, lineHeight:1, transition:"all 0.2s" }} aria-label="Close">✕</button>
@@ -848,9 +1001,9 @@ function LangSwitcher({ lang, setLang, th }) {
         <span style={{ fontSize: 9, opacity: 0.7 }}>{open ? "▲" : "▼"}</span>
       </button>
       {open && (
-        <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: t === THEME.dark ? "linear-gradient(180deg, #1e1005, #140b03)" : "linear-gradient(180deg, #faf6ec, #f0e8d4)", border: "1px solid rgba(180,120,40,0.35)", borderRadius: 10, overflow: "hidden", boxShadow: "0 8px 24px rgba(0,0,0,0.3)", minWidth: 90, zIndex: 200 }}>
+        <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: t === THEME.dark ? "linear-gradient(180deg, #1e293b, #0f172a)" : "linear-gradient(180deg, #faf6ec, #f0e8d4)", border: `1px solid ${t.modalBorder}`, borderRadius: 10, overflow: "hidden", boxShadow: "0 8px 24px rgba(0,0,0,0.3)", minWidth: 90, zIndex: 200 }}>
           {Object.entries(LANG_LABELS).map(([code, label]) => (
-            <button key={code} onClick={() => { setLang(code); setOpen(false); }} style={{ width: "100%", padding: "9px 14px", background: lang === code ? "rgba(184,101,32,0.25)" : "transparent", border: "none", borderBottom: "1px solid rgba(180,120,40,0.1)", color: lang === code ? "#e0a030" : t.tabInactiveClr, fontSize: 12, fontWeight: lang === code ? 700 : 500, cursor: "pointer", textAlign: "left", transition: "background 0.15s" }}
+            <button key={code} onClick={() => { setLang(code); setOpen(false); }} style={{ width: "100%", padding: "9px 14px", background: lang === code ? "rgba(184,101,32,0.25)" : "transparent", border: "none", borderBottom: "1px solid rgba(180,120,40,0.1)", color: lang === code ? t.brandName : t.tabInactiveClr, fontSize: 12, fontWeight: lang === code ? 700 : 500, cursor: "pointer", textAlign: "left", transition: "background 0.15s" }}
               onMouseEnter={e => { if (lang !== code) e.target.style.background = "rgba(180,120,40,0.08)"; }}
               onMouseLeave={e => { if (lang !== code) e.target.style.background = "transparent"; }}
             >{label}</button>
@@ -930,20 +1083,19 @@ function AboutView({ lang, th }) {
   const currentHour = new Date().getHours();
   const isMatchDay  = false;
   const isOpen      = isMatchDay || (currentHour >= 10 && currentHour < 23);
-  const cardBg     = isDark ? "linear-gradient(145deg, #1e1209, #2a1a0a)" : "linear-gradient(145deg, #f4f1eb, #ede8de)";
-  const cardBorder = isDark ? "rgba(180,120,40,0.2)" : "rgba(160,100,30,0.18)";
-  const labelColor = isDark ? "#8a6040" : "#9a7040";
-  const valueColor = isDark ? "#f0c060" : "#1c1510";
-  const socialBtnStyle = { display:"inline-flex", alignItems:"center", gap:6, color:"#c8903a", textDecoration:"none", padding:"7px 14px", borderRadius:8, border:"1px solid rgba(180,120,40,0.25)", background: isDark ? "rgba(180,120,40,0.07)" : "rgba(180,120,40,0.08)", fontSize:13, fontWeight:600, transition:"all 0.2s" };
+  const cardBg     = isDark ? "linear-gradient(145deg, #1e293b, #0f172a)" : "linear-gradient(145deg, #f4f1eb, #ede8de)";
+  const cardBorder = isDark ? "rgba(245,158,11,0.15)" : "rgba(160,100,30,0.18)";
+  const labelColor = isDark ? "#94a3b8" : "#9a7040";
+  const valueColor = isDark ? "#f59e0b" : "#1c1510";
 
   return (
     <div style={{ maxWidth:600, margin:"0 auto", padding:"0 16px 120px" }}>
-      <div style={{ width:"100%", height:220, borderRadius:"0 0 20px 20px", overflow:"hidden", background:"linear-gradient(135deg,#2d1a08,#3d2410,#1a0e04)", position:"relative", marginBottom:24 }}>
+      <div style={{ width:"100%", height:220, borderRadius:"0 0 20px 20px", overflow:"hidden", background:isDark?"linear-gradient(135deg,#0f172a,#1e293b,#020617)":"linear-gradient(135deg,#e8dcc8,#d8ccb0,#efe5cf)", position:"relative", marginBottom:24 }}>
         <img src="Images/staropub.webp" alt="StaroPub" style={{ width:"100%", height:"100%", objectFit:"cover" }} onError={e => { e.target.style.display="none"; }} />
         <div style={{ position:"absolute", inset:0, background:"linear-gradient(180deg,transparent 40%,rgba(0,0,0,0.72) 100%)" }} />
         <div style={{ position:"absolute", bottom:20, left:20 }}>
-          <div style={{ color:"#f0c060", fontSize:26, fontWeight:700, fontFamily:"'Georgia',serif", letterSpacing:"0.5px", textShadow:"0 2px 16px rgba(0,0,0,0.7)" }}>StaroPub</div>
-          <div style={{ color:"rgba(240,192,96,0.65)", fontSize:11, letterSpacing:"2px" }}>სტაროპაბი</div>
+          <div style={{ color:"#f59e0b", fontSize:26, fontWeight:700, fontFamily:"'Georgia',serif", letterSpacing:"0.5px", textShadow:"0 2px 16px rgba(0,0,0,0.7)" }}>StaroPub</div>
+          <div style={{ color:"rgba(245,158,11,0.65)", fontSize:11, letterSpacing:"2px" }}>სტაროპაბი</div>
         </div>
       </div>
       <div style={{ background:cardBg, border:`1px solid ${cardBorder}`, borderRadius:16, padding:"20px 22px", marginBottom:16 }}>
@@ -957,32 +1109,10 @@ function AboutView({ lang, th }) {
               <span style={{ color:labelColor, fontSize:11, fontWeight:600, letterSpacing:"0.5px" }}>{ABOUT_TEXT.hours[lang]}</span>
               <span style={{ color:valueColor, fontSize:15, fontWeight:700, fontFamily:"'Georgia',serif" }}>10:00 – 23:00</span>
             </div>
-            <p style={{ color:isDark?"#7a5a38":"#9a7040", fontSize:11, lineHeight:1.55, margin:"8px 0 0" }}>{ABOUT_TEXT.matchDay[lang]}</p>
+            <p style={{ color:isDark?"#64748b":"#9a7040", fontSize:11, lineHeight:1.55, margin:"8px 0 0" }}>{ABOUT_TEXT.matchDay[lang]}</p>
           </div>
           <AboutBeerMug isOpen={isOpen} />
         </div>
-      </div>
-      <div style={{ background:cardBg, border:`1px solid ${cardBorder}`, borderRadius:16, padding:"20px 22px", marginBottom:16, display:"flex", flexDirection:"column", gap:16 }}>
-        {[
-          { icon:"📍", label:ABOUT_TEXT.location[lang], value:<span style={{color:valueColor,fontSize:14,fontWeight:600}}>ილია ვეკუას 20</span> },
-          { icon:"📞", label:ABOUT_TEXT.phone[lang],    value:<a href="tel:595931119" style={{color:"#e8a030",fontSize:16,fontWeight:700,fontFamily:"'Georgia',serif",textDecoration:"none"}}>595 93 11 19</a> },
-          { icon:"✉️", label:ABOUT_TEXT.email[lang],    value:<a href="mailto:staropub25@gmail.com" style={{color:"#e8a030",fontSize:13,fontWeight:600,textDecoration:"none",wordBreak:"break-all"}}>staropub25@gmail.com</a> },
-        ].map((row, idx) => (
-          <React.Fragment key={idx}>
-            {idx > 0 && <div style={{ height:1, background:isDark?"rgba(180,120,40,0.1)":"rgba(160,100,30,0.1)" }} />}
-            <div style={{ display:"flex", alignItems:"flex-start", gap:12 }}>
-              <span style={{ fontSize:20, lineHeight:1, marginTop:1, flexShrink:0 }}>{row.icon}</span>
-              <div>
-                <div style={{ color:labelColor, fontSize:10, letterSpacing:"1px", textTransform:"uppercase", marginBottom:3 }}>{row.label}</div>
-                {row.value}
-              </div>
-            </div>
-          </React.Fragment>
-        ))}
-      </div>
-      <div style={{ background:cardBg, border:`1px solid ${cardBorder}`, borderRadius:16, padding:"18px 22px", display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap" }}>
-        <a href="https://www.facebook.com/StaroPub1" target="_blank" rel="noopener noreferrer" style={socialBtnStyle} className="about-social-link"><IconFacebook size={16} /> Facebook</a>
-        <a href="https://www.instagram.com/staropub/" target="_blank" rel="noopener noreferrer" style={socialBtnStyle} className="about-social-link"><IconInstagram size={16} /> Instagram</a>
       </div>
     </div>
   );
@@ -991,8 +1121,8 @@ function AboutView({ lang, th }) {
 // ══════════════════════════════════════════════════════════════════════════════
 // FOOTER
 // ══════════════════════════════════════════════════════════════════════════════
-function SiteFooter({ lang, visible, th, currentView, setCurrentView }) {
-  const t = th || THEME.light;
+function SiteFooter({ lang, visible, th, currentView, setCurrentView, isAdmin }) {
+  const t = th || THEME.dark;
   return (
     <footer style={{ position:"fixed", left:0, right:0, bottom:0, zIndex:50, background:t.footerBg, borderTop:`1px solid ${t.footerBorder}`, padding:"10px 24px 12px", backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)", transform:visible?"translateY(0)":"translateY(100%)", opacity:visible?1:0, pointerEvents:visible?"auto":"none", transition:"transform 0.32s ease-in-out, opacity 0.32s ease-in-out, background 0.3s" }}>
       <style>{`
@@ -1000,29 +1130,830 @@ function SiteFooter({ lang, visible, th, currentView, setCurrentView }) {
         @media(min-width:640px) { .footer-grid { grid-template-columns:1fr 1fr 1fr; text-align:left; gap:0; } .footer-center { text-align:center!important; } .footer-right { text-align:right!important; } }
         .footer-nav-link { color:#8a6040; text-decoration:none; font-size:12px; font-weight:600; letter-spacing:0.3px; transition:color 0.2s; cursor:pointer; background:none; border:none; padding:0; font-family:'Georgia',serif; }
         .footer-nav-link:hover { color:#f0c060; }
-        .footer-wolt-link { color:#8a6040; text-decoration:none; font-size:11px; font-weight:600; transition:color 0.2s; letter-spacing:0.3px; }
-        .footer-wolt-link:hover { color:#009de0; }
       `}</style>
       <div className="footer-grid">
         <div style={{ display:"flex", flexDirection:"column", gap:5, justifyContent:"center", alignItems:"center" }}>
           <button className="footer-nav-link" onClick={() => setCurrentView(currentView === "menu" ? "about" : "menu")}>
             {currentView === "menu" ? ABOUT_TEXT.aboutUs[lang] : ABOUT_TEXT.backHome[lang]}
           </button>
-          {currentView === "menu" && (
-            <a href="https://wolt.com/ka/geo/tbilisi/restaurant/staropub1" target="_blank" rel="noopener noreferrer" className="footer-wolt-link">
-              {ABOUT_TEXT.wolt[lang]}
-            </a>
-          )}
         </div>
         <div className="footer-center" style={{ textAlign:"center" }}>
           <div style={{ color:"#c8a050", fontSize:12, fontWeight:700, fontFamily:"'Georgia',serif", lineHeight:1.4 }}>{FOOTER_TEXT.tagline[lang]}</div>
           <div style={{ marginTop:3, color:"#4a3018", fontSize:9, letterSpacing:"1px" }}>StaroPub · სტაროპაბი · QR მენიუ</div>
         </div>
         <div className="footer-right" style={{ textAlign:"center" }}>
-          <p style={{ color:"#4a3018", fontSize:10, lineHeight:1.5, margin:0 }}>{FOOTER_TEXT.copyright[lang]}</p>
+          {isAdmin && (
+            <button className="footer-nav-link" onClick={() => setCurrentView(currentView === "admin" ? "menu" : "admin")}>
+              ⚙️ Admin Panel
+            </button>
+          )}
         </div>
       </div>
     </footer>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ADMIN DASHBOARD COMPONENT
+// ══════════════════════════════════════════════════════════════════════════════
+function AdminDashboard({
+  lang, onClose,
+  waiterCalls, setWaiterCalls,
+  bannerSettings, setBannerSettings,
+  customMenuEnabled, setCustomMenuEnabled,
+  reviewFormEnabled, setReviewFormEnabled,
+  reviews, setReviews,
+  unavailableDishIds = [], setUnavailableDishIds,
+  allItems = [], setAllItems,
+  categoryOrder = [], setCategoryOrder,
+  dishOrder = [], setDishOrder
+}) {
+  const [activeAdminSection, setActiveAdminSection] = useState("calls");
+
+  const [selectedSortCategory, setSelectedSortCategory] = useState("");
+
+  useEffect(() => {
+    if (!selectedSortCategory && categoryOrder.length > 0) {
+      setSelectedSortCategory(categoryOrder[0]);
+    }
+  }, [categoryOrder, selectedSortCategory]);
+
+  // Category creation states
+  const [newCatKey, setNewCatKey]   = useState("");
+  const [newCatKa, setNewCatKa]     = useState("");
+  const [newCatEn, setNewCatEn]     = useState("");
+  const [newCatRu, setNewCatRu]     = useState("");
+  const [newCatIcon, setNewCatIcon] = useState("");
+
+  // Dish creation states
+  const [newDishNameKa, setNewDishNameKa] = useState("");
+  const [newDishNameEn, setNewDishNameEn] = useState("");
+  const [newDishNameRu, setNewDishNameRu] = useState("");
+  const [newDishDescKa, setNewDishDescKa] = useState("");
+  const [newDishDescEn, setNewDishDescEn] = useState("");
+  const [newDishDescRu, setNewDishDescRu] = useState("");
+  const [newDishPrice, setNewDishPrice]   = useState("");
+  const [newDishCat, setNewDishCat]       = useState("");
+  const [newDishImage, setNewDishImage]   = useState("");
+
+  useEffect(() => {
+    if (!newDishCat && categoryOrder.length > 0) {
+      setNewDishCat(categoryOrder[0]);
+    }
+  }, [categoryOrder, newDishCat]);
+
+  const handleCreateCategory = (e) => {
+    e.preventDefault();
+    const key = newCatKey.trim().toLowerCase();
+    if (!key) return alert("გთხოვთ მიუთითოთ კატეგორიის გასაღები (მაგ: dessert)!");
+    if (categoryOrder.includes(key)) return alert("კატეგორია ამ გასაღებით უკვე არსებობს!");
+
+    CATEGORY_LABELS[key] = {
+      ka: newCatKa.trim() || key,
+      en: newCatEn.trim() || key,
+      ru: newCatRu.trim() || key,
+    };
+    CATEGORY_ICONS[key] = newCatIcon.trim() || "🍽️";
+
+    setCategoryOrder(prev => [...prev, key]);
+
+    setNewCatKey("");
+    setNewCatKa("");
+    setNewCatEn("");
+    setNewCatRu("");
+    setNewCatIcon("");
+
+    alert("კატეგორია წარმატებით დაემატა!");
+  };
+
+  const handleCreateDish = (e) => {
+    e.preventDefault();
+    if (!newDishNameKa.trim()) return alert("გთხოვთ მიუთითოთ კერძის დასახელება ქართულად!");
+    if (!newDishCat) return alert("გთხოვთ აირჩიოთ კერძის კატეგორია!");
+    const priceNum = parseFloat(newDishPrice);
+    if (isNaN(priceNum) || priceNum <= 0) return alert("გთხოვთ მიუთითოთ კერძის ფასი!");
+
+    const newDishObj = {
+      id: `custom_${Date.now()}`,
+      category: newDishCat,
+      category_ka: CATEGORY_LABELS[newDishCat]?.ka || newDishCat,
+      name_ka: newDishNameKa.trim(),
+      name_en: newDishNameEn.trim() || newDishNameKa.trim(),
+      name_ru: newDishNameRu.trim() || newDishNameKa.trim(),
+      desc_ka: newDishDescKa.trim(),
+      desc_en: newDishDescEn.trim(),
+      desc_ru: newDishDescRu.trim(),
+      price: `${priceNum} ₾`,
+      image: newDishImage.trim() || "",
+    };
+
+    setAllItems(prev => [...prev, newDishObj]);
+
+    setNewDishNameKa("");
+    setNewDishNameEn("");
+    setNewDishNameRu("");
+    setNewDishDescKa("");
+    setNewDishDescEn("");
+    setNewDishDescRu("");
+    setNewDishPrice("");
+    setNewDishImage("");
+
+    alert("კერძი წარმატებით დაემატა!");
+  };
+
+  const handleDeleteCategory = (catKey) => {
+    const labelObj = CATEGORY_LABELS[catKey] || { ka: catKey };
+    const label = labelObj.ka || catKey;
+    
+    const categoryDishesCount = allItems.filter(dish => dish.category === catKey).length;
+    let confirmMsg = `ნამდვილად გსურთ კატეგორიის "${label}" წაშლა?`;
+    if (categoryDishesCount > 0) {
+      confirmMsg += `\n\nგაფრთხილება: ეს კატეგორია შეიცავს ${categoryDishesCount} კერძს. კატეგორიის წაშლით ეს კერძებიც წაიშლება!`;
+    }
+    
+    if (window.confirm(confirmMsg)) {
+      setCategoryOrder(prev => prev.filter(x => x !== catKey));
+      
+      if (categoryDishesCount > 0) {
+        setAllItems(prev => prev.filter(dish => dish.category !== catKey));
+      }
+      
+      delete CATEGORY_LABELS[catKey];
+      delete CATEGORY_ICONS[catKey];
+      
+      alert(`კატეგორია "${label}" წარმატებით წაიშალა!`);
+    }
+  };
+
+  const handleDeleteDish = (dishId) => {
+    const dish = allItems.find(x => x.id === dishId);
+    if (!dish) return;
+    const name = dish.name_ka || dish.name_en || "";
+    
+    if (window.confirm(`ნამდვილად გსურთ კერძის "${name}" წაშლა?`)) {
+      setAllItems(prev => prev.filter(x => x.id !== dishId));
+      alert(`კერძი "${name}" წარმატებით წაიშალა!`);
+    }
+  };
+
+  const moveCategory = (index, direction) => {
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= categoryOrder.length) return;
+    setCategoryOrder(prev => {
+      const next = [...prev];
+      const temp = next[index];
+      next[index] = next[newIndex];
+      next[newIndex] = temp;
+      return next;
+    });
+  };
+
+  const categoryDishes = allItems
+    .filter(dish => dish.category === selectedSortCategory)
+    .sort((a, b) => {
+      const idxA = dishOrder.indexOf(a.id);
+      const idxB = dishOrder.indexOf(b.id);
+      return (idxA === -1 ? 999999 : idxA) - (idxB === -1 ? 999999 : idxB);
+    });
+
+  const moveDish = (dishId, direction) => {
+    const indexInOrder = dishOrder.indexOf(dishId);
+    if (indexInOrder === -1) return;
+    const currentFilteredIndex = categoryDishes.findIndex(d => d.id === dishId);
+    const targetFilteredIndex = currentFilteredIndex + direction;
+    if (targetFilteredIndex < 0 || targetFilteredIndex >= categoryDishes.length) return;
+    
+    const targetDishId = categoryDishes[targetFilteredIndex].id;
+    const targetIndexInOrder = dishOrder.indexOf(targetDishId);
+    if (targetIndexInOrder === -1) return;
+
+    setDishOrder(prev => {
+      const next = [...prev];
+      const temp = next[indexInOrder];
+      next[indexInOrder] = next[targetIndexInOrder];
+      next[targetIndexInOrder] = temp;
+      return next;
+    });
+  };
+
+  const bannerImages = [
+    { label: "საფირმო ჩეხური ნეკნები", value: "sapirmo chexuri neknebi.jpg" },
+    { label: "ღორის მწვადი", value: "goris mcvadi.jpg" },
+    { label: "ღორის ნეკნები", value: "goris nekni.jpg" },
+    { label: "სტაროპაბის მთავარი ფონი", value: "staropub_main.jpg" },
+  ];
+
+  return (
+    <div style={{ maxWidth: 800, margin: "0 auto", padding: "0 16px 120px", color: "#f0c060" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 0", borderBottom: "1px solid rgba(245,158,11,0.25)" }}>
+        <div>
+          <h2 style={{ margin: 0, fontFamily: "'Georgia', serif", fontSize: 24 }}>ადმინისტრატორის მართვის პანელი</h2>
+          <span style={{ fontSize: 11, color: "#8a6040", letterSpacing: "1px", textTransform: "uppercase" }}>მართვის პანელი</span>
+        </div>
+        <button
+          onClick={onClose}
+          style={{ background: "rgba(180,120,40,0.1)", border: "1px solid rgba(180,120,40,0.3)", borderRadius: 10, color: "#f0c060", padding: "8px 14px", cursor: "pointer", fontSize: 13, fontWeight: 700 }}
+        >
+          პანელიდან გამოსვლა
+        </button>
+      </div>
+
+      <div style={{ display: "flex", gap: 10, overflowX: "auto", padding: "16px 0", scrollbarWidth: "none" }}>
+        {[
+          { key: "calls", label: `🔔 გამოძახებები (${waiterCalls.length})` },
+          { key: "banner", label: "📢 ბანერის პარამეტრები" },
+          { key: "global", label: "⚙️ გლობალური პარამეტრები" },
+          { key: "reviews", label: `💬 შეფასებები (${reviews.length})` },
+          { key: "availability", label: `🚫 ხელმისაწვდომობა (${allItems.length})` },
+          { key: "sorting", label: "↕️ სორტირება და რიგითობა" },
+          { key: "create", label: "➕ კერძის/კატეგორიის დამატება" },
+        ].map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveAdminSection(tab.key)}
+            style={{
+              whiteSpace: "nowrap", flexShrink: 0,
+              background: activeAdminSection === tab.key ? "linear-gradient(135deg,#b86520,#7a3a08)" : "rgba(255,255,255,0.03)",
+              border: `1px solid ${activeAdminSection === tab.key ? "rgba(200,120,40,0.6)" : "rgba(180,120,40,0.15)"}`,
+              color: activeAdminSection === tab.key ? "#fff" : "#8a6040",
+              borderRadius: 12, padding: "8px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.2s"
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ background: "linear-gradient(145deg, #1e293b, #0f172a)", border: "1px solid rgba(180,120,40,0.2)", borderRadius: 16, padding: 24 }}>
+        
+        {activeAdminSection === "calls" && (
+          <div>
+            <h3 style={{ margin: "0 0 16px", fontFamily: "'Georgia', serif" }}>მიმტანისა და ანგარიშის გამოძახება რეალურ დროში</h3>
+            <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
+              <button
+                onClick={() => {
+                  const now = new Date().toLocaleTimeString();
+                  setWaiterCalls(prev => [{ id: Date.now(), table: "3", type: "მიმტანი 💁‍♂️", time: now }, ...prev]);
+                }}
+                style={{ background: "rgba(180,120,40,0.1)", border: "1px solid rgba(180,120,40,0.25)", color: "#e8a030", borderRadius: 8, padding: "8px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+              >
+                + მაგიდა 3 მიმტანი (სიმულაცია)
+              </button>
+              <button
+                onClick={() => {
+                  const now = new Date().toLocaleTimeString();
+                  setWaiterCalls(prev => [{ id: Date.now(), table: "5", type: "ანგარიში 🧾", time: now }, ...prev]);
+                }}
+                style={{ background: "rgba(180,120,40,0.1)", border: "1px solid rgba(180,120,40,0.25)", color: "#e8a030", borderRadius: 8, padding: "8px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+              >
+                + მაგიდა 5 ანგარიში (სიმულაცია)
+              </button>
+              <button
+                onClick={() => setWaiterCalls([])}
+                style={{ background: "rgba(180,40,40,0.1)", border: "1px solid rgba(180,40,40,0.25)", color: "#e06060", borderRadius: 8, padding: "8px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer", marginLeft: "auto" }}
+              >
+                ყველას წაშლა
+              </button>
+            </div>
+
+            {waiterCalls.length === 0 ? (
+              <p style={{ color: "#8a6040", textAlign: "center", margin: "40px 0" }}>მაგიდებიდან აქტიური გამოძახება არ არის.</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {waiterCalls.map(call => (
+                  <div key={call.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(180,120,40,0.12)", borderRadius: 10, padding: 14 }}>
+                    <div>
+                      <span style={{ fontSize: 14, fontWeight: "bold" }}>მაგიდა {call.table}</span>
+                      <span style={{ background: "rgba(184,101,32,0.15)", color: "#e8a030", fontSize: 11, padding: "2px 8px", borderRadius: 10, marginLeft: 10 }}>
+                        {call.type === "Waiter 💁‍♂️" || call.type === "მიმტანი 💁‍♂️" ? "მიმტანი 💁‍♂️" : call.type === "Bill 🧾" || call.type === "ანგარიში 🧾" ? "ანგარიში 🧾" : call.type}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <span style={{ fontSize: 12, color: "#8a6040" }}>{call.time}</span>
+                      <button
+                        onClick={() => setWaiterCalls(prev => prev.filter(c => c.id !== call.id))}
+                        style={{ background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.25)", color: "#4ade80", borderRadius: 6, padding: "4px 10px", fontSize: 11, cursor: "pointer" }}
+                      >
+                        დასრულება
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeAdminSection === "banner" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+            <h3 style={{ margin: 0, fontFamily: "'Georgia', serif" }}>სარეკლამო ბანერის კონსტრუქტორი</h3>
+            
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span>ბანერის ჩვენების ჩართვა</span>
+              <button
+                onClick={() => setBannerSettings(b => ({ ...b, enabled: !b.enabled }))}
+                style={{
+                  background: bannerSettings.enabled ? "#4ade80" : "#4a3018",
+                  color: bannerSettings.enabled ? "#000" : "#fff",
+                  border: "none", borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontWeight: "bold"
+                }}
+              >
+                {bannerSettings.enabled ? "აქტიური" : "გათიშული"}
+              </button>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ fontSize: 12, color: "#8a6040", textTransform: "uppercase" }}>ბანერის სარეკლამო ტექსტი</label>
+              <input
+                type="text"
+                value={bannerSettings.text}
+                onChange={e => setBannerSettings(b => ({ ...b, text: e.target.value }))}
+                style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none" }}
+              />
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ fontSize: 12, color: "#8a6040", textTransform: "uppercase" }}>ბეიჯის სათაური</label>
+              <input
+                type="text"
+                value={bannerSettings.badge}
+                onChange={e => setBannerSettings(b => ({ ...b, badge: e.target.value }))}
+                style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none" }}
+              />
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ fontSize: 12, color: "#8a6040", textTransform: "uppercase" }}>ბანერის სურათი</label>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                {bannerImages.map(img => (
+                  <button
+                    key={img.value}
+                    onClick={() => setBannerSettings(b => ({ ...b, image: img.value }))}
+                    style={{
+                      background: bannerSettings.image === img.value ? "rgba(184,101,32,0.2)" : "rgba(255,255,255,0.03)",
+                      border: `1px solid ${bannerSettings.image === img.value ? "#f0c060" : "rgba(180,120,40,0.15)"}`,
+                      color: bannerSettings.image === img.value ? "#f0c060" : "#8a6040",
+                      borderRadius: 8, padding: "8px 12px", fontSize: 11, cursor: "pointer", transition: "all 0.2s"
+                    }}
+                  >
+                    {img.label}
+                  </button>
+                ))}
+              </div>
+              <input
+                type="text"
+                value={bannerSettings.image}
+                onChange={e => setBannerSettings(b => ({ ...b, image: e.target.value }))}
+                placeholder="ან ჩაწერეთ სურათის ლინკი/სახელი..."
+                style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", marginTop: 8 }}
+              />
+            </div>
+          </div>
+        )}
+
+        {activeAdminSection === "global" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            <h3 style={{ margin: 0, fontFamily: "'Georgia', serif" }}>ფუნქციების კონფიგურაცია</h3>
+            
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(180,120,40,0.1)", paddingBottom: 16 }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: "bold" }}>მენიუს შერჩევა და გაზიარება</div>
+                <div style={{ fontSize: 11, color: "#8a6040" }}>საშუალებას აძლევს მომხმარებლებს შეადგინონ და გააზიარონ საკუთარი მენიუ.</div>
+              </div>
+              <button
+                onClick={() => setCustomMenuEnabled(!customMenuEnabled)}
+                style={{
+                  background: customMenuEnabled ? "#4ade80" : "#4a3018",
+                  color: customMenuEnabled ? "#000" : "#fff",
+                  border: "none", borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontWeight: "bold"
+                }}
+              >
+                {customMenuEnabled ? "ჩართული" : "გათიშული"}
+              </button>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: "bold" }}>შეფასების ფორმის საჯარო ჩვენება</div>
+                <div style={{ fontSize: 11, color: "#8a6040" }}>აჩვენებს ღილაკს სტუმრებისთვის შეფასების დასაწერად.</div>
+              </div>
+              <button
+                onClick={() => setReviewFormEnabled(!reviewFormEnabled)}
+                style={{
+                  background: reviewFormEnabled ? "#4ade80" : "#4a3018",
+                  color: reviewFormEnabled ? "#000" : "#fff",
+                  border: "none", borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontWeight: "bold"
+                }}
+              >
+                {reviewFormEnabled ? "ხილული" : "დამალული"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {activeAdminSection === "reviews" && (
+          <div>
+            <h3 style={{ margin: "0 0 16px", fontFamily: "'Georgia', serif" }}>სტუმრების შეფასებების ჟურნალი</h3>
+            {reviews.length === 0 ? (
+              <p style={{ color: "#8a6040", textAlign: "center", margin: "40px 0" }}>სტუმრების შეფასებები ჯერ არ არის შემოსული.</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {reviews.map(rev => (
+                  <div key={rev.id || `${rev.date}-${rev.name}`} style={{ background: "rgba(0,0,0,0.2)", border: "1px solid rgba(180,120,40,0.12)", borderRadius: 12, padding: 16 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                      <div>
+                        <span style={{ fontWeight: "bold", fontSize: 14 }}>{rev.name}</span>
+                        <span style={{ fontSize: 11, color: "#8a6040", marginLeft: 10 }}>მაგიდა {rev.table}</span>
+                      </div>
+                      <div style={{ color: "#f59e0b" }}>
+                        {"★".repeat(rev.rating)}{"☆".repeat(5 - rev.rating)}
+                      </div>
+                    </div>
+                    <p style={{ color: "#cbd5e1", fontSize: 13, margin: "0 0 10px", lineHeight: 1.5 }}>{rev.comment}</p>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 10, color: "#8a6040" }}>
+                      <span>{rev.date}</span>
+                      <span style={{ color: "#4ade80" }}>📧 იმიტირებული იმეილი გაეგზავნა ადმინისტრატორს</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeAdminSection === "availability" && (
+          <div>
+            <h3 style={{ margin: "0 0 16px", fontFamily: "'Georgia', serif" }}>კერძების ხელმისაწვდომობის მენეჯერი</h3>
+            <p style={{ fontSize: 12, color: "#8a6040", marginBottom: 16 }}>
+              გამორთეთ კერძები, რათა დროებით დამალოთ ისინი მენიუს ძირითადი ბადიდან და ყოველდღიური შემოთავაზებებიდან.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, maxHeight: 400, overflowY: "auto", paddingRight: 6 }}>
+              {allItems.map(dish => {
+                const dishName = dish.name_ka || dish.name_en || "";
+                const isAvailable = !unavailableDishIds.includes(dish.id);
+                return (
+                  <div key={dish.id || dish.name_ka} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(180,120,40,0.12)", borderRadius: 10, padding: "10px 14px" }}>
+                    <div>
+                      <span style={{ fontSize: 14, fontWeight: "bold", color: isAvailable ? "#f0c060" : "#64748b" }}>{dishName}</span>
+                      <span style={{ fontSize: 10, color: "#8a6040", marginLeft: 10, textTransform: "uppercase" }}>
+                        {CATEGORY_LABELS[dish.category]?.ka || dish.category}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setUnavailableDishIds(prev =>
+                          prev.includes(dish.id) ? prev.filter(id => id !== dish.id) : [...prev, dish.id]
+                        );
+                      }}
+                      style={{
+                        background: isAvailable ? "#4ade80" : "#4a3018",
+                        color: isAvailable ? "#000" : "#fff",
+                        border: "none", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 11, fontWeight: "bold", transition: "all 0.2s"
+                      }}
+                    >
+                      {isAvailable ? "აქტიური" : "გათიშული"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {activeAdminSection === "sorting" && (
+          <div>
+            <h3 style={{ margin: "0 0 16px", fontFamily: "'Georgia', serif" }}>პრიორიტეტებისა და სორტირების მენეჯერი</h3>
+            
+            {/* Category sorting section */}
+            <div style={{ marginBottom: 32 }}>
+              <h4 style={{ margin: "0 0 12px", fontFamily: "'Georgia', serif", fontSize: 16 }}>კატეგორიების რიგითობა</h4>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 220, overflowY: "auto", paddingRight: 6 }}>
+                {categoryOrder.map((cat, idx) => {
+                  const catLabelObj = CATEGORY_LABELS[cat] || { ka: cat, en: cat, ru: cat };
+                  return (
+                    <div key={cat} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(180,120,40,0.12)", borderRadius: 10, padding: "8px 12px" }}>
+                      <span style={{ fontSize: 13, fontWeight: "bold" }}>{catLabelObj.ka || cat}</span>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button
+                          onClick={() => moveCategory(idx, -1)}
+                          disabled={idx === 0}
+                          style={{
+                            background: "rgba(180,120,40,0.1)", border: "1px solid rgba(180,120,40,0.3)",
+                            borderRadius: 6, color: idx === 0 ? "#4a3018" : "#f0c060",
+                            width: 32, height: 32, cursor: idx === 0 ? "default" : "pointer", fontSize: 12, fontWeight: "bold"
+                          }}
+                        >
+                          ▲
+                        </button>
+                        <button
+                          onClick={() => moveCategory(idx, 1)}
+                          disabled={idx === categoryOrder.length - 1}
+                          style={{
+                            background: "rgba(180,120,40,0.1)", border: "1px solid rgba(180,120,40,0.3)",
+                            borderRadius: 6, color: idx === categoryOrder.length - 1 ? "#4a3018" : "#f0c060",
+                            width: 32, height: 32, cursor: idx === categoryOrder.length - 1 ? "default" : "pointer", fontSize: 12, fontWeight: "bold"
+                          }}
+                        >
+                          ▼
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCategory(cat)}
+                          style={{
+                            background: "rgba(220,38,38,0.1)", border: "1px solid rgba(220,38,38,0.35)",
+                            borderRadius: 6, color: "#ef4444",
+                            padding: "0 10px", height: 32, cursor: "pointer", fontSize: 11, fontWeight: "bold"
+                          }}
+                        >
+                          წაშლა
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Dishes sorting section */}
+            <div>
+              <h4 style={{ margin: "0 0 12px", fontFamily: "'Georgia', serif", fontSize: 16 }}>კერძების რიგითობა</h4>
+              
+              <div style={{ marginBottom: 16, display: "flex", flexDirection: "column", gap: 6 }}>
+                <label style={{ fontSize: 12, color: "#8a6040", textTransform: "uppercase", fontWeight: "bold" }}>აირჩიეთ კატეგორია</label>
+                <select
+                  value={selectedSortCategory}
+                  onChange={e => setSelectedSortCategory(e.target.value)}
+                  style={{
+                    background: "#141210", border: "1px solid rgba(245,158,11,0.2)",
+                    borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", width: "100%", fontFamily: "'Georgia', serif"
+                  }}
+                >
+                  {categoryOrder.map(cat => {
+                    const catLabelObj = CATEGORY_LABELS[cat] || { ka: cat, en: cat, ru: cat };
+                    return (
+                      <option key={cat} value={cat}>
+                        {catLabelObj.ka || cat}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 260, overflowY: "auto", paddingRight: 6 }}>
+                {categoryDishes.length === 0 ? (
+                  <p style={{ color: "#8a6040", fontSize: 12, textAlign: "center", margin: "20px 0" }}>ამ კატეგორიაში კერძები არ არის.</p>
+                ) : (
+                  categoryDishes.map((dish, idx) => {
+                    const dishName = dish.name_ka || dish.name_en || "";
+                    return (
+                      <div key={dish.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(180,120,40,0.12)", borderRadius: 10, padding: "8px 12px" }}>
+                        <span style={{ fontSize: 13, color: "#cbd5e1" }}>{dishName}</span>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button
+                            onClick={() => moveDish(dish.id, -1)}
+                            disabled={idx === 0}
+                            style={{
+                              background: "rgba(180,120,40,0.1)", border: "1px solid rgba(180,120,40,0.3)",
+                              borderRadius: 6, color: idx === 0 ? "#4a3018" : "#f0c060",
+                              width: 32, height: 32, cursor: idx === 0 ? "default" : "pointer", fontSize: 12, fontWeight: "bold"
+                            }}
+                          >
+                            ▲
+                          </button>
+                          <button
+                            onClick={() => moveDish(dish.id, 1)}
+                            disabled={idx === categoryDishes.length - 1}
+                            style={{
+                              background: "rgba(180,120,40,0.1)", border: "1px solid rgba(180,120,40,0.3)",
+                              borderRadius: 6, color: idx === categoryDishes.length - 1 ? "#4a3018" : "#f0c060",
+                              width: 32, height: 32, cursor: idx === categoryDishes.length - 1 ? "default" : "pointer", fontSize: 12, fontWeight: "bold"
+                            }}
+                          >
+                            ▼
+                          </button>
+                          <button
+                            onClick={() => handleDeleteDish(dish.id)}
+                            style={{
+                              background: "rgba(220,38,38,0.1)", border: "1px solid rgba(220,38,38,0.35)",
+                              borderRadius: 6, color: "#ef4444",
+                              padding: "0 10px", height: 32, cursor: "pointer", fontSize: 11, fontWeight: "bold"
+                            }}
+                          >
+                            წაშლა
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeAdminSection === "create" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+            {/* Form 1: Add Category */}
+            <div style={{ background: "rgba(0,0,0,0.15)", border: "1px solid rgba(180,120,40,0.15)", borderRadius: 14, padding: 20 }}>
+              <h3 style={{ margin: "0 0 16px", fontFamily: "'Georgia', serif", fontSize: 18, color: "#f0c060" }}>
+                ➕ ახალი კატეგორიის დამატება
+              </h3>
+              <form onSubmit={handleCreateCategory} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>გასაღები (ID / Key)</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="მაგ: desserts"
+                      value={newCatKey}
+                      onChange={e => setNewCatKey(e.target.value)}
+                      style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
+                    />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>ემოჯი / იკონი</label>
+                    <input
+                      type="text"
+                      placeholder="მაგ: 🍰"
+                      value={newCatIcon}
+                      onChange={e => setNewCatIcon(e.target.value)}
+                      style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
+                    />
+                  </div>
+                </div>
+                
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>სახელი (KA)</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="დესერტები"
+                      value={newCatKa}
+                      onChange={e => setNewCatKa(e.target.value)}
+                      style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
+                    />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>სახელი (EN)</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Desserts"
+                      value={newCatEn}
+                      onChange={e => setNewCatEn(e.target.value)}
+                      style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
+                    />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>სახელი (RU)</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Десерты"
+                      value={newCatRu}
+                      onChange={e => setNewCatRu(e.target.value)}
+                      style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  style={{ background: "linear-gradient(135deg,#b86520,#7a3a08)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 10, color: "#fff", padding: "10px 16px", cursor: "pointer", fontSize: 13, fontWeight: "bold", marginTop: 8 }}
+                >
+                  კატეგორიის დამატება
+                </button>
+              </form>
+            </div>
+
+            {/* Form 2: Add Dish */}
+            <div style={{ background: "rgba(0,0,0,0.15)", border: "1px solid rgba(180,120,40,0.15)", borderRadius: 14, padding: 20 }}>
+              <h3 style={{ margin: "0 0 16px", fontFamily: "'Georgia', serif", fontSize: 18, color: "#f0c060" }}>
+                ➕ ახალი კერძის დამატება
+              </h3>
+              <form onSubmit={handleCreateDish} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>დასახელება (KA)</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="ჩიზქეიქი"
+                      value={newDishNameKa}
+                      onChange={e => setNewDishNameKa(e.target.value)}
+                      style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
+                    />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>დასახელება (EN)</label>
+                    <input
+                      type="text"
+                      placeholder="Cheesecake"
+                      value={newDishNameEn}
+                      onChange={e => setNewDishNameEn(e.target.value)}
+                      style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
+                    />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>დასახელება (RU)</label>
+                    <input
+                      type="text"
+                      placeholder="Чизкейк"
+                      value={newDishNameRu}
+                      onChange={e => setNewDishNameRu(e.target.value)}
+                      style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>აღწერა (KA)</label>
+                    <input
+                      type="text"
+                      placeholder="კენკრის სოუსით"
+                      value={newDishDescKa}
+                      onChange={e => setNewDishDescKa(e.target.value)}
+                      style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
+                    />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>აღწერა (EN)</label>
+                    <input
+                      type="text"
+                      placeholder="With berry sauce"
+                      value={newDishDescEn}
+                      onChange={e => setNewDishDescEn(e.target.value)}
+                      style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
+                    />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>აღწერა (RU)</label>
+                    <input
+                      type="text"
+                      placeholder="С ягодным соусом"
+                      value={newDishDescRu}
+                      onChange={e => setNewDishDescRu(e.target.value)}
+                      style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>ფასი (₾ / ლარი)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      required
+                      placeholder="12.50"
+                      value={newDishPrice}
+                      onChange={e => setNewDishPrice(e.target.value)}
+                      style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
+                    />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>კატეგორია</label>
+                    <select
+                      value={newDishCat}
+                      onChange={e => setNewDishCat(e.target.value)}
+                      style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13, height: 41 }}
+                    >
+                      {categoryOrder.map(cat => {
+                        const labelObj = CATEGORY_LABELS[cat] || { ka: cat };
+                        return (
+                          <option key={cat} value={cat}>
+                            {labelObj.ka || cat}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>სურათის სახელი (Images/)</label>
+                    <input
+                      type="text"
+                      placeholder="cheesecake.jpg"
+                      value={newDishImage}
+                      onChange={e => setNewDishImage(e.target.value)}
+                      style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  style={{ background: "linear-gradient(135deg,#b86520,#7a3a08)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 10, color: "#fff", padding: "10px 16px", cursor: "pointer", fontSize: 13, fontWeight: "bold", marginTop: 8 }}
+                >
+                  კერძის დამატება
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -1036,11 +1967,190 @@ export default function StaroPub() {
   const [error, setError]               = useState(null);
   const [selectedDish, setSelectedDish] = useState(null);
   const [searchQuery, setSearchQuery]   = useState("");
-  // ── DEFAULT THEME: LIGHT ──────────────────────────────────────────────────
+  
+  // RESTORE CLIENT-SIDE THEME TOGGLE
   const [isDark, setIsDark]             = useState(false);
   const [currentView, setCurrentView]   = useState("menu");
 
+  // Admin and availability states
+  const isAdmin = React.useMemo(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get("admin") === "true";
+  }, []);
+
+  const [unavailableDishIds, setUnavailableDishIds] = useState([]);
+  const [categoryOrder, setCategoryOrder]             = useState([]);
+  const [dishOrder, setDishOrder]                     = useState([]);
+
+  // Cart and checkout states
+  const [cartItems, setCartItems]                     = useState([]);
+  const [cartOpen, setCartOpen]                       = useState(false);
+  const [checkoutModalOpen, setCheckoutModalOpen]     = useState(false);
+
+  const addToCart = useCallback((item, size, price) => {
+    const cartId = `${item.id}-${size || "default"}`;
+    setCartItems(prev => {
+      const idx = prev.findIndex(x => x.id === cartId);
+      if (idx !== -1) {
+        const next = [...prev];
+        next[idx] = { ...next[idx], quantity: next[idx].quantity + 1 };
+        return next;
+      }
+      return [...prev, {
+        id: cartId,
+        dishId: item.id,
+        name_ka: item.name_ka || "",
+        name_en: item.name_en || "",
+        name_ru: item.name_ru || "",
+        image: item.image || "",
+        category: item.category || "",
+        size: size || "",
+        price: parseFloat(price) || 0,
+        quantity: 1
+      }];
+    });
+    showToast(lang === "ka" ? "კერძი დაემატა კალათაში!" : lang === "ru" ? "Блюдо добавлено в корзину!" : "Item added to cart!");
+  }, [lang]);
+
+  const removeFromCart = useCallback((cartId) => {
+    setCartItems(prev => prev.filter(x => x.id !== cartId));
+  }, []);
+
+  const updateQuantity = useCallback((cartId, delta) => {
+    setCartItems(prev => {
+      const idx = prev.findIndex(x => x.id === cartId);
+      if (idx === -1) return prev;
+      const next = [...prev];
+      const newQty = next[idx].quantity + delta;
+      if (newQty <= 0) {
+        return prev.filter(x => x.id !== cartId);
+      }
+      next[idx] = { ...next[idx], quantity: newQty };
+      return next;
+    });
+  }, []);
+
+  const clearCart = useCallback(() => {
+    setCartItems([]);
+  }, []);
+
+  // Security fallback: if not admin, currentView cannot be admin
+  useEffect(() => {
+    if (currentView === "admin" && !isAdmin) {
+      setCurrentView("menu");
+    }
+  }, [currentView, isAdmin]);
+
   const t = isDark ? THEME.dark : THEME.light;
+
+  // Mobile menu drawer open state
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // ─── Table Number Parsing ────────────────────────────────────────────────
+  const tableNumber = React.useMemo(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get("table") || "1";
+  }, []);
+
+  // ─── Floating actions & dialogs state ────────────────────────────────────
+  const [floatingMenuOpen, setFloatingMenuOpen] = useState(false);
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  // ─── Waiter & Bill request system ───────────────────────────────────────
+  const [waiterCalls, setWaiterCalls] = useState([
+    { id: 1, table: "3", type: "Waiter 💁‍♂️", time: "15:20:00" },
+    { id: 2, table: "2", type: "Bill 🧾", time: "15:22:15" },
+  ]);
+
+  const handleCallWaiter = () => {
+    const now = new Date().toLocaleTimeString();
+    const newCall = { id: Date.now(), table: tableNumber, type: "Waiter 💁‍♂️", time: now };
+    setWaiterCalls(prev => [newCall, ...prev]);
+    showToast(lang === "ka" ? "მოთხოვნა გაიგზავნა! ოფიციანტი მალე მოვა." : lang === "ru" ? "Запрос отправлен! Официант скоро подойдет." : "Request sent! Waiter will arrive shortly.");
+    setFloatingMenuOpen(false);
+  };
+
+  const handleCallBill = () => {
+    const now = new Date().toLocaleTimeString();
+    const newCall = { id: Date.now(), table: tableNumber, type: "Bill 🧾", time: now };
+    setWaiterCalls(prev => [newCall, ...prev]);
+    showToast(lang === "ka" ? "ანგარიშის მოთხოვნა გაიგზავნა!" : lang === "ru" ? "Запрос счета отправлен!" : "Bill request sent!");
+    setFloatingMenuOpen(false);
+  };
+
+  // ─── Custom selection and sharing ────────────────────────────────────────
+  const [selectedDishIds, setSelectedDishIds] = useState([]);
+  const [customMenuEnabled, setCustomMenuEnabled] = useState(true);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const selection = urlParams.get("selection");
+    if (selection) {
+      const ids = selection.split(",").filter(Boolean);
+      setSelectedDishIds(ids);
+      setActiveTab("selection");
+    }
+  }, []);
+
+  const handleToggleSelect = (id) => {
+    setSelectedDishIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleCopyShareLink = () => {
+    const idsString = selectedDishIds.join(",");
+    const shareUrl = `${window.location.origin}${window.location.pathname}?selection=${idsString}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      showToast(lang === "ka" ? "ბმული კოპირებულია!" : lang === "ru" ? "Ссылка скопирована!" : "Share link copied to clipboard!");
+    }).catch(err => {
+      console.error("Failed to copy link: ", err);
+    });
+  };
+
+  // ─── Banner Settings ─────────────────────────────────────────────────────
+  const [bannerSettings, setBannerSettings] = useState({
+    enabled: true,
+    text: "საფირმო ჩეხური ნეკნები - 15% ფასდაკლება!",
+    image: "sapirmo chexuri neknebi.jpg",
+    badge: "დღის შეთავაზება",
+  });
+
+  // ─── Reviews log & modal form state ──────────────────────────────────────
+  const [reviewFormEnabled, setReviewFormEnabled] = useState(true);
+  const [reviews, setReviews] = useState([
+    { id: 1, name: "გიორგი", rating: 5, comment: "საუკეთესო ნეკნები და ლუდია ქალაქში!", date: "2026-07-01", table: "3" },
+    { id: 2, name: "Elena", rating: 4, comment: "Great atmosphere and quick service.", date: "2026-07-02", table: "5" }
+  ]);
+  const [tempRating, setTempRating] = useState(0);
+  const [tempName, setTempName] = useState("");
+  const [tempComment, setTempComment] = useState("");
+
+  const handleSubmitReview = () => {
+    if (tempRating === 0) return;
+    const now = new Date().toISOString().split("T")[0];
+    const newReview = {
+      id: Date.now(),
+      name: tempName.trim() || (lang === "ka" ? "სტუმარი" : lang === "ru" ? "Гость" : "Guest"),
+      rating: tempRating,
+      comment: tempComment.trim(),
+      date: now,
+      table: tableNumber
+    };
+    setReviews(prev => [newReview, ...prev]);
+    console.log("Email Notification Sent to Admin: staropub25@gmail.com", {
+      subject: `New Feedback from Table ${tableNumber}`,
+      body: `Rating: ${newReview.rating}/5 stars\nComment: ${newReview.comment}\nDate: ${newReview.date}`
+    });
+    setFeedbackModalOpen(false);
+    showToast(lang === "ka" ? "გმადლობთ შეფასებისთვის!" : lang === "ru" ? "Спасибо за ваш отзыв!" : "Thank you for your feedback!");
+  };
 
   // ─── Smart footer scroll ──────────────────────────────────────────────────
   const [isFooterVisible, setIsFooterVisible] = useState(true);
@@ -1068,14 +2178,13 @@ export default function StaroPub() {
     const timer = setTimeout(() => {
       if (fetchedRows.current !== null) {
         setAllItems(fetchedRows.current);
-        if (fetchedRows.current.length > 0) setActiveTab(fetchedRows.current[0].category);
+        setActiveTab(null);
         setPhase("menu");
       } else {
         setPhase("skeleton");
       }
     }, POUR_DURATION_MS);
     return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -1092,7 +2201,11 @@ export default function StaroPub() {
         fetchedRows.current = rows;
         setPhase(prev => {
           if (prev === "skeleton") {
-            setTimeout(() => { setAllItems(rows); if (rows.length > 0) setActiveTab(rows[0].category); setPhase("menu"); }, SKELETON_DELAY_MS);
+            setTimeout(() => { 
+              setAllItems(rows); 
+              setActiveTab(null); 
+              setPhase("menu"); 
+            }, SKELETON_DELAY_MS);
             return "skeleton";
           }
           return prev;
@@ -1104,40 +2217,91 @@ export default function StaroPub() {
         setPhase(prev => { if (prev === "skeleton") setTimeout(() => setPhase("menu"), 300); return prev; });
       },
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ─── Derived data ─────────────────────────────────────────────────────────
-  const categories = React.useMemo(() => {
+  const rawCategories = React.useMemo(() => {
     const seen = new Set();
     return allItems.reduce((acc, item) => {
-      if (!seen.has(item.category)) { seen.add(item.category); acc.push(item.category); }
+      if (!unavailableDishIds.includes(item.id) && !seen.has(item.category)) {
+        seen.add(item.category);
+        acc.push(item.category);
+      }
       return acc;
     }, []);
+  }, [allItems, unavailableDishIds]);
+
+  // Sync categoryOrder when rawCategories changes
+  useEffect(() => {
+    if (rawCategories.length > 0) {
+      setCategoryOrder(prev => {
+        const next = [...prev];
+        rawCategories.forEach(cat => {
+          if (!next.includes(cat)) {
+            next.push(cat);
+          }
+        });
+        return next.filter(cat => rawCategories.includes(cat));
+      });
+    }
+  }, [rawCategories]);
+
+  // Sync dishOrder when allItems changes
+  useEffect(() => {
+    if (allItems.length > 0) {
+      setDishOrder(prev => {
+        const next = [...prev];
+        allItems.forEach(dish => {
+          if (!next.includes(dish.id)) {
+            next.push(dish.id);
+          }
+        });
+        return next.filter(id => allItems.some(dish => dish.id === id));
+      });
+    }
   }, [allItems]);
 
-  const items = React.useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (q) return allItems.filter(it =>
-      (it.name_ka || "").toLowerCase().includes(q) ||
-      (it.name_en || "").toLowerCase().includes(q) ||
-      (it.name_ru || "").toLowerCase().includes(q)
-    );
-    return allItems.filter(it => !activeTab || it.category === activeTab);
-  }, [allItems, activeTab, searchQuery]);
+  const categories = categoryOrder;
 
-  // ─── Daily Specials: grill items ─────────────────────────────────────────
-  const grillSpecials = React.useMemo(
-    () => allItems.filter(d => d.category === "grill" || d.category_ka === "გრილი"),
-    [allItems]
-  );
+  const items = React.useMemo(() => {
+    const availableItems = allItems.filter(it => !unavailableDishIds.includes(it.id));
+    const q = searchQuery.trim().toLowerCase();
+    
+    let filtered = [];
+    if (q) {
+      filtered = availableItems.filter(it =>
+        (it.name_ka || "").toLowerCase().includes(q) ||
+        (it.name_en || "").toLowerCase().includes(q) ||
+        (it.name_ru || "").toLowerCase().includes(q)
+      );
+    } else if (activeTab === "selection") {
+      filtered = availableItems.filter(it => selectedDishIds.includes(it.id));
+    } else {
+      filtered = availableItems.filter(it => !activeTab || it.category === activeTab);
+    }
+    
+    return [...filtered].sort((a, b) => {
+      const idxA = dishOrder.indexOf(a.id);
+      const idxB = dishOrder.indexOf(b.id);
+      return (idxA === -1 ? 999999 : idxA) - (idxB === -1 ? 999999 : idxB);
+    });
+  }, [allItems, activeTab, searchQuery, selectedDishIds, unavailableDishIds, dishOrder]);
+
+  const grillSpecials = React.useMemo(() => {
+    const filtered = allItems.filter(d => (d.category === "grill" || d.category_ka === "გრილი") && !unavailableDishIds.includes(d.id));
+    return [...filtered].sort((a, b) => {
+      const idxA = dishOrder.indexOf(a.id);
+      const idxB = dishOrder.indexOf(b.id);
+      return (idxA === -1 ? 999999 : idxA) - (idxB === -1 ? 999999 : idxB);
+    });
+  }, [allItems, unavailableDishIds, dishOrder]);
 
   const NO_RESULTS_TEXT   = { ka: "კერძი ვერ მოიძებნა", en: "No items found", ru: "Ничего не найдено" };
   const SEARCH_PLACEHOLDER = { ka: "მოძებნე კერძი...", en: "Search dish...", ru: "Найти блюдо..." };
 
   const scrollTab = useCallback((key) => {
     setActiveTab(key);
-    if (tabsRef.current) {
+    if (tabsRef.current && key !== "selection") {
       const btn = tabsRef.current.querySelector(`[data-key="${key}"]`);
       btn?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
     }
@@ -1147,7 +2311,6 @@ export default function StaroPub() {
   const isSkeleton = phase === "skeleton";
   const isMenu     = phase === "menu";
 
-  // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <div style={{
       minHeight: "100vh",
@@ -1160,8 +2323,7 @@ export default function StaroPub() {
       position: "relative",
       transition: "color 0.35s",
     }}>
-      {/* Theme overlay */}
-      <div style={{ position:"fixed", inset:0, zIndex:0, pointerEvents:"none", background: isDark ? "rgba(8,4,1,0.88)" : "rgba(252,247,241,0.88)", transition:"background 0.4s" }} />
+      <div style={{ position:"fixed", inset:0, zIndex:0, pointerEvents:"none", background: isDark ? "rgba(8,12,24,0.92)" : "rgba(252,247,241,0.90)", transition:"background 0.4s" }} />
 
       <style>{`
         @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
@@ -1178,16 +2340,93 @@ export default function StaroPub() {
         .tabs-row::-webkit-scrollbar { display:none; }
         @media(min-width:768px)  { .menu-grid { grid-template-columns:repeat(4,1fr)!important; } }
         @media(min-width:1024px) { .menu-grid { grid-template-columns:repeat(5,1fr)!important; } }
+
+        /* 3D Category grid animations */
+        .category-card {
+          background: ${isDark ? "linear-gradient(145deg, rgba(30,41,59,0.7), rgba(15,23,42,0.5))" : "linear-gradient(145deg, rgba(244,241,235,0.8), rgba(237,232,222,0.6))"};
+          border: 1px solid ${isDark ? "rgba(245,158,11,0.22)" : "rgba(180,120,40,0.22)"};
+          border-radius: 16px;
+          padding: 24px;
+          text-align: center;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+          position: relative;
+          overflow: hidden;
+          backdrop-filter: blur(12px);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          min-height: 140px;
+        }
+        .category-card:hover {
+          transform: translateY(-8px) rotateX(4deg) rotateY(-4deg);
+          border-color: ${isDark ? "rgba(245,158,11,0.6)" : "rgba(180,120,40,0.6)"};
+          box-shadow: 0 16px 36px rgba(0,0,0,0.55), 0 0 15px rgba(245,158,11,0.15);
+        }
+        .category-card::before {
+          content: '';
+          position: absolute;
+          top: 0; left: -100%;
+          width: 50%; height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+          transition: all 0.6s ease;
+        }
+        .category-card:hover::before {
+          left: 150%;
+        }
+
+        /* Floating action button animations */
+        .floating-btn {
+          width: 50px; height: 50px; border-radius: 50%;
+          background: ${isDark ? "linear-gradient(135deg, #1e293b, #0f172a)" : "linear-gradient(135deg, #f4f1eb, #ede8de)"};
+          border: 1px solid ${isDark ? "rgba(245,158,11,0.35)" : "rgba(180,120,40,0.35)"};
+          color: ${isDark ? "#f59e0b" : "#b86010"}; display: flex; align-items: center; justify-content: center;
+          font-size: 20px; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .floating-btn:hover {
+          transform: scale(1.08) translateY(-2px);
+          border-color: ${isDark ? "rgba(245,158,11,0.7)" : "rgba(180,120,40,0.7)"};
+          box-shadow: 0 8px 24px rgba(245,158,11,0.25);
+        }
+        .floating-label {
+          position: absolute; right: 60px; background: ${isDark ? "rgba(15,23,42,0.92)" : "rgba(252,248,240,0.92)"};
+          border: 1px solid ${isDark ? "rgba(245,158,11,0.3)" : "rgba(180,120,40,0.3)"}; color: ${isDark ? "#f59e0b" : "#b86010"};
+          padding: 4px 12px; border-radius: 8px; font-size: 11px; font-weight: 700;
+          white-space: nowrap; pointer-events: none; opacity: 0; transform: translateX(10px);
+          transition: all 0.2s ease;
+        }
+        .floating-btn-wrap:hover .floating-label {
+          opacity: 1; transform: translateX(0);
+        }
+        .floating-btn-wrap {
+          display: flex; align-items: center; position: relative;
+        }
+
+        /* Desktop vs Mobile Header Controls */
+        .desktop-header-actions {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .mobile-hamburger-btn {
+          display: none;
+        }
+
+        @media (max-width: 767px) {
+          .desktop-header-actions {
+            display: none !important;
+          }
+          .mobile-hamburger-btn {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+          }
+        }
       `}</style>
 
-      {/* Phase 1: Pour screen — passes isDark so light mode gets cream bg */}
       {isPour && <MasterPourScreen lang={lang} isDark={isDark} />}
-
-      {/* Decorative orbs (dark only) */}
-      {!isPour && isDark && <>
-        <div style={{ position:"fixed", top:-120, right:-80, width:400, height:400, borderRadius:"50%", background:"radial-gradient(circle,rgba(120,60,10,0.15),transparent 70%)", pointerEvents:"none", zIndex:1 }} />
-        <div style={{ position:"fixed", bottom:-100, left:-60, width:320, height:320, borderRadius:"50%", background:"radial-gradient(circle,rgba(80,40,5,0.12),transparent 70%)", pointerEvents:"none", zIndex:1 }} />
-      </>}
 
       {/* Header */}
       {!isPour && (
@@ -1202,32 +2441,82 @@ export default function StaroPub() {
               <div style={{ color:t.brandName, fontSize:18, fontWeight:700, letterSpacing:"0.5px", lineHeight:1.1, transition:"color 0.3s" }}>StaroPub</div>
               <div style={{ color:t.brandSub, fontSize:10, letterSpacing:"1px", transition:"color 0.3s" }}>სტაროპაბი</div>
             </div>
-            <button onClick={() => setIsDark(d => !d)} title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
-              style={{ background:isDark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.06)", border:"1px solid rgba(180,120,40,0.28)", borderRadius:8, padding:"6px 10px", cursor:"pointer", fontSize:16, lineHeight:1, display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.25s", flexShrink:0 }}
-              aria-label="Toggle theme">
-              {isDark ? "☀️" : "🌙"}
+            
+            {/* Desktop-only Header Actions */}
+            <div className="desktop-header-actions">
+              {/* Shopping Cart Trigger */}
+              <button onClick={() => setCartOpen(true)} title="Shopping Cart"
+                style={{ background:"rgba(255,255,255,0.06)", border:`1px solid ${isDark ? "rgba(245,158,11,0.28)" : "rgba(180,120,40,0.28)"}`, color: t.brandName, borderRadius:8, padding:"6px 10px", cursor:"pointer", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.25s", position: "relative" }}
+                aria-label="Shopping Cart">
+                🛒
+                {cartItems.reduce((acc, x) => acc + x.quantity, 0) > 0 && (
+                  <span style={{ position: "absolute", top: -6, right: -6, background: "linear-gradient(135deg, #b86520, #e8a030)", color: "#fff", fontSize: 9, fontWeight: 900, borderRadius: "50%", width: 16, height: 16, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${t.brandName}`, boxShadow: "0 2px 6px rgba(0,0,0,0.4)" }}>
+                    {cartItems.reduce((acc, x) => acc + x.quantity, 0)}
+                  </span>
+                )}
+              </button>
+
+              {isAdmin && (
+                <button onClick={() => setCurrentView(currentView === "admin" ? "menu" : "admin")} title="Admin Panel"
+                  style={{ background:"rgba(255,255,255,0.06)", border:`1px solid ${isDark ? "rgba(245,158,11,0.28)" : "rgba(180,120,40,0.28)"}`, color: t.brandName, borderRadius:8, padding:"6px 10px", cursor:"pointer", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.25s" }}
+                  aria-label="Admin Panel">
+                  ⚙️
+                </button>
+              )}
+              
+              {/* Restored Theme Switcher */}
+              <button onClick={() => setIsDark(d => !d)} title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                style={{ background:"rgba(255,255,255,0.06)", border:`1px solid ${isDark ? "rgba(245,158,11,0.28)" : "rgba(180,120,40,0.28)"}`, color: t.brandName, borderRadius:8, padding:"6px 10px", cursor:"pointer", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.25s" }}
+                aria-label="Toggle theme">
+                {isDark ? "☀️" : "🌙"}
+              </button>
+              
+              <LangSwitcher lang={lang} setLang={setLang} th={t} />
+            </div>
+
+            {/* Mobile Shopping Cart Trigger */}
+            <button onClick={() => setCartOpen(true)} className="mobile-hamburger-btn" style={{
+              background: "none", border: "none", color: t.brandName,
+              fontSize: 22, cursor: "pointer", padding: 6, lineHeight: 1, position: "relative",
+              marginRight: 6
+            }} aria-label="Open Cart">
+              🛒
+              {cartItems.reduce((acc, x) => acc + x.quantity, 0) > 0 && (
+                <span style={{ position: "absolute", top: -2, right: -2, background: "linear-gradient(135deg, #b86520, #e8a030)", color: "#fff", fontSize: 9, fontWeight: 900, borderRadius: "50%", width: 15, height: 15, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${t.brandName}`, boxShadow: "0 2px 4px rgba(0,0,0,0.4)" }}>
+                  {cartItems.reduce((acc, x) => acc + x.quantity, 0)}
+                </span>
+              )}
             </button>
-            <LangSwitcher lang={lang} setLang={setLang} th={t} />
+
+            {/* Mobile Hamburger Button */}
+            <button onClick={() => setMobileMenuOpen(true)} className="mobile-hamburger-btn" style={{
+              background: "none", border: "none", color: t.brandName,
+              fontSize: 28, cursor: "pointer", padding: 6, lineHeight: 1
+            }} aria-label="Open menu">
+              ☰
+            </button>
           </div>
 
+          {/* Search bar - available globally in menu view */}
           {isMenu && categories.length > 0 && currentView === "menu" && (
             <div style={{ maxWidth:1200, margin:"0 auto", padding:"8px 0 4px" }}>
               <div style={{ position:"relative" }}>
-                <span style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", color:"rgba(245,158,11,0.45)", fontSize:15, pointerEvents:"none", lineHeight:1 }}>🔍</span>
+                <span style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", color:isDark?"rgba(245,158,11,0.45)":"rgba(180,120,40,0.45)", fontSize:15, pointerEvents:"none", lineHeight:1 }}>🔍</span>
                 <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
                   placeholder={SEARCH_PLACEHOLDER[lang]}
-                  style={{ width:"100%", boxSizing:"border-box", background:t.searchBg, border:`1px solid ${t.searchBorder}`, borderRadius:12, padding:"10px 14px 10px 40px", color:t.searchColor, fontSize:14, fontFamily:"'Georgia','DejaVu Serif',serif", outline:"none", transition:"border-color 0.2s, box-shadow 0.2s, background 0.3s, color 0.3s", caretColor:"#f59e0b" }}
-                  onFocus={e => { e.target.style.borderColor="rgba(245,158,11,0.55)"; e.target.style.boxShadow="0 0 0 2px rgba(245,158,11,0.08)"; }}
+                  style={{ width:"100%", boxSizing:"border-box", background:t.searchBg, border:`1px solid ${t.searchBorder}`, borderRadius:12, padding:"10px 14px 10px 40px", color:t.searchColor, fontSize:14, fontFamily:"'Georgia','DejaVu Serif',serif", outline:"none", transition:"border-color 0.2s, box-shadow 0.2s, background 0.3s, color 0.3s", caretColor:isDark?"#f59e0b":"#b86010" }}
+                  onFocus={e => { e.target.style.borderColor=isDark?"rgba(245,158,11,0.55)":"rgba(180,120,40,0.55)"; e.target.style.boxShadow=isDark?"0 0 0 2px rgba(245,158,11,0.08)":"0 0 0 2px rgba(180,120,40,0.08)"; }}
                   onBlur={e =>  { e.target.style.borderColor=t.searchBorder; e.target.style.boxShadow="none"; }}
                 />
                 {searchQuery && (
-                  <button onClick={() => setSearchQuery("")} style={{ position:"absolute", right:12, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", color:"rgba(245,158,11,0.5)", cursor:"pointer", fontSize:14, lineHeight:1, padding:2 }} aria-label="Clear search">✕</button>
+                  <button onClick={() => setSearchQuery("")} style={{ position:"absolute", right:12, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", color:isDark?"rgba(245,158,11,0.5)":"rgba(180,120,40,0.5)", cursor:"pointer", fontSize:14, lineHeight:1, padding:2 }} aria-label="Clear search">✕</button>
                 )}
               </div>
             </div>
           )}
 
-          {isMenu && categories.length > 0 && currentView === "menu" && (
+          {/* Navigation Category Tabs (Only shown when viewing a specific category, not on landing grid) */}
+          {isMenu && categories.length > 0 && currentView === "menu" && activeTab !== null && (
             <div ref={tabsRef} className="tabs-row" style={{ display:"flex", gap:4, overflowX:"auto", padding:"8px 0 10px", maxWidth:1200, margin:"0 auto", scrollbarWidth:"none" }}>
               {categories.map(cat => {
                 const catObj = CATEGORY_LABELS[cat];
@@ -1239,12 +2528,17 @@ export default function StaroPub() {
                   </button>
                 );
               })}
+              {customMenuEnabled && selectedDishIds.length > 0 && (
+                <button data-key="selection" onClick={() => scrollTab("selection")} style={{ whiteSpace:"nowrap", flexShrink:0, background:activeTab === "selection"?"linear-gradient(135deg,#b86520,#7a3a08)":t.tabInactiveBg, border:`1px solid ${activeTab === "selection"?"rgba(200,120,40,0.6)":t.tabInactiveBdr}`, color:activeTab === "selection"?"#fff":t.tabInactiveClr, borderRadius:20, padding:"7px 14px", fontSize:12, fontWeight:700, cursor:"pointer", transition:"all 0.25s" }}>
+                  🌟 {lang === "ka" ? "ჩემი არჩევანი" : lang === "ru" ? "Мой выбор" : "My Selection"} ({selectedDishIds.length})
+                </button>
+              )}
             </div>
           )}
         </header>
       )}
 
-      {/* Main — menu view */}
+      {/* Main Viewport */}
       {!isPour && currentView === "menu" && (
         <main style={{ maxWidth:1200, margin:"0 auto", padding:"16px 16px 112px", position:"relative", zIndex:1 }}>
           {isSkeleton && <SkeletonGrid isDark={isDark} />}
@@ -1257,46 +2551,712 @@ export default function StaroPub() {
 
           {isMenu && !error && (
             <>
-              {/* ── Daily Specials Carousel (menu view only, grill items) ── */}
-              {grillSpecials.length > 0 && !searchQuery && (
-                <DailySpecialsCarousel
-                  items={grillSpecials}
-                  lang={lang}
-                  onSelectDish={setSelectedDish}
-                  th={t}
-                />
+              {/* Dynamic Header Advertisement Banner */}
+              {bannerSettings.enabled && !searchQuery && (
+                <div style={{
+                  width: "100%", height: 160, borderRadius: 16, overflow: "hidden",
+                  position: "relative", marginBottom: 24,
+                  border: `1px solid ${isDark ? "rgba(245, 158, 11, 0.25)" : "rgba(180, 120, 40, 0.25)"}`,
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.4)"
+                }}>
+                  <img src={bannerSettings.image.startsWith("http") || bannerSettings.image.startsWith("Images") ? bannerSettings.image : `Images/${bannerSettings.image}`}
+                    alt="Promotional Banner"
+                    style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }}
+                    onError={e => { e.target.style.display = "none"; }}
+                  />
+                  <div style={{
+                    position: "absolute", inset: 0,
+                    background: "linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.85) 100%)",
+                  }} />
+                  <div style={{ position: "absolute", bottom: 16, left: 20, zIndex: 2 }}>
+                    <span style={{
+                      background: "linear-gradient(90deg, #b86520 0%, #e8a030 100%)",
+                      color: "#fff", fontSize: 10, fontWeight: 800, letterSpacing: "1px",
+                      textTransform: "uppercase", padding: "4px 10px", borderRadius: 12,
+                      fontFamily: "'Georgia', serif", display: "inline-block", marginBottom: 8,
+                      boxShadow: "0 2px 8px rgba(184,101,32,0.4)"
+                    }}>
+                      {bannerSettings.badge}
+                    </span>
+                    <p style={{
+                      color: "#fff", fontSize: 16, fontWeight: 700, margin: 0,
+                      textShadow: "0 2px 4px rgba(0,0,0,0.8)", fontFamily: "'Georgia', serif",
+                      letterSpacing: "0.3px"
+                    }}>
+                      {bannerSettings.text}
+                    </p>
+                  </div>
+                </div>
               )}
 
-              {/* ── Product grid ── */}
-              {items.length === 0 ? (
-                <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:260, gap:14, animation:"fadeIn 0.3s ease-out" }}>
-                  <span style={{ fontSize:48, opacity:0.35 }}>🔍</span>
-                  <p style={{ color:t.noResultsColor, fontFamily:"'Georgia','DejaVu Serif',serif", fontSize:15, fontWeight:600, letterSpacing:"0.3px", margin:0, textAlign:"center" }}>{NO_RESULTS_TEXT[lang]}</p>
-                </div>
+              {/* ── LANDING VIEW: Category Grid ── */}
+              {activeTab === null && !searchQuery ? (
+                <>
+                  {/* Daily Specials Carousel (grill specials) */}
+                  {grillSpecials.length > 0 && (
+                    <DailySpecialsCarousel
+                      items={grillSpecials}
+                      lang={lang}
+                      onSelectDish={setSelectedDish}
+                      th={t}
+                    />
+                  )}
+
+                  {/* Grid of Categories */}
+                  <div style={{ marginTop: 24 }}>
+                    <h2 style={{ color: t.brandName, fontFamily: "'Georgia', serif", fontSize: 20, fontWeight: 700, marginBottom: 16, borderLeft: `4px solid ${t.brandSub}`, paddingLeft: 10 }}>
+                      {lang === "ka" ? "კატეგორიები" : lang === "ru" ? "Категории" : "Categories"}
+                    </h2>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
+                      <style>{`
+                        @media(min-width:640px) {
+                          .categories-landing-grid { grid-template-columns: repeat(3, 1fr) !important; }
+                        }
+                        @media(min-width:1024px) {
+                          .categories-landing-grid { grid-template-columns: repeat(4, 1fr) !important; }
+                        }
+                      `}</style>
+                      <div className="categories-landing-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16, width: "100%", gridColumn: "span 2" }}>
+                        {categories.map(cat => {
+                          const labelObj = CATEGORY_LABELS[cat] || { ka: cat, en: cat, ru: cat };
+                          const icon = CATEGORY_ICONS[cat] || "🍽️";
+                          const count = allItems.filter(item => item.category === cat && !unavailableDishIds.includes(item.id)).length;
+                          return (
+                            <div key={cat} onClick={() => scrollTab(cat)} className="category-card">
+                              <span style={{ fontSize: 40, marginBottom: 8 }}>{icon}</span>
+                              <span style={{ color: t.brandName, fontWeight: 700, fontSize: 14 }}>{labelObj[lang]}</span>
+                              <span style={{ color: t.tabInactiveClr, fontSize: 10, marginTop: 4 }}>{count} {lang === "ka" ? "კერძი" : lang === "ru" ? "блюд" : "items"}</span>
+                            </div>
+                          );
+                        })}
+                        {/* Custom Selection Grid Item */}
+                        {customMenuEnabled && selectedDishIds.length > 0 && (
+                          <div onClick={() => setActiveTab("selection")} className="category-card" style={{ border: `1.5px dashed ${t.brandName}`, background: "rgba(245,158,11,0.06)" }}>
+                            <span style={{ fontSize: 40, marginBottom: 8, animation: "badgePulse 2s infinite" }}>🌟</span>
+                            <span style={{ color: t.brandName, fontWeight: 700, fontSize: 14 }}>{lang === "ka" ? "ჩემი არჩევანი" : lang === "ru" ? "Мой выбор" : "My Selection"}</span>
+                            <span style={{ color: t.tabInactiveClr, fontSize: 10, marginTop: 4 }}>{selectedDishIds.length} {lang === "ka" ? "კერძი" : lang === "ru" ? "блюд" : "items"}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </>
               ) : (
-                <div key={`${activeTab}-${searchQuery}`} className="menu-grid" style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:12, animation:"fadeIn 0.4s ease-out" }}>
-                  {items.map((item) => (
-                    <ItemCard key={item.id || `${item.category}-${item.name_ka}`} item={item} lang={lang} onOpen={setSelectedDish} th={t} />
-                  ))}
-                </div>
+                /* ── SUB-GRID VIEW: Specific Category Items or Search Results ── */
+                <>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+                    <button
+                      onClick={() => setActiveTab(null)}
+                      style={{
+                        background: "rgba(180,120,40,0.1)",
+                        border: "1px solid rgba(180,120,40,0.3)",
+                        borderRadius: 20, color: t.brandName,
+                        padding: "8px 18px", fontSize: 13, fontWeight: 700,
+                        cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+                        transition: "all 0.2s", fontFamily: "'Georgia', serif"
+                      }}
+                      onMouseEnter={e => e.target.style.background = "rgba(180,120,40,0.2)"}
+                      onMouseLeave={e => e.target.style.background = "rgba(180,120,40,0.1)"}
+                    >
+                      ← {lang === "ka" ? "კატეგორიები" : lang === "ru" ? "Категории" : "Categories"}
+                    </button>
+
+                    {activeTab === "selection" && (
+                      <button
+                        onClick={handleCopyShareLink}
+                        style={{
+                          background: "linear-gradient(135deg, #b86520, #7a3a08)",
+                          border: `1.5px solid ${t.brandName}`,
+                          borderRadius: 20, color: "#fff",
+                          padding: "8px 18px", fontSize: 12, fontWeight: 700,
+                          cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+                          boxShadow: "0 4px 12px rgba(184,101,32,0.3)", transition: "all 0.2s",
+                          fontFamily: "'Georgia', serif"
+                        }}
+                      >
+                        🔗 {lang === "ka" ? "ბმულის კოპირება" : lang === "ru" ? "Скопировать ссылку" : "Copy Shared Menu Link"}
+                      </button>
+                    )}
+                  </div>
+
+                  {activeTab === "selection" && selectedDishIds.length === 0 && (
+                    <div style={{ textAlign: "center", padding: "40px 0", color: t.noResultsColor }}>
+                      <span style={{ fontSize: 40, opacity: 0.5 }}>🌟</span>
+                      <p style={{ marginTop: 12 }}>{lang === "ka" ? "თქვენ ჯერ არ შეგირჩევიათ კერძები" : lang === "ru" ? "Вы еще не выбрали блюда" : "You have not selected any dishes yet."}</p>
+                    </div>
+                  )}
+
+                  {items.length === 0 && (activeTab !== "selection" || selectedDishIds.length > 0) ? (
+                    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:260, gap:14, animation:"fadeIn 0.3s ease-out" }}>
+                      <span style={{ fontSize:48, opacity:0.35 }}>🔍</span>
+                      <p style={{ color:t.noResultsColor, fontFamily:"'Georgia','DejaVu Serif',serif", fontSize:15, fontWeight:600, letterSpacing:"0.3px", margin:0, textAlign:"center" }}>{NO_RESULTS_TEXT[lang]}</p>
+                    </div>
+                  ) : (
+                    <div key={`${activeTab}-${searchQuery}`} className="menu-grid" style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:12, animation:"fadeIn 0.4s ease-out" }}>
+                      {items.map((item) => (
+                        <ItemCard
+                          key={item.id || `${item.category}-${item.name_ka}`}
+                          item={item}
+                          lang={lang}
+                          onOpen={setSelectedDish}
+                          th={t}
+                          customMenuEnabled={customMenuEnabled}
+                          selected={selectedDishIds.includes(item.id)}
+                          onToggleSelect={handleToggleSelect}
+                          cartItems={cartItems}
+                          onAddToCart={addToCart}
+                          onUpdateQuantity={updateQuantity}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </>
           )}
         </main>
       )}
 
-      {/* About view */}
+      {/* About View */}
       {!isPour && currentView === "about" && (
         <main style={{ maxWidth:1200, margin:"0 auto", padding:"16px 0 112px", animation:"fadeIn 0.3s ease-out", position:"relative", zIndex:1 }}>
           <AboutView lang={lang} th={t} />
         </main>
       )}
 
-      {!isPour && <SiteFooter lang={lang} visible={isFooterVisible} th={t} currentView={currentView} setCurrentView={setCurrentView} />}
+      {/* Admin Panel View */}
+      {!isPour && currentView === "admin" && (
+        <main style={{ maxWidth:1200, margin:"0 auto", padding:"16px 0 112px", animation:"fadeIn 0.3s ease-out", position:"relative", zIndex:1 }}>
+          <AdminDashboard
+            lang={lang}
+            onClose={() => setCurrentView("menu")}
+            waiterCalls={waiterCalls}
+            setWaiterCalls={setWaiterCalls}
+            bannerSettings={bannerSettings}
+            setBannerSettings={setBannerSettings}
+            customMenuEnabled={customMenuEnabled}
+            setCustomMenuEnabled={setCustomMenuEnabled}
+            reviewFormEnabled={reviewFormEnabled}
+            setReviewFormEnabled={setReviewFormEnabled}
+            reviews={reviews}
+            setReviews={setReviews}
+            unavailableDishIds={unavailableDishIds}
+            setUnavailableDishIds={setUnavailableDishIds}
+            allItems={allItems}
+            setAllItems={setAllItems}
+            categoryOrder={categoryOrder}
+            setCategoryOrder={setCategoryOrder}
+            dishOrder={dishOrder}
+            setDishOrder={setDishOrder}
+          />
+        </main>
+      )}
+
+      {!isPour && <SiteFooter lang={lang} visible={isFooterVisible} th={t} currentView={currentView} setCurrentView={setCurrentView} isAdmin={isAdmin} />}
 
       {/* Dish Detail Modal */}
       {selectedDish && (
-        <DishModal item={selectedDish} lang={lang} onClose={() => setSelectedDish(null)} th={t} />
+        <DishModal item={selectedDish} lang={lang} onClose={() => setSelectedDish(null)} th={t} onAddToCart={addToCart} />
+      )}
+
+      {/* ── SERVICE REQUESTS FLOATING WIDGET ── */}
+      {!isPour && (
+        <div style={{ position: "fixed", bottom: 90, right: 20, zIndex: 1000, display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-end" }}>
+          {floatingMenuOpen && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 6, animation: "fadeIn 0.2s ease-out" }}>
+              <div className="floating-btn-wrap">
+                <span className="floating-label">{lang === "ka" ? "ოფიციანტის გამოძახება" : lang === "ru" ? "Вызвать официанта" : "Request Waiter"}</span>
+                <button onClick={handleCallWaiter} className="floating-btn">💁‍♂️</button>
+              </div>
+              <div className="floating-btn-wrap">
+                <span className="floating-label">{lang === "ka" ? "ანგარიშის მოთხოვნა" : lang === "ru" ? "Попросить счет" : "Request Bill"}</span>
+                <button onClick={handleCallBill} className="floating-btn">🧾</button>
+              </div>
+              {reviewFormEnabled && (
+                <div className="floating-btn-wrap">
+                  <span className="floating-label">{lang === "ka" ? "შეფასების დატოვება" : lang === "ru" ? "Оставить отзыв" : "Write Review"}</span>
+                  <button onClick={() => { setFeedbackModalOpen(true); setTempRating(0); setTempName(""); setTempComment(""); setFloatingMenuOpen(false); }} className="floating-btn">✍️</button>
+                </div>
+              )}
+              {isAdmin && (
+                <div className="floating-btn-wrap">
+                  <span className="floating-label">Admin Dashboard</span>
+                  <button onClick={() => { setCurrentView(currentView === "admin" ? "menu" : "admin"); setFloatingMenuOpen(false); }} className="floating-btn" style={{ borderColor: isDark ? "rgba(245,158,11,0.5)" : "rgba(180,120,40,0.5)", background: isDark ? "rgba(245,158,11,0.08)" : "rgba(180,120,40,0.08)" }}>⚙️</button>
+                </div>
+              )}
+            </div>
+          )}
+
+          <button onClick={() => setFloatingMenuOpen(!floatingMenuOpen)} className="floating-btn" style={{ width: 56, height: 56, fontSize: 24, background: "linear-gradient(135deg, #b86520, #7a3a08)", border: `1px solid ${t.brandName}`, color: "#fff" }}>
+            🛎️
+          </button>
+        </div>
+      )}
+
+      {/* ── TOAST NOTIFICATIONS ── */}
+      {toast && (
+        <div style={{
+          position: "fixed", top: 24, left: "50%", transform: "translateX(-50%)",
+          background: "linear-gradient(135deg, #b86520, #7a3a08)",
+          border: "1px solid rgba(250, 190, 80, 0.4)",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.5), 0 0 10px rgba(245,158,11,0.2)",
+          color: "#fff", padding: "12px 24px", borderRadius: 30, zIndex: 10000,
+          fontSize: 14, fontWeight: 700, fontFamily: "'Georgia', serif",
+          animation: "fadeIn 0.2s ease-out", pointerEvents: "none",
+          textAlign: "center", whiteSpace: "nowrap"
+        }}>
+          {toast}
+        </div>
+      )}
+
+      {/* ── REVIEW / FEEDBACK MODAL FORM ── */}
+      {feedbackModalOpen && (
+        <div onClick={() => setFeedbackModalOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 1100, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxWidth: 460, background: isDark ? "linear-gradient(160deg, #1e293b 0%, #0f172a 100%)" : "linear-gradient(160deg, #faf7f0 0%, #ede8de 100%)", border: `1px solid ${t.modalBorder}`, borderRadius: 20, padding: 28, boxShadow: "0 24px 64px rgba(0,0,0,0.6)" }}>
+            <h3 style={{ margin: "0 0 16px", color: t.brandName, fontFamily: "'Georgia', serif", fontSize: 20, fontWeight: 700 }}>
+              {lang === "ka" ? "დატოვე შეფასება" : lang === "ru" ? "Оставить отзыв" : "Leave a Feedback"}
+            </h3>
+            <div style={{ height: 1, background: `linear-gradient(90deg, ${t.brandSub}, transparent)`, marginBottom: 20 }} />
+            
+            <div style={{ marginBottom: 20, display: "flex", flexDirection: "column", gap: 8 }}>
+              <label style={{ color: t.tabInactiveClr, fontSize: 12, textTransform: "uppercase", letterSpacing: "1px" }}>
+                {lang === "ka" ? "შეფასება" : lang === "ru" ? "Рейтинг" : "Rating"}
+              </label>
+              <div style={{ display: "flex", gap: 10 }}>
+                {[1, 2, 3, 4, 5].map(star => (
+                  <button
+                    key={star}
+                    onClick={() => setTempRating(star)}
+                    style={{ background: "none", border: "none", cursor: "pointer", fontSize: 28, padding: 0, color: star <= tempRating ? "#f59e0b" : "rgba(255,255,255,0.15)", transition: "color 0.15s" }}
+                  >
+                    ★
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 20, display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ color: t.tabInactiveClr, fontSize: 12, textTransform: "uppercase", letterSpacing: "1px" }}>
+                {lang === "ka" ? "სახელი (არასავალდებულო)" : lang === "ru" ? "Имя (необязательно)" : "Name (Optional)"}
+              </label>
+              <input
+                type="text"
+                value={tempName}
+                onChange={e => setTempName(e.target.value)}
+                placeholder={lang === "ka" ? "სტუმარი" : lang === "ru" ? "Гость" : "Guest"}
+                style={{ background: isDark ? "#0b0f19" : "#f0ebe0", border: `1px solid ${t.cardBorder}`, borderRadius: 10, padding: 10, color: t.brandName, outline: "none" }}
+              />
+            </div>
+
+            <div style={{ marginBottom: 24, display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ color: t.tabInactiveClr, fontSize: 12, textTransform: "uppercase", letterSpacing: "1px" }}>
+                {lang === "ka" ? "კომენტარი" : lang === "ru" ? "Комментарий" : "Comment"}
+              </label>
+              <textarea
+                value={tempComment}
+                onChange={e => setTempComment(e.target.value)}
+                rows={4}
+                placeholder={lang === "ka" ? "გაგვიზიარეთ თქვენი აზრი..." : lang === "ru" ? "Поделитесь вашим мнением..." : "Share your feedback..."}
+                style={{ background: isDark ? "#0b0f19" : "#f0ebe0", border: `1px solid ${t.cardBorder}`, borderRadius: 10, padding: 10, color: t.brandName, outline: "none", resize: "none" }}
+              />
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
+              <button
+                onClick={() => setFeedbackModalOpen(false)}
+                style={{ background: "none", border: "none", color: t.tabInactiveClr, fontSize: 14, cursor: "pointer", fontWeight: 600 }}
+              >
+                {lang === "ka" ? "გაუქმება" : lang === "ru" ? "Отмена" : "Cancel"}
+              </button>
+              <button
+                onClick={handleSubmitReview}
+                disabled={tempRating === 0}
+                style={{
+                  background: tempRating === 0 ? "rgba(180,120,40,0.15)" : "linear-gradient(135deg, #b86520, #7a3a08)",
+                  border: `1px solid ${t.brandName}`,
+                  borderRadius: 12, color: tempRating === 0 ? "rgba(255,255,255,0.3)" : "#fff",
+                  padding: "10px 22px", fontSize: 14, fontWeight: 700,
+                  cursor: tempRating === 0 ? "default" : "pointer", transition: "all 0.2s"
+                }}
+              >
+                {lang === "ka" ? "გაგზავნა" : lang === "ru" ? "Отправить" : "Submit"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MOBILE NAVIGATION DRAWER ── */}
+      <div style={{
+        position: "fixed", inset: 0, zIndex: 1200,
+        visibility: mobileMenuOpen ? "visible" : "hidden",
+        pointerEvents: mobileMenuOpen ? "auto" : "none",
+        transition: "visibility 0.3s"
+      }}>
+        {/* Backdrop overlay */}
+        <div
+          onClick={() => setMobileMenuOpen(false)}
+          style={{
+            position: "absolute", inset: 0,
+            background: "rgba(0, 0, 0, 0.4)",
+            opacity: mobileMenuOpen ? 1 : 0,
+            transition: "opacity 0.3s ease",
+            backdropFilter: "blur(6px)"
+          }}
+        />
+        {/* Drawer panel */}
+        <div style={{
+          position: "absolute", top: 0, right: 0, bottom: 0,
+          width: "280px", maxWidth: "85%",
+          background: t.modalBg,
+          borderLeft: t.modalBorder,
+          boxShadow: "-8px 0 32px rgba(0,0,0,0.5)",
+          padding: "24px",
+          display: "flex", flexDirection: "column", gap: 24,
+          transform: mobileMenuOpen ? "translateX(0)" : "translateX(100%)",
+          transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          backdropFilter: "blur(20px)"
+        }}>
+          {/* Drawer header */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontFamily: "'Georgia', serif", fontSize: 18, color: t.brandName, fontWeight: "bold" }}>
+              StaroPub
+            </span>
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              style={{ background: "none", border: "none", color: t.bodyText, fontSize: 20, cursor: "pointer" }}
+              aria-label="Close menu"
+            >
+              ✕
+            </button>
+          </div>
+          <div style={{ height: 1, background: `linear-gradient(90deg, ${t.brandSub}, transparent)` }} />
+
+          {/* Primary Navigation Links */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <button
+              onClick={() => { setCurrentView("menu"); setActiveTab(null); setMobileMenuOpen(false); }}
+              style={{ background: "none", border: "none", color: currentView === "menu" ? t.brandName : t.bodyText, fontSize: 16, fontWeight: "bold", textAlign: "left", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, fontFamily: "'Georgia', serif" }}
+            >
+              🍽️ {lang === "ka" ? "მენიუ" : lang === "ru" ? "Меню" : "Menu"}
+            </button>
+            <button
+              onClick={() => { setCurrentView("about"); setMobileMenuOpen(false); }}
+              style={{ background: "none", border: "none", color: currentView === "about" ? t.brandName : t.bodyText, fontSize: 16, fontWeight: "bold", textAlign: "left", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, fontFamily: "'Georgia', serif" }}
+            >
+              ℹ️ {lang === "ka" ? "ჩვენს შესახებ" : lang === "ru" ? "О нас" : "About Us"}
+            </button>
+            {isAdmin && (
+              <button
+                onClick={() => { setCurrentView("admin"); setMobileMenuOpen(false); }}
+                style={{ background: "none", border: "none", color: currentView === "admin" ? t.brandName : t.bodyText, fontSize: 16, fontWeight: "bold", textAlign: "left", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, fontFamily: "'Georgia', serif" }}
+              >
+                ⚙️ Admin Panel
+              </button>
+            )}
+          </div>
+
+          <div style={{ height: 1, background: "rgba(255,255,255,0.08)", margin: "8px 0" }} />
+
+          {/* Language Selector */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <span style={{ fontSize: 11, color: t.tabInactiveClr, textTransform: "uppercase", letterSpacing: "1px", fontWeight: "bold" }}>
+              {lang === "ka" ? "ენა" : lang === "ru" ? "Язык" : "Language"}
+            </span>
+            <div style={{ display: "flex", gap: 8 }}>
+              {Object.entries(LANG_LABELS).map(([code, label]) => (
+                <button
+                  key={code}
+                  onClick={() => setLang(code)}
+                  style={{
+                    flex: 1, padding: "8px", borderRadius: 8,
+                    background: lang === code ? (isDark ? "rgba(245,158,11,0.15)" : "rgba(180,120,40,0.15)") : "rgba(0,0,0,0.03)",
+                    border: `1.5px solid ${lang === code ? t.brandName : "rgba(180,120,40,0.15)"}`,
+                    color: lang === code ? t.brandName : t.tabInactiveClr,
+                    fontSize: 12, fontWeight: "bold", cursor: "pointer"
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Theme Toggle Button */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <span style={{ fontSize: 11, color: t.tabInactiveClr, textTransform: "uppercase", letterSpacing: "1px", fontWeight: "bold" }}>
+              {lang === "ka" ? "თემა" : lang === "ru" ? "Тема" : "Theme"}
+            </span>
+            <button
+              onClick={() => setIsDark(prev => !prev)}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+                padding: "10px", borderRadius: 8,
+                background: "rgba(0,0,0,0.03)",
+                border: `1.5px solid ${t.brandName}`,
+                color: t.brandName, fontSize: 13, fontWeight: "bold", cursor: "pointer"
+              }}
+            >
+              {isDark ? "☀️ Light Mode" : "🌙 Dark Mode"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── SHOPPING CART DRAWER ── */}
+      <div style={{
+        position: "fixed", inset: 0, zIndex: 1300,
+        visibility: cartOpen ? "visible" : "hidden",
+        pointerEvents: cartOpen ? "auto" : "none",
+        transition: "visibility 0.3s"
+      }}>
+        {/* Backdrop overlay */}
+        <div
+          onClick={() => setCartOpen(false)}
+          style={{
+            position: "absolute", inset: 0,
+            background: "rgba(0, 0, 0, 0.4)",
+            opacity: cartOpen ? 1 : 0,
+            transition: "opacity 0.3s ease",
+            backdropFilter: "blur(6px)"
+          }}
+        />
+        {/* Cart Drawer panel */}
+        <div style={{
+          position: "absolute", top: 0, right: 0, bottom: 0,
+          width: "380px", maxWidth: "90%",
+          background: t.modalBg,
+          borderLeft: t.modalBorder,
+          boxShadow: "-8px 0 32px rgba(0,0,0,0.5)",
+          padding: "24px 20px",
+          display: "flex", flexDirection: "column",
+          transform: cartOpen ? "translateX(0)" : "translateX(100%)",
+          transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          backdropFilter: "blur(20px)",
+          boxSizing: "border-box"
+        }}>
+          {/* Cart Header */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <span style={{ fontFamily: "'Georgia', serif", fontSize: 19, color: t.brandName, fontWeight: "bold", display: "flex", alignItems: "center", gap: 8 }}>
+              🛒 {lang === "ka" ? "კალათა" : lang === "ru" ? "Корзина" : "Shopping Cart"}
+            </span>
+            <button
+              onClick={() => setCartOpen(false)}
+              style={{ background: "none", border: "none", color: t.bodyText, fontSize: 20, cursor: "pointer" }}
+              aria-label="Close cart"
+            >
+              ✕
+            </button>
+          </div>
+          <div style={{ height: 1, background: `linear-gradient(90deg, ${t.brandSub}, transparent)`, marginBottom: 20 }} />
+
+          {/* Cart items list */}
+          <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 14, paddingRight: 4 }}>
+            {cartItems.length === 0 ? (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "60%", gap: 12, opacity: 0.5 }}>
+                <span style={{ fontSize: 44 }}>🛒</span>
+                <span style={{ fontSize: 13, fontFamily: "'Georgia', serif" }}>
+                  {lang === "ka" ? "კალათა ცარიელია" : lang === "ru" ? "Корзина пуста" : "Your cart is empty"}
+                </span>
+              </div>
+            ) : (
+              cartItems.map((cItem) => {
+                const title = cItem[`name_${lang}`] || cItem.name_ka || "";
+                const imgPath = cItem.image ? `Images/${cItem.image}` : "";
+                const fallbackIcon = CATEGORY_ICONS[cItem.category] || "🍽️";
+                return (
+                  <div key={cItem.id} style={{ display: "flex", gap: 10, background: "rgba(0,0,0,0.14)", border: `1px solid ${t.cardBorder}`, borderRadius: 12, padding: 10, position: "relative" }}>
+                    {/* Item Image thumbnail */}
+                    <div style={{ width: 56, height: 56, borderRadius: 8, overflow: "hidden", background: t.imgFallbackBg, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {imgPath ? (
+                        <img src={imgPath} alt={title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        <span style={{ fontSize: 22 }}>{fallbackIcon}</span>
+                      )}
+                    </div>
+                    {/* Item info */}
+                    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+                      <span style={{ fontSize: 13, fontWeight: "bold", color: t.modalName, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {title}
+                      </span>
+                      {cItem.size && (
+                        <span style={{ fontSize: 10, color: t.brandSub, textTransform: "uppercase", fontWeight: 700 }}>
+                          {cItem.size}
+                        </span>
+                      )}
+                      <span style={{ fontSize: 13, color: "#e8a030", fontWeight: "bold" }}>
+                        ₾{(cItem.price * cItem.quantity).toFixed(2)}
+                      </span>
+                    </div>
+                    {/* Quantity controls & Delete */}
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "space-between", flexShrink: 0 }}>
+                      <button
+                        onClick={() => removeFromCart(cItem.id)}
+                        style={{ background: "none", border: "none", color: "#e06060", cursor: "pointer", fontSize: 14, padding: 0 }}
+                        title="Delete"
+                      >
+                        ✕
+                      </button>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 6, padding: "2px 6px" }}>
+                        <button
+                          onClick={() => updateQuantity(cItem.id, -1)}
+                          style={{ background: "none", border: "none", color: t.brandName, cursor: "pointer", fontSize: 13, fontWeight: "bold", padding: 0 }}
+                        >
+                          -
+                        </button>
+                        <span style={{ fontSize: 12, color: "#fff", fontWeight: "bold", minWidth: 14, textAlign: "center" }}>
+                          {cItem.quantity}
+                        </span>
+                        <button
+                          onClick={() => updateQuantity(cItem.id, 1)}
+                          style={{ background: "none", border: "none", color: t.brandName, cursor: "pointer", fontSize: 13, fontWeight: "bold", padding: 0 }}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Cart Footer */}
+          {cartItems.length > 0 && (
+            <div style={{ marginTop: 20 }}>
+              <div style={{ height: 1, background: "rgba(255,255,255,0.08)", marginBottom: 16 }} />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <span style={{ fontSize: 14, color: t.tabInactiveClr, fontWeight: "bold" }}>
+                  {lang === "ka" ? "ჯამური ფასი:" : lang === "ru" ? "Итого:" : "Total Price:"}
+                </span>
+                <span style={{ fontSize: 22, color: "#e8a030", fontWeight: "bold" }}>
+                  ₾{cartItems.reduce((acc, x) => acc + x.price * x.quantity, 0).toFixed(2)}
+                </span>
+              </div>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  onClick={clearCart}
+                  style={{
+                    flex: 1, background: "rgba(180,40,40,0.1)", border: "1px solid rgba(180,40,40,0.3)",
+                    borderRadius: 12, color: "#e06060", padding: "12px", fontSize: 12, fontWeight: 700,
+                    cursor: "pointer", transition: "all 0.2s"
+                  }}
+                >
+                  {lang === "ka" ? "გასუფთავება" : lang === "ru" ? "Очистить" : "Clear"}
+                </button>
+                <button
+                  onClick={() => {
+                    setCheckoutModalOpen(true);
+                    setCartOpen(false);
+                  }}
+                  style={{
+                    flex: 2, background: "linear-gradient(135deg, #b86520, #7a3a08)", border: `1px solid ${t.brandName}`,
+                    borderRadius: 12, color: "#fff", padding: "12px", fontSize: 13, fontWeight: 700,
+                    cursor: "pointer", transition: "all 0.2s", boxShadow: "0 4px 14px rgba(184,101,32,0.4)"
+                  }}
+                >
+                  {lang === "ka" ? "შეკვეთა" : lang === "ru" ? "Оформить заказ" : "Order Now"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── CHECKOUT SUMMARY DIALOG ── */}
+      {checkoutModalOpen && (
+        <div onClick={() => setCheckoutModalOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 1400, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxWidth: 480, background: isDark ? "linear-gradient(160deg, #1e293b 0%, #0f172a 100%)" : "linear-gradient(160deg, #faf7f0 0%, #ede8de 100%)", border: `1px solid ${t.modalBorder}`, borderRadius: 20, padding: 24, boxShadow: "0 24px 64px rgba(0,0,0,0.6)" }}>
+            <h3 style={{ margin: "0 0 12px", color: t.brandName, fontFamily: "'Georgia', serif", fontSize: 20, fontWeight: 700 }}>
+              {lang === "ka" ? "შეკვეთის დეტალები" : lang === "ru" ? "Детали заказа" : "Order Summary"}
+            </h3>
+            <div style={{ height: 1, background: `linear-gradient(90deg, ${t.brandSub}, transparent)`, marginBottom: 16 }} />
+            
+            <p style={{ margin: "0 0 14px", fontSize: 13, color: t.modalDesc }}>
+              {lang === "ka" ? `მაგიდა: #${tableNumber}` : lang === "ru" ? `Стол: #${tableNumber}` : `Table: #${tableNumber}`}
+            </p>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, maxHeight: 200, overflowY: "auto", marginBottom: 20, background: "rgba(0,0,0,0.1)", borderRadius: 10, padding: 12 }}>
+              {cartItems.map(item => {
+                const title = item[`name_${lang}`] || item.name_ka || "";
+                return (
+                  <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: 13 }}>
+                    <div style={{ display: "flex", flexDirection: "column" }}>
+                      <span style={{ fontWeight: "bold" }}>{title}</span>
+                      {item.size && <span style={{ fontSize: 10, color: t.brandSub }}>{item.size}</span>}
+                    </div>
+                    <span style={{ whiteSpace: "nowrap" }}>
+                      {item.quantity} x ₾{item.price.toFixed(2)} = ₾{(item.quantity * item.price).toFixed(2)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, fontWeight: "bold", fontSize: 16 }}>
+              <span>{lang === "ka" ? "სულ გადასახდელი:" : lang === "ru" ? "Итого к оплате:" : "Grand Total:"}</span>
+              <span style={{ color: "#e8a030", fontSize: 19 }}>
+                ₾{cartItems.reduce((acc, x) => acc + x.price * x.quantity, 0).toFixed(2)}
+              </span>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <button
+                onClick={() => {
+                  const orderStr = cartItems.map(item => {
+                    const title = item[`name_${lang}`] || item.name_ka || "";
+                    const sizeStr = item.size ? ` (${item.size})` : "";
+                    return `- ${title}${sizeStr} x${item.quantity}: ₾${(item.quantity * item.price).toFixed(2)}`;
+                  }).join("\n");
+                  const totalStr = cartItems.reduce((acc, x) => acc + x.price * x.quantity, 0).toFixed(2);
+                  const fullText = `StaroPub Order Summary\nTable: #${tableNumber}\n\nItems:\n${orderStr}\n\nGrand Total: ₾${totalStr}`;
+                  
+                  navigator.clipboard.writeText(fullText).then(() => {
+                    showToast(lang === "ka" ? "შეკვეთა კოპირებულია!" : lang === "ru" ? "Заказ скопирован!" : "Order copied to clipboard!");
+                  });
+                }}
+                style={{
+                  background: "rgba(180,120,40,0.1)", border: "1px solid rgba(180,120,40,0.3)",
+                  borderRadius: 12, color: t.brandName, padding: "10px 18px", fontSize: 13, fontWeight: 700,
+                  cursor: "pointer", transition: "all 0.2s"
+                }}
+              >
+                📋 {lang === "ka" ? "შეკვეთის კოპირება" : lang === "ru" ? "Скопировать заказ" : "Copy Order Text"}
+              </button>
+              <button
+                onClick={() => {
+                  const orderStr = cartItems.map(item => {
+                    const title = item[`name_${lang}`] || item.name_ka || "";
+                    const sizeStr = item.size ? ` (${item.size})` : "";
+                    return `- ${title}${sizeStr} x${item.quantity}: ₾${(item.quantity * item.price).toFixed(2)}`;
+                  }).join("\n");
+                  const totalStr = cartItems.reduce((acc, x) => acc + x.price * x.quantity, 0).toFixed(2);
+                  const fullText = `StaroPub Order\nTable: #${tableNumber}\n\n${orderStr}\n\nTotal: ₾${totalStr}`;
+                  
+                  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(fullText)}`, "_blank");
+                  clearCart();
+                  setCheckoutModalOpen(false);
+                }}
+                style={{
+                  background: "linear-gradient(135deg, #b86520, #7a3a08)", border: `1px solid ${t.brandName}`,
+                  borderRadius: 12, color: "#fff", padding: "12px 20px", fontSize: 13, fontWeight: 700,
+                  cursor: "pointer", transition: "all 0.2s", boxShadow: "0 4px 14px rgba(184,101,32,0.4)"
+                }}
+              >
+                💬 {lang === "ka" ? "გაგზავნა WhatsApp-ით" : lang === "ru" ? "Отправить в WhatsApp" : "Send via WhatsApp"}
+              </button>
+              <button
+                onClick={() => setCheckoutModalOpen(false)}
+                style={{
+                  background: "none", border: "none", color: t.tabInactiveClr, fontSize: 13, fontWeight: 600,
+                  cursor: "pointer", marginTop: 6
+                }}
+              >
+                {lang === "ka" ? "დახურვა" : lang === "ru" ? "Закрыть" : "Close"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
