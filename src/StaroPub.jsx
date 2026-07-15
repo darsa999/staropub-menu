@@ -1,10 +1,25 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
-import Papa from "papaparse";
+import { initializeApp } from "firebase/app";
+import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
-// ──────────────────────────────────────────────────────────────────────────────
-// 👇 ჩასვი შენი Google Sheets CSV ბმული აქ
-// ──────────────────────────────────────────────────────────────────────────────
-const SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTb9meX1aqFVREVH0ybAXHfgXVUombtxAJV-Out0Uf3jo4XQJoK_TXlxG_twhKtL8Kog_QotnHC3Qp6/pub?output=csv";
+// ─── Firebase Client Initialization ──────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyBItCODkqjOBCSTHQLst_zimOnsrYcPUGo",
+  authDomain: "staropub-menu.firebaseapp.com",
+  projectId: "staropub-menu",
+  storageBucket: "staropub-menu.firebasestorage.app",
+  messagingSenderId: "211658818022",
+  appId: "1:211658818022:web:e944e70d38b71515b25627",
+  measurementId: "G-GQ5PKEN8SW"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const googleProvider = new GoogleAuthProvider();
+
+export { auth, googleProvider, signInWithPopup };
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 // ─── Timing constants ─────────────────────────────────────────────────────────
 const POUR_DURATION_MS  = 2000;
@@ -21,13 +36,13 @@ const LOADING_TEXT = {
 const DAILY_SPECIAL_LABEL = { ka: "✦ დღის შეთავაზება", en: "✦ Daily Special", ru: "✦ Блюдо дня" };
 
 // ─── Category labels ──────────────────────────────────────────────────────────
-const CATEGORY_LABELS = {
+const INITIAL_CATEGORY_LABELS = {
   grill:      { ka: "🔥 გრილი",               en: "🔥 Grill",        ru: "🔥 Гриль" },
   khinkali:   { ka: "🥟 ხინკალი",             en: "🥟 Khinkali",     ru: "🥟 Хинкали" },
   hot_dishes: { ka: "🍲 ცხელი კერძები",       en: "🍲 Hot Dishes",   ru: "🍲 Горячие блюда" },
   cold_dishes:{ ka: "🥗 ცივი კერძები",        en: "🥗 Cold Dishes",  ru: "🥗 Холодные закуски" },
   soup:       { ka: "🍜 წვნიანი კერძები",     en: "🍜 Soups",        ru: "🍜 Супы" },
-  salad:      { ka: "🥗 სალათები",            en: "🥗 Salads",       ru: "🥗 Салаты" },
+  salad:      { ka: "🥗 სალათები",            en: "🥗 Salads",       ru: "🥗 Salaty" },
   cheese:     { ka: "🧀 ყველი",               en: "🧀 Cheese",       ru: "🧀 Сыр" },
   bakery:     { ka: "🫓 ცომეული",             en: "🫓 Bakery",       ru: "🫓 Выпечка" },
   fish:       { ka: "🐟 თევზეული",            en: "🐟 Fish",         ru: "🐟 Рыба" },
@@ -35,19 +50,18 @@ const CATEGORY_LABELS = {
   beer:       { ka: "🍺 ლუდი",               en: "🍺 Beer",         ru: "🍺 Пиво" },
   hot_drink:  { ka: "☕ ცხელი სასმელები",     en: "☕ Hot Drinks",   ru: "☕ Горячие напитки" },
   Alcohol:    { ka: "🥃 სპირტიანი სასმელები", en: "🥃 Spirits",      ru: "🥃 Крепкие напитки" },
-  spirits:    { ka: "🥃 სპირტიანი სასმელები", en: "🥃 Spirits",      ru: "🥃 Крепкие напитки" },
   sauces:     { ka: "🫙 სოუსები",             en: "🫙 Sauces",       ru: "🫙 Соусы" },
   snacks:     { ka: "🍟 წასახემსებელი",       en: "🍟 Snacks",       ru: "🍟 Закуски" },
 };
 
-const CATEGORY_ICONS = {
+const INITIAL_CATEGORY_ICONS = {
   grill: "🔥", khinkali: "🥟", hot_dish: "🍲", soup: "🍜", salad: "🥗",
   cheese: "🧀", bakery: "🫓", fish: "🐟", side: "🍚", beer: "🍺",
   hot_drink: "☕", alcohol: "🥃", spirits: "🥃", sauces: "🫙", snacks: "🍟",
 };
 
 // ─── Categories that get the hot-steam effect ─────────────────────────────────
-const HOT_CATEGORIES = new Set(["grill", "hot_dishes", "hot_dish", "soup", "khinkali"]);
+const INITIAL_HOT_CATEGORIES = new Set(["grill", "hot_dishes", "hot_dish", "soup", "khinkali"]);
 
 const FOOTER_TEXT = {
   tagline: {
@@ -419,7 +433,8 @@ function SkeletonGrid({ isDark }) {
 // PRICE BLOCK
 // ══════════════════════════════════════════════════════════════════════════════
 function parseMultiPrice(raw) {
-  if (!raw || typeof raw !== "string") return null;
+  if (typeof raw !== "string") return null;
+  if (!raw) return null;
   const lines = raw.split(/\\n|\n/).map(l => l.trim()).filter(Boolean);
   if (lines.length < 2) return null;
   return lines.map(line => {
@@ -463,14 +478,18 @@ function PriceBlock({ item, modal = false, th }) {
 function ItemCard({
   item, lang, onOpen, th,
   customMenuEnabled = false, selected = false, onToggleSelect = null,
-  cartItems = [], onAddToCart, onUpdateQuantity
+  cartItems = [], onAddToCart, onUpdateQuantity,
+  categoryIcons, hotCategories
 }) {
   const t = th || THEME.light;
+  if (!item) return null;
+
   const name     = item[`name_${lang}`] || item.name_ka || "";
   const desc     = item[`desc_${lang}`] || item.desc_ka || "";
-  const imgSrc   = item.image ? `Images/${item.image}` : "";
-  const fallback = CATEGORY_ICONS[item.category] || "🍽️";
-  const isHot    = HOT_CATEGORIES.has(item.category);
+  const imgSrc   = item.image && typeof item.image === "string" ? (item.image.startsWith("http") || item.image.startsWith("data:") ? item.image : `Images/${item.image}`) : "";
+  const category = item.category || "";
+  const fallback = (categoryIcons && categoryIcons[category]) || INITIAL_CATEGORY_ICONS[category] || "🍽️";
+  const isHot    = (hotCategories && hotCategories.has(category)) || INITIAL_HOT_CATEGORIES.has(category);
 
   const shimmerDelay = React.useMemo(
     () => `-${(Math.random() * 8).toFixed(2)}s`,
@@ -626,246 +645,20 @@ function ItemCard({
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// DAILY SPECIALS CAROUSEL
-// ══════════════════════════════════════════════════════════════════════════════
-function DailySpecialsCarousel({ items, lang, onSelectDish, th }) {
-  const t = th || THEME.light;
-  const [current, setCurrent]       = useState(0);
-  const [displayed, setDisplayed]   = useState(0);
-  const [transitioning, setTransitioning] = useState(false);
-  const [direction, setDirection]   = useState(1);
-  const autoRef    = useRef(null);
-  const touchStartX = useRef(null);
-  const touchStartY = useRef(null);
-  const total = items.length;
-
-  const goTo = useCallback((next, dir = 1) => {
-    if (transitioning || next === current) return;
-    setDirection(dir);
-    setTransitioning(true);
-    setTimeout(() => {
-      setDisplayed(next);
-      setCurrent(next);
-      setTransitioning(false);
-    }, 380);
-  }, [transitioning, current]);
-
-  const next = useCallback(() => goTo((current + 1) % total, 1),  [current, total, goTo]);
-  const prev = useCallback(() => goTo((current - 1 + total) % total, -1), [current, total, goTo]);
-
-  useEffect(() => {
-    if (total < 2) return;
-    autoRef.current = setInterval(next, 4200);
-    return () => clearInterval(autoRef.current);
-  }, [next, total]);
-
-  const resetAuto = useCallback(() => {
-    clearInterval(autoRef.current);
-    autoRef.current = setInterval(next, 4200);
-  }, [next]);
-
-  const handleTouchStart = (e) => {
-    touchStartX.current = e.touches[0].clientX;
-    touchStartY.current = e.touches[0].clientY;
-  };
-  const handleTouchEnd = (e) => {
-    if (touchStartX.current === null) return;
-    const dx = e.changedTouches[0].clientX - touchStartX.current;
-    const dy = e.changedTouches[0].clientY - touchStartY.current;
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
-      if (dx < 0) { next(); } else { prev(); }
-      resetAuto();
-    }
-    touchStartX.current = null;
-    touchStartY.current = null;
-  };
-
-  if (!items || total === 0) return null;
-
-  const item     = items[displayed];
-  const name     = item[`name_${lang}`] || item.name_ka || "";
-  const desc     = item[`desc_${lang}`] || item.desc_ka || "";
-  const imgSrc   = item.image ? `Images/${item.image}` : "";
-  const fallback = CATEGORY_ICONS[item.category] || "🔥";
-  const isHot    = HOT_CATEGORIES.has(item.category);
-
-  const slideStyle = {
-    opacity: transitioning ? 0 : 1,
-    transform: transitioning
-      ? `translateX(${direction * 28}px) scale(0.97)`
-      : "translateX(0) scale(1)",
-    transition: "opacity 0.38s cubic-bezier(0.4,0,0.2,1), transform 0.38s cubic-bezier(0.4,0,0.2,1)",
-  };
-
-  const glowColor1 = t === THEME.dark ? "rgba(245,158,11,0.22)" : "rgba(184,101,32,0.14)";
-  const glowColor2 = t === THEME.dark ? "rgba(245,158,11,0.32)" : "rgba(200,130,30,0.22)";
-
-  return (
-    <div style={{ margin: "20px 0 24px", position: "relative" }}>
-      <style>{`
-        @keyframes carouselGlow {
-          0%,100% { box-shadow: 0 0 28px ${glowColor1}, 0 0 0 1px ${t.carouselBorder}; }
-          50%      { box-shadow: 0 0 44px ${glowColor2}, 0 0 0 1px ${t.carouselBorder}; }
-        }
-        @keyframes badgePulse {
-          0%,100% { opacity: 1; }
-          50%      { opacity: 0.78; }
-        }
-        .carousel-arrow:hover { background: rgba(200,120,40,0.35) !important; }
-        .carousel-dot-btn:hover { background: rgba(200,140,40,0.7) !important; }
-      `}</style>
-
-      {/* Badge row */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-        <div style={{
-          background: "linear-gradient(90deg, #b86520 0%, #e8a030 60%, #b86520 100%)",
-          color: "#fff",
-          fontSize: 11, fontWeight: 800, letterSpacing: "2px",
-          textTransform: "uppercase", padding: "5px 14px",
-          borderRadius: 20, fontFamily: "'Georgia', serif",
-          animation: "badgePulse 2.8s ease-in-out infinite",
-          boxShadow: "0 2px 12px rgba(184,101,32,0.5)",
-          flexShrink: 0,
-        }}>
-          {DAILY_SPECIAL_LABEL[lang]}
-        </div>
-        <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, rgba(184,101,32,0.4), transparent)" }} />
-      </div>
-
-      {/* Carousel frame */}
-      <div
-        style={{
-          borderRadius: 18, overflow: "hidden",
-          background: t.carouselFrame,
-          border: `1px solid ${t.carouselBorder}`,
-          animation: "carouselGlow 4s ease-in-out infinite",
-          position: "relative",
-          userSelect: "none", WebkitUserSelect: "none",
-        }}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-      >
-        <div style={slideStyle}>
-          <div style={{ display: "flex", flexDirection: "row", minHeight: 200 }} className="carousel-inner">
-            <style>{`
-              @media (max-width: 640px) {
-                .carousel-inner { flex-direction: column !important; }
-                .carousel-img-wrap { width: 100% !important; height: 220px !important; }
-                .carousel-text-wrap { padding: 18px 18px 22px !important; }
-              }
-            `}</style>
-
-            {/* Image side */}
-            <div className="carousel-img-wrap" style={{ width: "45%", minWidth: 180, position: "relative", overflow: "hidden", background: t.imgFallbackBg, flexShrink: 0 }}>
-              {imgSrc && (
-                <img key={imgSrc} src={imgSrc} alt={name} loading="lazy"
-                  onError={e => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex"; }}
-                  style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0, transition: "transform 0.6s ease" }}
-                  onMouseEnter={e => { e.target.style.transform = "scale(1.04)"; }}
-                  onMouseLeave={e => { e.target.style.transform = "scale(1)"; }}
-                />
-              )}
-              <div style={{ display: imgSrc ? "none" : "flex", fontSize: 72, position: "absolute", inset: 0, alignItems: "center", justifyContent: "center" }}>
-                <span>{fallback}</span>
-              </div>
-              {/* Steam on hot items */}
-              {isHot && <HotSteamOverlay />}
-              {/* Cinematic right-bleed overlay */}
-              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, transparent 60%, " + (t === THEME.dark ? "rgba(2,6,23,0.85)" : "rgba(242,237,227,0.85)") + ")", pointerEvents: "none" }} />
-              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 60, background: "linear-gradient(transparent, rgba(0,0,0,0.45))", pointerEvents: "none" }} />
-            </div>
-
-            {/* Text side */}
-            <div className="carousel-text-wrap" style={{ flex: 1, padding: "28px 28px 26px 24px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 10 }}>
-              {/* category chip */}
-              <div style={{
-                display: "inline-flex", alignItems: "center", gap: 5,
-                background: t.carouselChip,
-                border: `1px solid ${t.carouselChipBdr}`,
-                borderRadius: 20, padding: "3px 10px",
-                fontSize: 10, color: t.carouselChipClr,
-                letterSpacing: "1px", textTransform: "uppercase", fontWeight: 700,
-                width: "fit-content",
-              }}>
-                🔥 {lang === "ka" ? "გრილი" : lang === "ru" ? "Гриль" : "Grill"}
-              </div>
-              <h2 style={{ margin: 0, color: t.cardName, fontFamily: "'Georgia', serif", fontSize: "clamp(17px,3vw,26px)", fontWeight: 700, lineHeight: 1.25, letterSpacing: "0.2px", transition: "color 0.3s" }}>
-                {name}
-              </h2>
-              {desc && <p style={{ margin: 0, color: t.carouselDesc, fontSize: "clamp(11px,1.5vw,13px)", lineHeight: 1.6, maxWidth: 320 }}>{desc}</p>}
-              <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 4, flexWrap: "wrap" }}>
-                <span style={{ color: "#e8a030", fontFamily: "'Georgia', serif", fontSize: "clamp(20px,3.5vw,30px)", fontWeight: 700 }}>
-                  {formatPrice(item.price)}
-                </span>
-                <button
-                  onClick={() => onSelectDish(item)}
-                  style={{
-                    background: "linear-gradient(135deg, #b86520, #7a3a08)",
-                    border: "1px solid rgba(200,130,40,0.5)",
-                    borderRadius: 24, color: "#fff",
-                    padding: "8px 20px", fontSize: 12, fontWeight: 700,
-                    letterSpacing: "0.5px", cursor: "pointer",
-                    transition: "all 0.2s", fontFamily: "'Georgia', serif",
-                    boxShadow: "0 4px 14px rgba(184,101,32,0.4)", flexShrink: 0,
-                  }}
-                  onMouseEnter={e => { e.target.style.transform = "scale(1.04)"; e.target.style.boxShadow = "0 6px 20px rgba(232,160,48,0.5)"; }}
-                  onMouseLeave={e => { e.target.style.transform = ""; e.target.style.boxShadow = "0 4px 14px rgba(184,101,32,0.4)"; }}
-                >
-                  {lang === "ka" ? "დეტალები" : lang === "ru" ? "Подробнее" : "View Details"}
-                </button>
-              </div>
-              <div style={{ color: t.tabInactiveClr, fontSize: 10, letterSpacing: "1px", marginTop: 2 }}>
-                {current + 1} / {total}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Arrows */}
-        {total > 1 && (
-          <>
-            <button className="carousel-arrow" onClick={() => { prev(); resetAuto(); }} aria-label="Previous"
-              style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", background: "rgba(0,0,0,0.35)", border: `1px solid ${t.carouselBorder}`, borderRadius: "50%", width: 36, height: 36, color: "#c89040", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.2s", zIndex: 10, backdropFilter: "blur(6px)" }}>‹</button>
-            <button className="carousel-arrow" onClick={() => { next(); resetAuto(); }} aria-label="Next"
-              style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "rgba(0,0,0,0.35)", border: `1px solid ${t.carouselBorder}`, borderRadius: "50%", width: 36, height: 36, color: "#c89040", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.2s", zIndex: 10, backdropFilter: "blur(6px)" }}>›</button>
-          </>
-        )}
-      </div>
-
-      {/* Dots */}
-      {total > 1 && (
-        <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 12 }}>
-          {items.map((_, i) => (
-            <button key={i} className="carousel-dot-btn"
-              onClick={() => { goTo(i, i > current ? 1 : -1); resetAuto(); }}
-              style={{
-                width: i === current ? 22 : 7, height: 7, borderRadius: 4,
-                border: "none", padding: 0, cursor: "pointer",
-                background: i === current ? "linear-gradient(90deg, #b86520, #e8a030)" : (t === THEME.dark ? "rgba(245,158,11,0.25)" : "rgba(160,100,30,0.2)"),
-                transition: "all 0.3s cubic-bezier(0.4,0,0.2,1)",
-                boxShadow: i === current ? "0 0 8px rgba(232,160,48,0.5)" : "none",
-              }}
-              aria-label={`Slide ${i + 1}`}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
 // DISH DETAIL MODAL
 // ══════════════════════════════════════════════════════════════════════════════
-function DishModal({ item, lang, onClose, th, onAddToCart }) {
+function DishModal({ item, lang, onClose, th, onAddToCart, categoryIcons, categoryLabels, hotCategories }) {
   const t = th || THEME.light;
+  if (!item) return null;
+
   const name     = item[`name_${lang}`] || item.name_ka || "";
   const desc     = item[`desc_${lang}`] || item.desc_ka || "";
-  const imgSrc   = item.image ? `Images/${item.image}` : "";
-  const fallback = CATEGORY_ICONS[item.category] || "🍽️";
-  const catObj   = CATEGORY_LABELS[item.category];
-  const catLabel = catObj ? catObj[lang] : item.category || "";
-  const isHot    = HOT_CATEGORIES.has(item.category);
+  const imgSrc   = item.image && typeof item.image === "string" ? (item.image.startsWith("http") || item.image.startsWith("data:") ? item.image : `Images/${item.image}`) : "";
+  const category = item.category || "";
+  const fallback = (categoryIcons && categoryIcons[category]) || INITIAL_CATEGORY_ICONS[category] || "🍽️";
+  const catObj   = (categoryLabels && categoryLabels[category]) || INITIAL_CATEGORY_LABELS[category];
+  const catLabel = catObj ? catObj[lang] : category;
+  const isHot    = (hotCategories && hotCategories.has(category)) || INITIAL_HOT_CATEGORIES.has(category);
   const PRICE_LABEL = { ka: "ფასი", en: "Price", ru: "Цена" };
 
   const multi = parseMultiPrice(item.price);
@@ -1141,13 +934,7 @@ function SiteFooter({ lang, visible, th, currentView, setCurrentView, isAdmin })
           <div style={{ color:"#c8a050", fontSize:12, fontWeight:700, fontFamily:"'Georgia',serif", lineHeight:1.4 }}>{FOOTER_TEXT.tagline[lang]}</div>
           <div style={{ marginTop:3, color:"#4a3018", fontSize:9, letterSpacing:"1px" }}>StaroPub · სტაროპაბი · QR მენიუ</div>
         </div>
-        <div className="footer-right" style={{ textAlign:"center" }}>
-          {isAdmin && (
-            <button className="footer-nav-link" onClick={() => setCurrentView(currentView === "admin" ? "menu" : "admin")}>
-              ⚙️ Admin Panel
-            </button>
-          )}
-        </div>
+
       </div>
     </footer>
   );
@@ -1157,7 +944,7 @@ function SiteFooter({ lang, visible, th, currentView, setCurrentView, isAdmin })
 // ADMIN DASHBOARD COMPONENT
 // ══════════════════════════════════════════════════════════════════════════════
 function AdminDashboard({
-  lang, onClose,
+  lang, onClose, onLogout,
   waiterCalls, setWaiterCalls,
   bannerSettings, setBannerSettings,
   customMenuEnabled, setCustomMenuEnabled,
@@ -1166,9 +953,37 @@ function AdminDashboard({
   unavailableDishIds = [], setUnavailableDishIds,
   allItems = [], setAllItems,
   categoryOrder = [], setCategoryOrder,
-  dishOrder = [], setDishOrder
+  dishOrder = [], setDishOrder,
+  categoryLabels, setCategoryLabels,
+  categoryIcons, setCategoryIcons,
+  hotCategories, setHotCategories,
+  dbCategories, setDbCategories
 }) {
   const [activeAdminSection, setActiveAdminSection] = useState("calls");
+
+  // Visual appearance settings states
+  const [bgImageFile, setBgImageFile] = useState(null);
+  const [aboutImageFile, setAboutImageFile] = useState(null);
+
+  const handleUpdateBgImage = async (e) => {
+    e.preventDefault();
+    if (!bgImageFile) {
+      alert("გთხოვთ აირჩიოთ ფაილი");
+      return;
+    }
+    alert("სურათი წარმატებით განახლდა (სიმულაცია)");
+    setBgImageFile(null);
+  };
+
+  const handleUpdateAboutImage = async (e) => {
+    e.preventDefault();
+    if (!aboutImageFile) {
+      alert("გთხოვთ აირჩიოთ ფაილი");
+      return;
+    }
+    alert("სურათი წარმატებით განახლდა (სიმულაცია)");
+    setAboutImageFile(null);
+  };
 
   const [selectedSortCategory, setSelectedSortCategory] = useState("");
 
@@ -1184,6 +999,7 @@ function AdminDashboard({
   const [newCatEn, setNewCatEn]     = useState("");
   const [newCatRu, setNewCatRu]     = useState("");
   const [newCatIcon, setNewCatIcon] = useState("");
+  const [newCatImageFile, setNewCatImageFile] = useState(null);
 
   // Dish creation states
   const [newDishNameKa, setNewDishNameKa] = useState("");
@@ -1194,7 +1010,7 @@ function AdminDashboard({
   const [newDishDescRu, setNewDishDescRu] = useState("");
   const [newDishPrice, setNewDishPrice]   = useState("");
   const [newDishCat, setNewDishCat]       = useState("");
-  const [newDishImage, setNewDishImage]   = useState("");
+  const [newDishImageFile, setNewDishImageFile] = useState(null);
 
   useEffect(() => {
     if (!newDishCat && categoryOrder.length > 0) {
@@ -1202,110 +1018,214 @@ function AdminDashboard({
     }
   }, [categoryOrder, newDishCat]);
 
-  const handleCreateCategory = (e) => {
+  const handleCreateCategory = async (e) => {
     e.preventDefault();
     const key = newCatKey.trim().toLowerCase();
     if (!key) return alert("გთხოვთ მიუთითოთ კატეგორიის გასაღები (მაგ: dessert)!");
     if (categoryOrder.includes(key)) return alert("კატეგორია ამ გასაღებით უკვე არსებობს!");
 
-    CATEGORY_LABELS[key] = {
-      ka: newCatKa.trim() || key,
-      en: newCatEn.trim() || key,
-      ru: newCatRu.trim() || key,
-    };
-    CATEGORY_ICONS[key] = newCatIcon.trim() || "🍽️";
+    const formData = new FormData();
+    formData.append("id", key);
+    formData.append("name_ka", newCatKa.trim() || key);
+    formData.append("name_en", newCatEn.trim() || key);
+    formData.append("name_ru", newCatRu.trim() || key);
+    formData.append("icon", newCatIcon.trim() || "🍽️");
+    formData.append("isHot", "false");
+    if (newCatImageFile) {
+      formData.append("image", newCatImageFile);
+    }
 
-    setCategoryOrder(prev => [...prev, key]);
+    try {
+      const response = await fetch(`${API_URL}/api/categories`, {
+        method: "POST",
+        body: formData,
+        credentials: "include"
+      });
+      if (!response.ok) {
+        throw new Error("კატეგორიის დამატება ვერ მოხერხდა");
+      }
+      const createdCategory = await response.json();
+      const catId = createdCategory.id || createdCategory._id;
 
-    setNewCatKey("");
-    setNewCatKa("");
-    setNewCatEn("");
-    setNewCatRu("");
-    setNewCatIcon("");
+      setDbCategories(prev => [...prev, createdCategory]);
+      setCategoryOrder(prev => [...prev, catId]);
+      setCategoryLabels(prev => ({
+        ...prev,
+        [catId]: {
+          ka: createdCategory.name_ka || catId,
+          en: createdCategory.name_en || catId,
+          ru: createdCategory.name_ru || catId,
+        }
+      }));
+      setCategoryIcons(prev => ({
+        ...prev,
+        [catId]: createdCategory.icon || "🍽️"
+      }));
 
-    alert("კატეგორია წარმატებით დაემატა!");
+      setNewCatKey("");
+      setNewCatKa("");
+      setNewCatEn("");
+      setNewCatRu("");
+      setNewCatIcon("");
+      setNewCatImageFile(null);
+      // Try to reset file input via standard query selector or key reset
+      const fileInput = document.querySelector('input[type="file"][accept="image/*"]');
+      if (fileInput) fileInput.value = "";
+
+      alert("კატეგორია წარმატებით დაემატა!");
+    } catch (err) {
+      alert(`შეცდომა: ${err.message}`);
+    }
   };
 
-  const handleCreateDish = (e) => {
+  const handleCreateDish = async (e) => {
     e.preventDefault();
     if (!newDishNameKa.trim()) return alert("გთხოვთ მიუთითოთ კერძის დასახელება ქართულად!");
     if (!newDishCat) return alert("გთხოვთ აირჩიოთ კერძის კატეგორია!");
     const priceNum = parseFloat(newDishPrice);
     if (isNaN(priceNum) || priceNum <= 0) return alert("გთხოვთ მიუთითოთ კერძის ფასი!");
 
-    const newDishObj = {
-      id: `custom_${Date.now()}`,
-      category: newDishCat,
-      category_ka: CATEGORY_LABELS[newDishCat]?.ka || newDishCat,
-      name_ka: newDishNameKa.trim(),
-      name_en: newDishNameEn.trim() || newDishNameKa.trim(),
-      name_ru: newDishNameRu.trim() || newDishNameKa.trim(),
-      desc_ka: newDishDescKa.trim(),
-      desc_en: newDishDescEn.trim(),
-      desc_ru: newDishDescRu.trim(),
-      price: `${priceNum} ₾`,
-      image: newDishImage.trim() || "",
-    };
+    const formData = new FormData();
+    formData.append("name_ka", newDishNameKa.trim());
+    formData.append("name_en", newDishNameEn.trim() || newDishNameKa.trim());
+    formData.append("name_ru", newDishNameRu.trim() || newDishNameKa.trim());
+    formData.append("desc_ka", newDishDescKa.trim());
+    formData.append("desc_en", newDishDescEn.trim());
+    formData.append("desc_ru", newDishDescRu.trim());
+    formData.append("price", `${priceNum} ₾`);
+    formData.append("category", newDishCat);
+    if (newDishImageFile) {
+      formData.append("image", newDishImageFile);
+    }
 
-    setAllItems(prev => [...prev, newDishObj]);
+    try {
+      const response = await fetch(`${API_URL}/api/dishes`, {
+        method: "POST",
+        body: formData,
+        credentials: "include"
+      });
+      if (!response.ok) {
+        throw new Error("კერძის დამატება ვერ მოხერხდა");
+      }
+      const createdDish = await response.json();
+      const dishObj = {
+        ...createdDish,
+        id: createdDish.id || createdDish._id
+      };
 
-    setNewDishNameKa("");
-    setNewDishNameEn("");
-    setNewDishNameRu("");
-    setNewDishDescKa("");
-    setNewDishDescEn("");
-    setNewDishDescRu("");
-    setNewDishPrice("");
-    setNewDishImage("");
+      setAllItems(prev => [...prev, dishObj]);
 
-    alert("კერძი წარმატებით დაემატა!");
+      setNewDishNameKa("");
+      setNewDishNameEn("");
+      setNewDishNameRu("");
+      setNewDishDescKa("");
+      setNewDishDescEn("");
+      setNewDishDescRu("");
+      setNewDishPrice("");
+      setNewDishImageFile(null);
+      // Try to reset file input via standard query selector or key reset
+      const fileInputs = document.querySelectorAll('input[type="file"][accept="image/*"]');
+      fileInputs.forEach(input => { input.value = ""; });
+
+      alert("კერძი წარმატებით დაემატა!");
+    } catch (err) {
+      alert(`შეცდომა: ${err.message}`);
+    }
   };
 
-  const handleDeleteCategory = (catKey) => {
-    const labelObj = CATEGORY_LABELS[catKey] || { ka: catKey };
+  const handleDeleteCategory = async (catKey) => {
+    const labelObj = categoryLabels[catKey] || { ka: catKey };
     const label = labelObj.ka || catKey;
-    
+
     const categoryDishesCount = allItems.filter(dish => dish.category === catKey).length;
     let confirmMsg = `ნამდვილად გსურთ კატეგორიის "${label}" წაშლა?`;
     if (categoryDishesCount > 0) {
       confirmMsg += `\n\nგაფრთხილება: ეს კატეგორია შეიცავს ${categoryDishesCount} კერძს. კატეგორიის წაშლით ეს კერძებიც წაიშლება!`;
     }
-    
+
     if (window.confirm(confirmMsg)) {
-      setCategoryOrder(prev => prev.filter(x => x !== catKey));
-      
-      if (categoryDishesCount > 0) {
-        setAllItems(prev => prev.filter(dish => dish.category !== catKey));
+      try {
+        const response = await fetch(`${API_URL}/api/categories/${catKey}`, {
+          method: "DELETE",
+          credentials: "include"
+        });
+        if (!response.ok) {
+          throw new Error("კატეგორიის წაშლა ვერ მოხერხდა");
+        }
+
+        setCategoryOrder(prev => prev.filter(x => x !== catKey));
+        setDbCategories(prev => prev.filter(x => (x.id || x._id) !== catKey));
+        if (categoryDishesCount > 0) {
+          setAllItems(prev => prev.filter(dish => dish.category !== catKey));
+        }
+
+        setCategoryLabels(prev => {
+          const next = { ...prev };
+          delete next[catKey];
+          return next;
+        });
+        setCategoryIcons(prev => {
+          const next = { ...prev };
+          delete next[catKey];
+          return next;
+        });
+
+        alert(`კატეგორია "${label}" წარმატებით წაიშალა!`);
+      } catch (err) {
+        alert(`შეცდომა: ${err.message}`);
       }
-      
-      delete CATEGORY_LABELS[catKey];
-      delete CATEGORY_ICONS[catKey];
-      
-      alert(`კატეგორია "${label}" წარმატებით წაიშალა!`);
     }
   };
 
-  const handleDeleteDish = (dishId) => {
+  const handleDeleteDish = async (dishId) => {
     const dish = allItems.find(x => x.id === dishId);
     if (!dish) return;
     const name = dish.name_ka || dish.name_en || "";
-    
+
     if (window.confirm(`ნამდვილად გსურთ კერძის "${name}" წაშლა?`)) {
-      setAllItems(prev => prev.filter(x => x.id !== dishId));
-      alert(`კერძი "${name}" წარმატებით წაიშალა!`);
+      try {
+        const response = await fetch(`${API_URL}/api/dishes/${dishId}`, {
+          method: "DELETE",
+          credentials: "include"
+        });
+        if (!response.ok) {
+          throw new Error("კერძის წაშლა ვერ მოხერხდა");
+        }
+
+        setAllItems(prev => prev.filter(x => x.id !== dishId));
+        alert(`კერძი "${name}" წარმატებით წაიშალა!`);
+      } catch (err) {
+        alert(`შეცდომა: ${err.message}`);
+      }
     }
   };
 
-  const moveCategory = (index, direction) => {
+  const moveCategory = async (index, direction) => {
     const newIndex = index + direction;
     if (newIndex < 0 || newIndex >= categoryOrder.length) return;
-    setCategoryOrder(prev => {
-      const next = [...prev];
-      const temp = next[index];
-      next[index] = next[newIndex];
-      next[newIndex] = temp;
-      return next;
-    });
+
+    const newOrder = [...categoryOrder];
+    const temp = newOrder[index];
+    newOrder[index] = newOrder[newIndex];
+    newOrder[newIndex] = temp;
+
+    setCategoryOrder(newOrder);
+
+    try {
+      const response = await fetch(`${API_URL}/api/categories/reorder`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: newOrder, order: newOrder }),
+        credentials: "include"
+      });
+      if (!response.ok) {
+        throw new Error("კატეგორიების რიგითობის განახლება ვერ მოხერხდა");
+      }
+    } catch (err) {
+      alert(`შეცდომა: ${err.message}`);
+      // Revert if error
+      setCategoryOrder(categoryOrder);
+    }
   };
 
   const categoryDishes = allItems
@@ -1316,24 +1236,39 @@ function AdminDashboard({
       return (idxA === -1 ? 999999 : idxA) - (idxB === -1 ? 999999 : idxB);
     });
 
-  const moveDish = (dishId, direction) => {
+  const moveDish = async (dishId, direction) => {
     const indexInOrder = dishOrder.indexOf(dishId);
     if (indexInOrder === -1) return;
     const currentFilteredIndex = categoryDishes.findIndex(d => d.id === dishId);
     const targetFilteredIndex = currentFilteredIndex + direction;
     if (targetFilteredIndex < 0 || targetFilteredIndex >= categoryDishes.length) return;
-    
+
     const targetDishId = categoryDishes[targetFilteredIndex].id;
     const targetIndexInOrder = dishOrder.indexOf(targetDishId);
     if (targetIndexInOrder === -1) return;
 
-    setDishOrder(prev => {
-      const next = [...prev];
-      const temp = next[indexInOrder];
-      next[indexInOrder] = next[targetIndexInOrder];
-      next[targetIndexInOrder] = temp;
-      return next;
-    });
+    const newOrder = [...dishOrder];
+    const temp = newOrder[indexInOrder];
+    newOrder[indexInOrder] = newOrder[targetIndexInOrder];
+    newOrder[targetIndexInOrder] = temp;
+
+    setDishOrder(newOrder);
+
+    try {
+      const response = await fetch(`${API_URL}/api/dishes/reorder`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: newOrder, order: newOrder }),
+        credentials: "include"
+      });
+      if (!response.ok) {
+        throw new Error("კერძების რიგითობის განახლება ვერ მოხერხდა");
+      }
+    } catch (err) {
+      alert(`შეცდომა: ${err.message}`);
+      // Revert if error
+      setDishOrder(dishOrder);
+    }
   };
 
   const bannerImages = [
@@ -1344,47 +1279,70 @@ function AdminDashboard({
   ];
 
   return (
-    <div style={{ maxWidth: 800, margin: "0 auto", padding: "0 16px 120px", color: "#f0c060" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 0", borderBottom: "1px solid rgba(245,158,11,0.25)" }}>
+    <div style={{ display: "flex", minHeight: "100vh", color: "#f0c060", background: "#0a0f1d", width: "100%" }}>
+      {/* Left Sidebar */}
+      <div style={{ width: 280, minWidth: 280, borderRight: "1px solid rgba(245,158,11,0.2)", background: "#060a13", padding: "24px 16px", display: "flex", flexDirection: "column", gap: 20 }}>
         <div>
-          <h2 style={{ margin: 0, fontFamily: "'Georgia', serif", fontSize: 24 }}>ადმინისტრატორის მართვის პანელი</h2>
-          <span style={{ fontSize: 11, color: "#8a6040", letterSpacing: "1px", textTransform: "uppercase" }}>მართვის პანელი</span>
+          <h2 style={{ margin: 0, fontFamily: "'Georgia', serif", fontSize: 20, color: "#f0c060" }}>ადმინისტრატორი</h2>
+          <span style={{ fontSize: 10, color: "#8a6040", letterSpacing: "1px", textTransform: "uppercase" }}>StaroPub Menu</span>
         </div>
-        <button
-          onClick={onClose}
-          style={{ background: "rgba(180,120,40,0.1)", border: "1px solid rgba(180,120,40,0.3)", borderRadius: 10, color: "#f0c060", padding: "8px 14px", cursor: "pointer", fontSize: 13, fontWeight: 700 }}
-        >
-          პანელიდან გამოსვლა
-        </button>
-      </div>
 
-      <div style={{ display: "flex", gap: 10, overflowX: "auto", padding: "16px 0", scrollbarWidth: "none" }}>
-        {[
-          { key: "calls", label: `🔔 გამოძახებები (${waiterCalls.length})` },
-          { key: "banner", label: "📢 ბანერის პარამეტრები" },
-          { key: "global", label: "⚙️ გლობალური პარამეტრები" },
-          { key: "reviews", label: `💬 შეფასებები (${reviews.length})` },
-          { key: "availability", label: `🚫 ხელმისაწვდომობა (${allItems.length})` },
-          { key: "sorting", label: "↕️ სორტირება და რიგითობა" },
-          { key: "create", label: "➕ კერძის/კატეგორიის დამატება" },
-        ].map(tab => (
+        {/* Vertical Tabs */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
+          {[
+            { key: "calls", label: `🔔 გამოძახებები (${waiterCalls.length})` },
+            { key: "banner", label: "📢 ბანერის პარამეტრები" },
+            { key: "global", label: "⚙️ გლობალური პარამეტრები" },
+            { key: "look", label: "🎨 საიტის იერსახის მართვა" },
+            { key: "reviews", label: `💬 შეფასებები (${reviews.length})` },
+            { key: "availability", label: `🚫 ხელმისაწვდომობა (${allItems.length})` },
+            { key: "sorting", label: "↕️ სორტირება და რიგითობა" },
+            { key: "create", label: "➕ კერძის/კატეგორიის დამატება" },
+          ].map(tab => {
+            const isActive = activeAdminSection === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveAdminSection(tab.key)}
+                style={{
+                  width: "100%",
+                  textAlign: "left",
+                  background: isActive ? "linear-gradient(135deg, #b86520, #7a3a08)" : "rgba(255,255,255,0.03)",
+                  border: isActive ? "1px solid #e8a030" : "1px solid rgba(180,120,40,0.15)",
+                  borderRadius: 12,
+                  color: isActive ? "#fff" : "#8a6040",
+                  padding: "12px 16px",
+                  cursor: "pointer",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  transition: "all 0.2s"
+                }}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Logout and Close Buttons */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, borderTop: "1px solid rgba(245,158,11,0.15)", paddingTop: 16 }}>
           <button
-            key={tab.key}
-            onClick={() => setActiveAdminSection(tab.key)}
-            style={{
-              whiteSpace: "nowrap", flexShrink: 0,
-              background: activeAdminSection === tab.key ? "linear-gradient(135deg,#b86520,#7a3a08)" : "rgba(255,255,255,0.03)",
-              border: `1px solid ${activeAdminSection === tab.key ? "rgba(200,120,40,0.6)" : "rgba(180,120,40,0.15)"}`,
-              color: activeAdminSection === tab.key ? "#fff" : "#8a6040",
-              borderRadius: 12, padding: "8px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.2s"
-            }}
+            onClick={onLogout}
+            style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 10, color: "#f87171", padding: "10px 14px", cursor: "pointer", fontSize: 13, fontWeight: 700 }}
           >
-            {tab.label}
+            სისტემიდან გამოსვლა
           </button>
-        ))}
+          <button
+            onClick={onClose}
+            style={{ background: "rgba(180,120,40,0.1)", border: "1px solid rgba(180,120,40,0.3)", borderRadius: 10, color: "#f0c060", padding: "10px 14px", cursor: "pointer", fontSize: 13, fontWeight: 700 }}
+          >
+            დახურვა
+          </button>
+        </div>
       </div>
 
-      <div style={{ background: "linear-gradient(145deg, #1e293b, #0f172a)", border: "1px solid rgba(180,120,40,0.2)", borderRadius: 16, padding: 24 }}>
+      {/* Right Content Area */}
+      <div style={{ flex: 1, padding: "32px 40px", overflowY: "auto", background: "#0a0f1d" }}>
         
         {activeAdminSection === "calls" && (
           <div>
@@ -1441,6 +1399,53 @@ function AdminDashboard({
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {activeAdminSection === "look" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 32, maxWidth: 600 }}>
+            <div>
+              <h3 style={{ margin: "0 0 8px", fontFamily: "'Georgia', serif", fontSize: 22, color: "#f0c060" }}>საიტის იერსახის მართვა</h3>
+              <p style={{ margin: 0, fontSize: 13, color: "#8a6040" }}>საიტის ვიზუალური ნაწილის რედაქტირება</p>
+            </div>
+
+            {/* Block A */}
+            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(245,158,11,0.15)", borderRadius: 16, padding: 24 }}>
+              <h4 style={{ margin: "0 0 16px", fontSize: 16, color: "#e8a030" }}>ბექგრაუნდის სურათის ატვირთვა</h4>
+              <form onSubmit={handleUpdateBgImage} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setBgImageFile(e.target.files[0])}
+                  style={{ color: "#cbd5e1", fontSize: 13 }}
+                />
+                <button
+                  type="submit"
+                  style={{ alignSelf: "flex-start", background: "linear-gradient(135deg, #b86520, #7a3a08)", border: "1px solid #e8a030", borderRadius: 10, color: "#fff", padding: "10px 20px", cursor: "pointer", fontSize: 13, fontWeight: "bold" }}
+                >
+                  სურათის განახლება
+                </button>
+              </form>
+            </div>
+
+            {/* Block B */}
+            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(245,158,11,0.15)", borderRadius: 16, padding: 24 }}>
+              <h4 style={{ margin: "0 0 16px", fontSize: 16, color: "#e8a030" }}>ჩვენს შესახებ გვერდის ფოტო</h4>
+              <form onSubmit={handleUpdateAboutImage} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setAboutImageFile(e.target.files[0])}
+                  style={{ color: "#cbd5e1", fontSize: 13 }}
+                />
+                <button
+                  type="submit"
+                  style={{ alignSelf: "flex-start", background: "linear-gradient(135deg, #b86520, #7a3a08)", border: "1px solid #e8a030", borderRadius: 10, color: "#fff", padding: "10px 20px", cursor: "pointer", fontSize: 13, fontWeight: "bold" }}
+                >
+                  სურათის განახლება
+                </button>
+              </form>
+            </div>
           </div>
         )}
 
@@ -1596,7 +1601,7 @@ function AdminDashboard({
                     <div>
                       <span style={{ fontSize: 14, fontWeight: "bold", color: isAvailable ? "#f0c060" : "#64748b" }}>{dishName}</span>
                       <span style={{ fontSize: 10, color: "#8a6040", marginLeft: 10, textTransform: "uppercase" }}>
-                        {CATEGORY_LABELS[dish.category]?.ka || dish.category}
+                        {categoryLabels[dish.category]?.ka || dish.category}
                       </span>
                     </div>
                     <button
@@ -1627,9 +1632,9 @@ function AdminDashboard({
             {/* Category sorting section */}
             <div style={{ marginBottom: 32 }}>
               <h4 style={{ margin: "0 0 12px", fontFamily: "'Georgia', serif", fontSize: 16 }}>კატეგორიების რიგითობა</h4>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 220, overflowY: "auto", paddingRight: 6 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: "none", overflow: "visible" }}>
                 {categoryOrder.map((cat, idx) => {
-                  const catLabelObj = CATEGORY_LABELS[cat] || { ka: cat, en: cat, ru: cat };
+                  const catLabelObj = categoryLabels[cat] || { ka: cat, en: cat, ru: cat };
                   return (
                     <div key={cat} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(180,120,40,0.12)", borderRadius: 10, padding: "8px 12px" }}>
                       <span style={{ fontSize: 13, fontWeight: "bold" }}>{catLabelObj.ka || cat}</span>
@@ -1677,20 +1682,21 @@ function AdminDashboard({
             <div>
               <h4 style={{ margin: "0 0 12px", fontFamily: "'Georgia', serif", fontSize: 16 }}>კერძების რიგითობა</h4>
               
-              <div style={{ marginBottom: 16, display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ marginBottom: 24, display: "flex", flexDirection: "column", gap: 6, overflow: "visible" }}>
                 <label style={{ fontSize: 12, color: "#8a6040", textTransform: "uppercase", fontWeight: "bold" }}>აირჩიეთ კატეგორია</label>
                 <select
                   value={selectedSortCategory}
                   onChange={e => setSelectedSortCategory(e.target.value)}
                   style={{
                     background: "#141210", border: "1px solid rgba(245,158,11,0.2)",
-                    borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", width: "100%", fontFamily: "'Georgia', serif"
+                    borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", width: "100%", fontFamily: "'Georgia', serif",
+                    colorScheme: "dark", overflow: "visible"
                   }}
                 >
                   {categoryOrder.map(cat => {
-                    const catLabelObj = CATEGORY_LABELS[cat] || { ka: cat, en: cat, ru: cat };
+                    const catLabelObj = categoryLabels[cat] || { ka: cat, en: cat, ru: cat };
                     return (
-                      <option key={cat} value={cat}>
+                      <option key={cat} value={cat} style={{ background: "#141210", color: "#f0c060" }}>
                         {catLabelObj.ka || cat}
                       </option>
                     );
@@ -1818,9 +1824,19 @@ function AdminDashboard({
                   </div>
                 </div>
 
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>კატეგორიის სურათი (ატვირთვა)</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={e => setNewCatImageFile(e.target.files[0])}
+                    style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
+                  />
+                </div>
+
                 <button
                   type="submit"
-                  style={{ background: "linear-gradient(135deg,#b86520,#7a3a08)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 10, color: "#fff", padding: "10px 16px", cursor: "pointer", fontSize: 13, fontWeight: "bold", marginTop: 8 }}
+                  style={{ background: "linear-gradient(135deg,#b86520,#7a3a08)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 10, color: "#fff", padding: "10px 16px", cursor: "pointer", fontSize: 13, fontWeight: "bold", marginTop: 8, width: "fit-content" }}
                 >
                   კატეგორიის დამატება
                 </button>
@@ -1921,7 +1937,7 @@ function AdminDashboard({
                       style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13, height: 41 }}
                     >
                       {categoryOrder.map(cat => {
-                        const labelObj = CATEGORY_LABELS[cat] || { ka: cat };
+                        const labelObj = categoryLabels[cat] || { ka: cat };
                         return (
                           <option key={cat} value={cat}>
                             {labelObj.ka || cat}
@@ -1931,12 +1947,11 @@ function AdminDashboard({
                     </select>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>სურათის სახელი (Images/)</label>
+                    <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>სურათი (ატვირთვა)</label>
                     <input
-                      type="text"
-                      placeholder="cheesecake.jpg"
-                      value={newDishImage}
-                      onChange={e => setNewDishImage(e.target.value)}
+                      type="file"
+                      accept="image/*"
+                      onChange={e => setNewDishImageFile(e.target.files[0])}
                       style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
                     />
                   </div>
@@ -1944,7 +1959,7 @@ function AdminDashboard({
 
                 <button
                   type="submit"
-                  style={{ background: "linear-gradient(135deg,#b86520,#7a3a08)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 10, color: "#fff", padding: "10px 16px", cursor: "pointer", fontSize: 13, fontWeight: "bold", marginTop: 8 }}
+                  style={{ background: "linear-gradient(135deg,#b86520,#7a3a08)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 10, color: "#fff", padding: "10px 16px", cursor: "pointer", fontSize: 13, fontWeight: "bold", marginTop: 8, width: "fit-content"}}
                 >
                   კერძის დამატება
                 </button>
@@ -1972,10 +1987,125 @@ export default function StaroPub() {
   const [isDark, setIsDark]             = useState(false);
   const [currentView, setCurrentView]   = useState("menu");
 
+  const [categoryLabels, setCategoryLabels] = useState(INITIAL_CATEGORY_LABELS);
+  const [categoryIcons, setCategoryIcons] = useState(INITIAL_CATEGORY_ICONS);
+  const [hotCategories, setHotCategories] = useState(INITIAL_HOT_CATEGORIES);
+  const [dbCategories, setDbCategories] = useState([]);
+
   // Admin and availability states
-  const isAdmin = React.useMemo(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get("admin") === "true";
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+
+  const [authTab, setAuthTab] = useState("login");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authRememberMe, setAuthRememberMe] = useState(false);
+  const [authError, setAuthError] = useState("");
+
+  const handleAuthSubmit = async (e) => {
+    e.preventDefault();
+    setAuthError("");
+    const url = authTab === "login"
+      ? `${API_URL}/api/auth/login`
+      : `${API_URL}/api/auth/register`;
+
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: authEmail.trim(),
+          password: authPassword,
+          rememberMe: authRememberMe
+        }),
+        credentials: "include"
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "ავტორიზაცია ვერ მოხერხდა");
+      }
+      setIsAdmin(true);
+      setIsAuthenticated(true);
+      setAuthModalOpen(false);
+      setAuthEmail("");
+      setAuthPassword("");
+      setAuthRememberMe(false);
+      setCurrentView("admin");
+      
+      const u = new URL(window.location.href);
+      u.searchParams.set("admin", "true");
+      window.history.pushState({}, "", u.toString());
+    } catch (err) {
+      setAuthError(err.message);
+    }
+  };
+
+  const handleSocialLogin = async (providerName) => {
+    setAuthError("");
+    try {
+      let provider;
+      if (providerName === "google") {
+        provider = googleProvider;
+      } else {
+        throw new Error("Unsupported provider");
+      }
+
+      const result = await signInWithPopup(auth, provider);
+      const idToken = await result.user.getIdToken();
+
+      const response = await fetch(`${API_URL}/api/auth/social-login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: idToken }),
+        credentials: "include"
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "სოციალური ავტორიზაცია ვერ მოხერხდა");
+      }
+      setIsAdmin(true);
+      setIsAuthenticated(true);
+      setAuthModalOpen(false);
+      setCurrentView("admin");
+
+      const u = new URL(window.location.href);
+      u.searchParams.set("admin", "true");
+      window.history.pushState({}, "", u.toString());
+    } catch (err) {
+      setAuthError(err.message);
+    }
+  };
+
+  const logoTimerRef = useRef(null);
+
+  const handleLogoPressStart = useCallback(() => {
+    if (logoTimerRef.current) {
+      clearTimeout(logoTimerRef.current);
+    }
+    logoTimerRef.current = setTimeout(() => {
+      if (isAuthenticated) {
+        setCurrentView("admin");
+      } else {
+        setAuthModalOpen(true);
+      }
+      logoTimerRef.current = null;
+    }, 5000);
+  }, [isAuthenticated]);
+
+  const handleLogoPressEnd = useCallback(() => {
+    if (logoTimerRef.current) {
+      clearTimeout(logoTimerRef.current);
+      logoTimerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (logoTimerRef.current) {
+        clearTimeout(logoTimerRef.current);
+      }
+    };
   }, []);
 
   const [unavailableDishIds, setUnavailableDishIds] = useState([]);
@@ -2188,65 +2318,82 @@ export default function StaroPub() {
   }, []);
 
   useEffect(() => {
-    if (!SPREADSHEET_URL || SPREADSHEET_URL === "YOUR_GOOGLE_SHEETS_CSV_URL_HERE") {
-      setError("SPREADSHEET_URL არ არის დაყენებული.");
-      fetchedRows.current = [];
-      setPhase(prev => prev === "skeleton" ? "menu" : prev);
-      return;
-    }
-    Papa.parse(SPREADSHEET_URL, {
-      download: true, header: true, skipEmptyLines: true,
-      complete: (results) => {
-        const rows = results.data.filter(r => r.id && r.category && r.name_ka);
-        fetchedRows.current = rows;
+    const fetchData = async () => {
+      try {
+        try {
+          const meRes = await fetch(`${API_URL}/api/auth/me`, { credentials: "include" });
+          if (meRes.ok) {
+            setIsAdmin(true);
+            setIsAuthenticated(true);
+          } else {
+            setIsAdmin(false);
+            setIsAuthenticated(false);
+            setCurrentView(prev => prev === "admin" ? "menu" : prev);
+          }
+        } catch (meErr) {
+          console.warn("Session validation failed:", meErr);
+        }
+
+        const catRes = await fetch(`${API_URL}/api/categories`, { credentials: "include" });
+        if (!catRes.ok) throw new Error("კატეგორიების ჩატვირთვა ვერ მოხერხდა");
+        const categoriesData = await catRes.json();
+
+        const dishRes = await fetch(`${API_URL}/api/dishes`, { credentials: "include" });
+        if (!dishRes.ok) throw new Error("კერძების ჩატვირთვა ვერ მოხერხდა");
+        const dishesData = await dishRes.json();
+
+        const labels = {};
+        const icons = {};
+        const hot = new Set();
+        categoriesData.forEach(cat => {
+          const key = cat.id || cat._id;
+          labels[key] = {
+            ka: cat.name_ka || key,
+            en: cat.name_en || key,
+            ru: cat.name_ru || key,
+          };
+          icons[key] = cat.icon || "🍽️";
+          if (cat.isHot) {
+            hot.add(key);
+          }
+        });
+
+        setCategoryLabels(labels);
+        setCategoryIcons(icons);
+        setHotCategories(hot);
+        setDbCategories(categoriesData);
+
+        const formattedDishes = dishesData.map(dish => ({
+          ...dish,
+          id: dish.id || dish._id,
+        }));
+
+        fetchedRows.current = formattedDishes;
+        setAllItems(formattedDishes);
+
+        setCategoryOrder(categoriesData.map(cat => cat.id || cat._id));
+        
+        // Transition phase if the setTimeout hasn't already fired
         setPhase(prev => {
           if (prev === "skeleton") {
-            setTimeout(() => { 
-              setAllItems(rows); 
-              setActiveTab(null); 
-              setPhase("menu"); 
+            setTimeout(() => {
+              setPhase("menu");
             }, SKELETON_DELAY_MS);
             return "skeleton";
           }
           return prev;
         });
-      },
-      error: (err) => {
-        setError(`CSV შეცდომა: ${err.message}`);
+        setError(null);
+      } catch (err) {
+        setError(`შეცდომა მონაცემების ჩატვირთვისას: ${err.message}`);
         fetchedRows.current = [];
-        setPhase(prev => { if (prev === "skeleton") setTimeout(() => setPhase("menu"), 300); return prev; });
-      },
-    });
+        setPhase("menu");
+      }
+    };
+
+    fetchData();
   }, []);
 
-  // ─── Derived data ─────────────────────────────────────────────────────────
-  const rawCategories = React.useMemo(() => {
-    const seen = new Set();
-    return allItems.reduce((acc, item) => {
-      if (!unavailableDishIds.includes(item.id) && !seen.has(item.category)) {
-        seen.add(item.category);
-        acc.push(item.category);
-      }
-      return acc;
-    }, []);
-  }, [allItems, unavailableDishIds]);
-
-  // Sync categoryOrder when rawCategories changes
-  useEffect(() => {
-    if (rawCategories.length > 0) {
-      setCategoryOrder(prev => {
-        const next = [...prev];
-        rawCategories.forEach(cat => {
-          if (!next.includes(cat)) {
-            next.push(cat);
-          }
-        });
-        return next.filter(cat => rawCategories.includes(cat));
-      });
-    }
-  }, [rawCategories]);
-
-  // Sync dishOrder when allItems changes
   useEffect(() => {
     if (allItems.length > 0) {
       setDishOrder(prev => {
@@ -2314,10 +2461,7 @@ export default function StaroPub() {
   return (
     <div style={{
       minHeight: "100vh",
-      backgroundImage: "url('Images/staropub_main.jpg')",
-      backgroundAttachment: "fixed",
-      backgroundSize: "cover",
-      backgroundPosition: "center",
+      background: t.appBg,
       fontFamily: "'Georgia','DejaVu Serif',serif",
       color: t.bodyText,
       position: "relative",
@@ -2434,11 +2578,21 @@ export default function StaroPub() {
       {!isPour && (
         <header style={{ position:"sticky", top:0, zIndex:100, background:t.headerBg, borderBottom:t.headerBorder, backdropFilter:"blur(12px)", padding:"0 16px", transition:"background 0.3s, border-color 0.3s" }}>
           <div style={{ maxWidth:1200, margin:"0 auto", display:"flex", alignItems:"center", height:64, gap:12 }}>
-            <img src="Images/logo.jpg" alt="StaroPub Logo" loading="lazy"
-              style={{ width:40, height:40, borderRadius:"50%", objectFit:"cover", boxShadow:"0 2px 12px rgba(200,120,32,0.4)", border:"1px solid rgba(200,160,60,0.3)", flexShrink:0 }}
-              onError={e => { e.target.style.display="none"; e.target.nextSibling.style.display="flex"; }}
-            />
-            <div style={{ display:"none", width:40, height:40, borderRadius:"50%", background:"linear-gradient(135deg,#c87820,#7a4010)", alignItems:"center", justifyContent:"center", fontSize:20, boxShadow:"0 2px 12px rgba(200,120,32,0.4)", border:"1px solid rgba(200,160,60,0.3)", flexShrink:0 }}>🍺</div>
+            <div
+              onMouseDown={handleLogoPressStart}
+              onMouseUp={handleLogoPressEnd}
+              onMouseLeave={handleLogoPressEnd}
+              onTouchStart={handleLogoPressStart}
+              onTouchEnd={handleLogoPressEnd}
+              onContextMenu={e => e.preventDefault()}
+              style={{ display: "flex", alignItems: "center", cursor: "pointer", flexShrink: 0, userSelect: "none", WebkitUserSelect: "none", WebkitTouchCallout: "none" }}
+            >
+              <img src="Images/logo.jpg" alt="StaroPub Logo" loading="lazy"
+                style={{ width:40, height:40, borderRadius:"50%", objectFit:"cover", boxShadow:"0 2px 12px rgba(200,120,32,0.4)", border:"1px solid rgba(200,160,60,0.3)", flexShrink:0 }}
+                onError={e => { e.target.style.display="none"; e.target.nextSibling.style.display="flex"; }}
+              />
+              <div style={{ display:"none", width:40, height:40, borderRadius:"50%", background:"linear-gradient(135deg,#c87820,#7a4010)", alignItems:"center", justifyContent:"center", fontSize:20, boxShadow:"0 2px 12px rgba(200,120,32,0.4)", border:"1px solid rgba(200,160,60,0.3)", flexShrink:0 }}>🍺</div>
+            </div>
             <div style={{ flex:1 }}>
               <div style={{ color:t.brandName, fontSize:18, fontWeight:700, letterSpacing:"0.5px", lineHeight:1.1, transition:"color 0.3s" }}>StaroPub</div>
               <div style={{ color:t.brandSub, fontSize:10, letterSpacing:"1px", transition:"color 0.3s" }}>სტაროპაბი</div>
@@ -2458,13 +2612,7 @@ export default function StaroPub() {
                 )}
               </button>
 
-              {isAdmin && (
-                <button onClick={() => setCurrentView(currentView === "admin" ? "menu" : "admin")} title="Admin Panel"
-                  style={{ background:"rgba(255,255,255,0.06)", border:`1px solid ${isDark ? "rgba(245,158,11,0.28)" : "rgba(180,120,40,0.28)"}`, color: t.brandName, borderRadius:8, padding:"6px 10px", cursor:"pointer", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.25s" }}
-                  aria-label="Admin Panel">
-                  ⚙️
-                </button>
-              )}
+
               
               {/* Restored Theme Switcher */}
               <button onClick={() => setIsDark(d => !d)} title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
@@ -2521,7 +2669,7 @@ export default function StaroPub() {
           {isMenu && categories.length > 0 && currentView === "menu" && activeTab !== null && (
             <div ref={tabsRef} className="tabs-row" style={{ display:"flex", gap:4, overflowX:"auto", padding:"8px 0 10px", maxWidth:1200, margin:"0 auto", scrollbarWidth:"none" }}>
               {categories.map(cat => {
-                const catObj = CATEGORY_LABELS[cat];
+                const catObj = categoryLabels[cat];
                 const label  = catObj ? catObj[lang] : cat;
                 const active = activeTab === cat;
                 return (
@@ -2594,15 +2742,7 @@ export default function StaroPub() {
               {/* ── LANDING VIEW: Category Grid ── */}
               {activeTab === null && !searchQuery ? (
                 <>
-                  {/* Daily Specials Carousel (grill specials) */}
-                  {grillSpecials.length > 0 && (
-                    <DailySpecialsCarousel
-                      items={grillSpecials}
-                      lang={lang}
-                      onSelectDish={setSelectedDish}
-                      th={t}
-                    />
-                  )}
+
 
                   {/* Grid of Categories */}
                   <div style={{ marginTop: 24 }}>
@@ -2620,18 +2760,29 @@ export default function StaroPub() {
                       `}</style>
                       <div className="categories-landing-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16, width: "100%", gridColumn: "span 2" }}>
                         {categories.map(cat => {
-                          const labelObj = CATEGORY_LABELS[cat] || { ka: cat, en: cat, ru: cat };
-                          const icon = CATEGORY_ICONS[cat] || "🍽️";
+                          const labelObj = categoryLabels[cat] || { ka: cat, en: cat, ru: cat };
+                          const icon = categoryIcons[cat] || "🍽️";
                           const count = allItems.filter(item => item.category === cat && !unavailableDishIds.includes(item.id)).length;
+                          
+                          const catObj = dbCategories.find(c => (c.id || c._id) === cat);
+                          const catImage = catObj?.image;
                           const firstDishWithImage = allItems.find(item => item.category === cat && !unavailableDishIds.includes(item.id) && item.image);
+
+                          let imgSrc = "";
+                          if (catImage) {
+                            imgSrc = catImage;
+                          } else if (firstDishWithImage) {
+                            const dishImg = firstDishWithImage.image;
+                            imgSrc = (dishImg.startsWith("http://") || dishImg.startsWith("https://") || dishImg.startsWith("data:")) ? dishImg : `Images/${dishImg}`;
+                          }
 
                           return (
                             <div key={cat} onClick={() => scrollTab(cat)} className="category-card">
                               {/* Top image or icon fallback */}
                               <div style={{ width: "100%", height: 110, overflow: "hidden", position: "relative", borderBottom: t.cardBorder }}>
-                                {firstDishWithImage ? (
+                                {imgSrc ? (
                                   <img
-                                    src={`Images/${firstDishWithImage.image}`}
+                                    src={imgSrc}
                                     alt={labelObj[lang]}
                                     style={{
                                       width: "100%",
@@ -2755,6 +2906,8 @@ export default function StaroPub() {
                           cartItems={cartItems}
                           onAddToCart={addToCart}
                           onUpdateQuantity={updateQuantity}
+                          categoryIcons={categoryIcons}
+                          hotCategories={hotCategories}
                         />
                       ))}
                     </div>
@@ -2774,11 +2927,32 @@ export default function StaroPub() {
       )}
 
       {/* Admin Panel View */}
-      {!isPour && currentView === "admin" && (
-        <main style={{ maxWidth:1200, margin:"0 auto", padding:"16px 0 112px", animation:"fadeIn 0.3s ease-out", position:"relative", zIndex:1 }}>
+      {!isPour && currentView === "admin" && isAuthenticated && (
+        <main style={{ width: "100%", minHeight: "100vh", animation:"fadeIn 0.3s ease-out", position:"relative", zIndex:1 }}>
           <AdminDashboard
             lang={lang}
-            onClose={() => setCurrentView("menu")}
+            onClose={() => {
+              setCurrentView("menu");
+              const u = new URL(window.location.href);
+              u.searchParams.delete("admin");
+              window.history.pushState({}, "", u.toString());
+            }}
+            onLogout={async () => {
+              try {
+                await fetch(`${API_URL}/api/auth/logout`, {
+                  method: "POST",
+                  credentials: "include"
+                });
+              } catch (e) {
+                console.error("Logout failed:", e);
+              }
+              setIsAdmin(false);
+              setIsAuthenticated(false);
+              setCurrentView("menu");
+              const u = new URL(window.location.href);
+              u.searchParams.delete("admin");
+              window.history.pushState({}, "", u.toString());
+            }}
             waiterCalls={waiterCalls}
             setWaiterCalls={setWaiterCalls}
             bannerSettings={bannerSettings}
@@ -2797,6 +2971,14 @@ export default function StaroPub() {
             setCategoryOrder={setCategoryOrder}
             dishOrder={dishOrder}
             setDishOrder={setDishOrder}
+            categoryLabels={categoryLabels}
+            setCategoryLabels={setCategoryLabels}
+            categoryIcons={categoryIcons}
+            setCategoryIcons={setCategoryIcons}
+            hotCategories={hotCategories}
+            setHotCategories={setHotCategories}
+            dbCategories={dbCategories}
+            setDbCategories={setDbCategories}
           />
         </main>
       )}
@@ -2805,7 +2987,16 @@ export default function StaroPub() {
 
       {/* Dish Detail Modal */}
       {selectedDish && (
-        <DishModal item={selectedDish} lang={lang} onClose={() => setSelectedDish(null)} th={t} onAddToCart={addToCart} />
+        <DishModal
+          item={selectedDish}
+          lang={lang}
+          onClose={() => setSelectedDish(null)}
+          th={t}
+          onAddToCart={addToCart}
+          categoryIcons={categoryIcons}
+          categoryLabels={categoryLabels}
+          hotCategories={hotCategories}
+        />
       )}
 
       {/* ── SERVICE REQUESTS FLOATING WIDGET ── */}
@@ -2827,12 +3018,7 @@ export default function StaroPub() {
                   <button onClick={() => { setFeedbackModalOpen(true); setTempRating(0); setTempName(""); setTempComment(""); setFloatingMenuOpen(false); }} className="floating-btn">✍️</button>
                 </div>
               )}
-              {isAdmin && (
-                <div className="floating-btn-wrap">
-                  <span className="floating-label">Admin Dashboard</span>
-                  <button onClick={() => { setCurrentView(currentView === "admin" ? "menu" : "admin"); setFloatingMenuOpen(false); }} className="floating-btn" style={{ borderColor: isDark ? "rgba(245,158,11,0.5)" : "rgba(180,120,40,0.5)", background: isDark ? "rgba(245,158,11,0.08)" : "rgba(180,120,40,0.08)" }}>⚙️</button>
-                </div>
-              )}
+
             </div>
           )}
 
@@ -2855,6 +3041,108 @@ export default function StaroPub() {
           textAlign: "center", whiteSpace: "nowrap"
         }}>
           {toast}
+        </div>
+      )}
+
+      {/* ── ADMIN AUTH MODAL FORM ── */}
+      {authModalOpen && (
+        <div onClick={() => setAuthModalOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 1200, background: "rgba(0,0,0,0.88)", backdropFilter: "blur(10px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxWidth: 440, background: isDark ? "linear-gradient(160deg, #1e293b 0%, #0f172a 100%)" : "linear-gradient(160deg, #faf7f0 0%, #ede8de 100%)", border: `1px solid ${t.modalBorder}`, borderRadius: 24, padding: "28px 24px", boxShadow: "0 30px 70px rgba(0,0,0,0.6)" }}>
+            
+            {/* Tabs */}
+            <div style={{ display: "flex", gap: 8, marginBottom: 20, background: isDark ? "rgba(0,0,0,0.3)" : "rgba(0,0,0,0.05)", padding: 4, borderRadius: 12 }}>
+              <button
+                onClick={() => { setAuthTab("login"); setAuthError(""); }}
+                style={{ flex: 1, background: authTab === "login" ? "linear-gradient(135deg, #b86520, #7a3a08)" : "none", border: "none", color: authTab === "login" ? "#fff" : t.bodyText, padding: "8px 12px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: "bold", transition: "all 0.2s" }}
+              >
+                შესვლა
+              </button>
+              <button
+                onClick={() => { setAuthTab("register"); setAuthError(""); }}
+                style={{ flex: 1, background: authTab === "register" ? "linear-gradient(135deg, #b86520, #7a3a08)" : "none", border: "none", color: authTab === "register" ? "#fff" : t.bodyText, padding: "8px 12px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: "bold", transition: "all 0.2s" }}
+              >
+                რეგისტრაცია
+              </button>
+            </div>
+
+            <h3 style={{ margin: "0 0 8px", color: t.brandName, fontFamily: "'Georgia', serif", fontSize: 20, fontWeight: 700, textAlign: "center" }}>
+              {authTab === "login" ? "ადმინისტრატორის ავტორიზაცია" : "ადმინისტრატორის რეგისტრაცია"}
+            </h3>
+            
+            {authError && (
+              <div style={{ background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", borderRadius: 10, padding: 10, color: "#f87171", fontSize: 12, marginBottom: 16, textAlign: "center" }}>
+                ⚠️ {authError}
+              </div>
+            )}
+
+            <form onSubmit={handleAuthSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <label style={{ fontSize: 11, color: t.tabInactiveClr, textTransform: "uppercase", fontWeight: "bold" }}>ელ-ფოსტა</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="admin@staropub.com"
+                  value={authEmail}
+                  onChange={e => setAuthEmail(e.target.value)}
+                  style={{ background: isDark ? "#0f172a" : "#fff", border: `1px solid ${t.modalBorder}`, borderRadius: 10, padding: 12, color: t.bodyText, outline: "none", fontSize: 13 }}
+                />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <label style={{ fontSize: 11, color: t.tabInactiveClr, textTransform: "uppercase", fontWeight: "bold" }}>პაროლი</label>
+                <input
+                  type="password"
+                  required
+                  placeholder="******"
+                  value={authPassword}
+                  onChange={e => setAuthPassword(e.target.value)}
+                  style={{ background: isDark ? "#0f172a" : "#fff", border: `1px solid ${t.modalBorder}`, borderRadius: 10, padding: 12, color: t.bodyText, outline: "none", fontSize: 13 }}
+                />
+              </div>
+
+              {authTab === "login" && (
+                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 12, color: t.bodyText, margin: "4px 0" }}>
+                  <input
+                    type="checkbox"
+                    checked={authRememberMe}
+                    onChange={e => setAuthRememberMe(e.target.checked)}
+                    style={{ accentColor: "#e8a030", width: 15, height: 15 }}
+                  />
+                  დამიმახსოვრე (30 დღე)
+                </label>
+              )}
+
+              <button
+                type="submit"
+                style={{ background: "linear-gradient(135deg, #b86520, #7a3a08)", border: `1px solid ${t.brandName}`, borderRadius: 12, color: "#fff", padding: "12px 16px", cursor: "pointer", fontSize: 14, fontWeight: "bold", marginTop: 8, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(184,101,32,0.3)" }}
+              >
+                {authTab === "login" ? "შესვლა" : "რეგისტრაცია"}
+              </button>
+            </form>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "20px 0" }}>
+              <div style={{ flex: 1, height: 1, background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)" }} />
+              <span style={{ fontSize: 11, color: t.tabInactiveClr, textTransform: "uppercase" }}>ან</span>
+              <div style={{ flex: 1, height: 1, background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)" }} />
+            </div>
+
+            {/* Social Logins */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <button
+                onClick={() => handleSocialLogin("google")}
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, background: isDark ? "#0f172a" : "#fff", border: "1px solid rgba(220,38,38,0.25)", color: isDark ? "#cbd5e1" : "#1e293b", padding: "10px 16px", borderRadius: 12, fontSize: 13, fontWeight: "bold", cursor: "pointer", transition: "all 0.2s" }}
+              >
+                <span style={{ color: "#ea4335", fontSize: 16 }}>🔴</span> Google-ით შესვლა
+              </button>
+            </div>
+            
+            <button
+              onClick={() => { setAuthModalOpen(false); setAuthError(""); }}
+              style={{ background: "none", border: "none", color: t.tabInactiveClr, display: "block", margin: "20px auto 0", fontSize: 12, cursor: "pointer", textDecoration: "underline" }}
+            >
+              გაუქმება
+            </button>
+
+          </div>
         </div>
       )}
 
@@ -2995,14 +3283,7 @@ export default function StaroPub() {
             >
               ℹ️ {lang === "ka" ? "ჩვენს შესახებ" : lang === "ru" ? "О нас" : "About Us"}
             </button>
-            {isAdmin && (
-              <button
-                onClick={() => { setCurrentView("admin"); setMobileMenuOpen(false); }}
-                style={{ background: "none", border: "none", color: currentView === "admin" ? t.brandName : t.bodyText, fontSize: 16, fontWeight: "bold", textAlign: "left", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, fontFamily: "'Georgia', serif" }}
-              >
-                ⚙️ Admin Panel
-              </button>
-            )}
+
           </div>
 
           <div style={{ height: 1, background: "rgba(255,255,255,0.08)", margin: "8px 0" }} />
@@ -3111,8 +3392,8 @@ export default function StaroPub() {
             ) : (
               cartItems.map((cItem) => {
                 const title = cItem[`name_${lang}`] || cItem.name_ka || "";
-                const imgPath = cItem.image ? `Images/${cItem.image}` : "";
-                const fallbackIcon = CATEGORY_ICONS[cItem.category] || "🍽️";
+                const imgPath = cItem.image ? (cItem.image.startsWith("http") || cItem.image.startsWith("data:") ? cItem.image : `Images/${cItem.image}`) : "";
+                const fallbackIcon = categoryIcons[cItem.category] || INITIAL_CATEGORY_ICONS[cItem.category] || "🍽️";
                 return (
                   <div key={cItem.id} style={{ display: "flex", gap: 10, background: "rgba(0,0,0,0.14)", border: `1px solid ${t.cardBorder}`, borderRadius: 12, padding: 10, position: "relative" }}>
                     {/* Item Image thumbnail */}

@@ -1,0 +1,29 @@
+[
+  {
+    "id": "user_1783518868553",
+    "email": "google_user_868476@staropub.com",
+    "provider": "google",
+    "providerId": "social_id_1783518868476",
+    "name": "Google Test User"
+  },
+  {
+    "id": "user_1783518940382",
+    "email": "gabbychloy@gmail.com",
+    "password": "$2b$10$kwEqmgYSxb4vfD2mVNa9xuY26YuoPL2GfwIhlE7xBGgm3VH5jNDy2",
+    "provider": "local"
+  },
+  {
+    "id": "user_1783519192158",
+    "email": "google_user_192132@staropub.com",
+    "provider": "google",
+    "providerId": "social_id_1783519192132",
+    "name": "Google Test User"
+  },
+  {
+    "id": "user_1783576581421",
+    "email": "google_user_581382@staropub.com",
+    "provider": "google",
+    "providerId": "social_id_1783576581382",
+    "name": "Google Test User"
+  }
+]

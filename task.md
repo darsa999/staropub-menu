@@ -1,0 +1,6 @@
+- [x] Remove app background image from root layout in `src/StaroPub.jsx`
+- [x] Add state hook definitions for visual settings file inputs in `<AdminDashboard>`
+- [x] Restructure the `<AdminDashboard>` layout to flex row split container with left sidebar menu
+- [x] Render Block A and Block B forms under 'საიტის იერსახის მართვა' section
+- [x] Update outer `<main>` wrapper of Admin Panel in `src/StaroPub.jsx`
+- [x] Verify compilation build and dev server status

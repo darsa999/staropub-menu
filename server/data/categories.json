@@ -1,0 +1,12 @@
+[
+  {
+    "id": "grill",
+    "name_ka": "გრილი",
+    "name_en": "Grill",
+    "name_ru": "Гриль",
+    "icon": "🍽️",
+    "image": "",
+    "isHot": false,
+    "order": 0
+  }
+]
