@@ -960,6 +960,7 @@ function AdminDashboard({
   dbCategories, setDbCategories
 }) {
   const [activeAdminSection, setActiveAdminSection] = useState("calls");
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Visual appearance settings states
   const [bgImageFile, setBgImageFile] = useState(null);
@@ -1288,6 +1289,7 @@ function AdminDashboard({
           background: #0a0f1d;
           width: 100%;
           flex-direction: row;
+          position: relative;
         }
         .admin-sidebar {
           width: 280px;
@@ -1298,32 +1300,123 @@ function AdminDashboard({
           display: flex;
           flex-direction: column;
           gap: 20px;
+          z-index: 10;
         }
         .admin-content {
           flex: 1;
           padding: 32px 40px;
           overflow-y: auto;
           background: #0a0f1d;
+          width: 100%;
+        }
+        .admin-mobile-header {
+          display: none;
+        }
+        .admin-sidebar-backdrop {
+          display: none;
+        }
+        .admin-sidebar-close-btn {
+          display: none;
         }
         @media (max-width: 767px) {
-          .admin-container {
-            flex-direction: column;
-          }
           .admin-sidebar {
-            width: 100%;
-            min-width: 100%;
-            border-right: none;
-            border-bottom: 1px solid rgba(245,158,11,0.2);
-            padding: 16px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            z-index: 1001;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            box-shadow: 5px 0 25px rgba(0, 0, 0, 0.8);
+            border-right: 1px solid rgba(245,158,11,0.3);
+          }
+          .admin-sidebar.open {
+            transform: translateX(0);
+          }
+          .admin-sidebar-close-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(245,158,11,0.2);
+            color: #f0c060;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            font-size: 18px;
+            font-weight: bold;
+            z-index: 1002;
           }
           .admin-content {
-            padding: 20px 16px;
-            overflow-y: visible;
+            padding: 80px 16px 20px;
+            overflow-y: auto;
+          }
+          .admin-mobile-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: #060a13;
+            border-bottom: 1px solid rgba(245,158,11,0.2);
+            padding: 0 16px;
+            z-index: 999;
+          }
+          .hamburger-btn {
+            background: linear-gradient(135deg, #b86520, #7a3a08);
+            border: 1px solid #e8a030;
+            border-radius: 8px;
+            color: #fff;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+          }
+          .admin-sidebar-backdrop {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
           }
         }
       `}</style>
+
+      {/* Mobile Top Header */}
+      <div className="admin-mobile-header">
+        <button onClick={() => setIsMobileSidebarOpen(true)} className="hamburger-btn">
+          ☰ მენიუ
+        </button>
+        <span style={{ fontSize: 16, fontWeight: "bold", fontFamily: "'Georgia', serif", color: "#f0c060" }}>
+          ადმინისტრატორი
+        </span>
+      </div>
+
+      {/* Dark backdrop overlay for mobile */}
+      {isMobileSidebarOpen && (
+        <div className="admin-sidebar-backdrop" onClick={() => setIsMobileSidebarOpen(false)} />
+      )}
+
       {/* Left Sidebar */}
-      <div className="admin-sidebar">
+      <div className={`admin-sidebar ${isMobileSidebarOpen ? "open" : ""}`}>
+        {/* Close Button on Mobile */}
+        <button className="admin-sidebar-close-btn" onClick={() => setIsMobileSidebarOpen(false)}>
+          ✕
+        </button>
         <div>
           <h2 style={{ margin: 0, fontFamily: "'Georgia', serif", fontSize: 20, color: "#f0c060" }}>ადმინისტრატორი</h2>
           <span style={{ fontSize: 10, color: "#8a6040", letterSpacing: "1px", textTransform: "uppercase" }}>StaroPub Menu</span>
@@ -1345,7 +1438,10 @@ function AdminDashboard({
             return (
               <button
                 key={tab.key}
-                onClick={() => setActiveAdminSection(tab.key)}
+                onClick={() => {
+                  setActiveAdminSection(tab.key);
+                  setIsMobileSidebarOpen(false);
+                }}
                 style={{
                   width: "100%",
                   textAlign: "left",
