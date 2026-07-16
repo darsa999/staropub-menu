@@ -40,9 +40,14 @@ app.use(cookieParser());
 app.use(express.json());
 
 // Configure CORS to dynamically accept requests from the Vercel production domain or local dev
+const cleanOrigin = (url) => {
+  if (!url) return "";
+  return url.replace(/\/$/, "");
+};
+
 const allowedOrigins = [
   "http://localhost:5173",
-  process.env.FRONTEND_URL
+  cleanOrigin(process.env.FRONTEND_URL)
 ].filter(Boolean);
 
 app.use(cors({
@@ -110,7 +115,7 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 // Helper function to upload file (Cloudinary with local filesystem fallback)
-const uploadFile = async (file) => {
+const uploadFile = async (file, req) => {
   if (!file) return "";
 
   const isCloudinaryConfigured =
@@ -138,6 +143,12 @@ const uploadFile = async (file) => {
   const filename = `${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`;
   const filepath = path.join(uploadsDir, filename);
   fs.writeFileSync(filepath, file.buffer);
+
+  if (req) {
+    const host = req.get('host');
+    const protocol = req.protocol;
+    return `${protocol}://${host}/uploads/${filename}`;
+  }
   return `http://localhost:5000/uploads/${filename}`;
 };
 
@@ -253,7 +264,7 @@ app.post('/api/auth/register', async (req, res) => {
       res.cookie('admin_session', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
       });
       
@@ -281,7 +292,7 @@ app.post('/api/auth/register', async (req, res) => {
     res.cookie('admin_session', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
     });
 
@@ -317,7 +328,7 @@ app.post('/api/auth/login', async (req, res) => {
       const cookieOptions = {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
       };
 
       if (rememberMe) {
@@ -346,7 +357,7 @@ app.post('/api/auth/login', async (req, res) => {
     const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
     };
 
     if (rememberMe) {
@@ -409,7 +420,7 @@ app.post('/api/auth/social-login', async (req, res) => {
       res.cookie('admin_session', jwtToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
       });
 
@@ -443,7 +454,7 @@ app.post('/api/auth/social-login', async (req, res) => {
     res.cookie('admin_session', jwtToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
     });
 
@@ -487,7 +498,11 @@ app.get('/api/auth/me', async (req, res) => {
 
 // User Logout
 app.post('/api/auth/logout', (req, res) => {
-  res.clearCookie('admin_session');
+  res.clearCookie('admin_session', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+  });
   res.json({ message: "Logged out successfully" });
 });
 
@@ -513,7 +528,7 @@ app.post('/api/categories', protect, upload.single('image'), async (req, res) =>
     const { id, name_ka, name_en, name_ru, icon, isHot } = req.body;
     let imageUrl = "";
     if (req.file) {
-      imageUrl = await uploadFile(req.file);
+      imageUrl = await uploadFile(req.file, req);
     }
 
     if (useLocalFallback) {
@@ -622,7 +637,7 @@ app.post('/api/dishes', protect, upload.single('image'), async (req, res) => {
     const { name_ka, name_en, name_ru, desc_ka, desc_en, desc_ru, price, category } = req.body;
     let imageUrl = "";
     if (req.file) {
-      imageUrl = await uploadFile(req.file);
+      imageUrl = await uploadFile(req.file, req);
     }
 
     if (useLocalFallback) {
