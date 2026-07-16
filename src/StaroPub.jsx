@@ -1279,9 +1279,51 @@ function AdminDashboard({
   ];
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", color: "#f0c060", background: "#0a0f1d", width: "100%" }}>
+    <div className="admin-container">
+      <style>{`
+        .admin-container {
+          display: flex;
+          min-height: 100vh;
+          color: #f0c060;
+          background: #0a0f1d;
+          width: 100%;
+          flex-direction: row;
+        }
+        .admin-sidebar {
+          width: 280px;
+          min-width: 280px;
+          border-right: 1px solid rgba(245,158,11,0.2);
+          background: #060a13;
+          padding: 24px 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+        .admin-content {
+          flex: 1;
+          padding: 32px 40px;
+          overflow-y: auto;
+          background: #0a0f1d;
+        }
+        @media (max-width: 767px) {
+          .admin-container {
+            flex-direction: column;
+          }
+          .admin-sidebar {
+            width: 100%;
+            min-width: 100%;
+            border-right: none;
+            border-bottom: 1px solid rgba(245,158,11,0.2);
+            padding: 16px;
+          }
+          .admin-content {
+            padding: 20px 16px;
+            overflow-y: visible;
+          }
+        }
+      `}</style>
       {/* Left Sidebar */}
-      <div style={{ width: 280, minWidth: 280, borderRight: "1px solid rgba(245,158,11,0.2)", background: "#060a13", padding: "24px 16px", display: "flex", flexDirection: "column", gap: 20 }}>
+      <div className="admin-sidebar">
         <div>
           <h2 style={{ margin: 0, fontFamily: "'Georgia', serif", fontSize: 20, color: "#f0c060" }}>ადმინისტრატორი</h2>
           <span style={{ fontSize: 10, color: "#8a6040", letterSpacing: "1px", textTransform: "uppercase" }}>StaroPub Menu</span>
@@ -1341,8 +1383,7 @@ function AdminDashboard({
         </div>
       </div>
 
-      {/* Right Content Area */}
-      <div style={{ flex: 1, padding: "32px 40px", overflowY: "auto", background: "#0a0f1d" }}>
+      <div className="admin-content">
         
         {activeAdminSection === "calls" && (
           <div>
