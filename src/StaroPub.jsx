@@ -23,7 +23,6 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 // ─── Timing constants ─────────────────────────────────────────────────────────
 const POUR_DURATION_MS  = 2000;
-const SKELETON_DELAY_MS = 1500;
 
 // ─── Loading text ─────────────────────────────────────────────────────────────
 const LOADING_TEXT = {
@@ -388,46 +387,7 @@ function MasterPourScreen({ lang = "ka", isDark = false }) {
   );
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// PHASE 2 — SKELETON GRID
-// ══════════════════════════════════════════════════════════════════════════════
-function SkeletonCard({ isDark }) {
-  return (
-    <div style={{
-      background: isDark ? "linear-gradient(145deg, #1e1209, #271508)" : "linear-gradient(145deg, #ede8de, #e4ddd0)",
-      border: isDark ? "1px solid rgba(100,60,20,0.3)" : "1px solid rgba(160,110,40,0.2)",
-      borderRadius: 12, overflow: "hidden",
-      display: "flex", flexDirection: "column",
-    }}>
-      <div className="sk-pulse" style={{ width: "100%", height: 160, background: isDark ? "#2e1a0a" : "#d8cfbe" }} />
-      <div style={{ padding: "14px 16px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
-        <div className="sk-pulse" style={{ height: 14, borderRadius: 6, width: "70%", background: isDark ? "#3a2010" : "#ccc3b0" }} />
-        <div className="sk-pulse" style={{ height: 10, borderRadius: 6, width: "90%", background: isDark ? "#2e1a0a" : "#d8cfbe" }} />
-        <div className="sk-pulse" style={{ height: 10, borderRadius: 6, width: "60%", background: isDark ? "#2e1a0a" : "#d8cfbe" }} />
-        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 6 }}>
-          <div className="sk-pulse" style={{ height: 18, borderRadius: 6, width: "36%", background: isDark ? "#3a2010" : "#ccc3b0" }} />
-        </div>
-      </div>
-    </div>
-  );
-}
 
-function SkeletonGrid({ isDark }) {
-  return (
-    <>
-      <style>{`
-        @keyframes skPulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-        .sk-pulse { animation: skPulse 1.1s ease-in-out infinite; }
-        .skeleton-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
-        @media(min-width:768px)  { .skeleton-grid { grid-template-columns:repeat(4,1fr)!important; } }
-        @media(min-width:1024px) { .skeleton-grid { grid-template-columns:repeat(5,1fr)!important; } }
-      `}</style>
-      <div className="skeleton-grid">
-        {Array.from({ length: 10 }).map((_, i) => <SkeletonCard key={i} isDark={isDark} />)}
-      </div>
-    </>
-  );
-}
 
 // ══════════════════════════════════════════════════════════════════════════════
 // PRICE BLOCK
@@ -2436,25 +2396,13 @@ export default function StaroPub() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // ─── Phase machine: "pour" → "skeleton" → "menu" ─────────────────────────
+  // ─── Phase machine: "pour" (Beer Glass animation) → "menu" ───────────────
   const [phase, setPhase] = useState("pour");
-  const fetchedRows = useRef(null);
   const tabsRef     = useRef(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (fetchedRows.current !== null) {
-        setAllItems(fetchedRows.current);
-        setActiveTab(null);
-        setPhase("menu");
-      } else {
-        setPhase("skeleton");
-      }
-    }, POUR_DURATION_MS);
-    return () => clearTimeout(timer);
-  }, []);
+    const startTime = Date.now();
 
-  useEffect(() => {
     const fetchData = async () => {
       try {
         try {
@@ -2505,26 +2453,18 @@ export default function StaroPub() {
           id: dish.id || dish._id,
         }));
 
-        fetchedRows.current = formattedDishes;
         setAllItems(formattedDishes);
-
         setCategoryOrder(categoriesData.map(cat => cat.id || cat._id));
-        
-        // Transition phase if the setTimeout hasn't already fired
-        setPhase(prev => {
-          if (prev === "skeleton") {
-            setTimeout(() => {
-              setPhase("menu");
-            }, SKELETON_DELAY_MS);
-            return "skeleton";
-          }
-          return prev;
-        });
         setError(null);
       } catch (err) {
         setError(`შეცდომა მონაცემების ჩატვირთვისას: ${err.message}`);
-        fetchedRows.current = [];
-        setPhase("menu");
+      } finally {
+        // Ensure the Beer Glass preloader plays for at least POUR_DURATION_MS, and until data finishes loading
+        const elapsed = Date.now() - startTime;
+        const remaining = Math.max(0, POUR_DURATION_MS - elapsed);
+        setTimeout(() => {
+          setPhase("menu");
+        }, remaining);
       }
     };
 
@@ -2591,9 +2531,8 @@ export default function StaroPub() {
     }
   }, []);
 
-  const isPour     = phase === "pour";
-  const isSkeleton = phase === "skeleton";
-  const isMenu     = phase === "menu";
+  const isPour = phase === "pour";
+  const isMenu = phase === "menu";
 
   return (
     <div style={{
@@ -2828,7 +2767,6 @@ export default function StaroPub() {
       {/* Main Viewport */}
       {!isPour && currentView === "menu" && (
         <main style={{ maxWidth:1200, margin:"0 auto", padding:"16px 16px 112px", position:"relative", zIndex:1 }}>
-          {isSkeleton && <SkeletonGrid isDark={isDark} />}
 
           {isMenu && error && (
             <div style={{ margin:"40px auto", maxWidth:480, padding:"20px 24px", background:"rgba(180,40,40,0.12)", border:"1px solid rgba(180,40,40,0.3)", borderRadius:12, color:"#e08080", fontSize:13, lineHeight:1.6 }}>
