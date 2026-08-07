@@ -2778,40 +2778,106 @@ export default function StaroPub() {
             <>
               {/* Dynamic Header Advertisement Banner */}
               {bannerSettings.enabled && !searchQuery && (
-                <div style={{
-                  width: "100%", height: 160, borderRadius: 16, overflow: "hidden",
-                  position: "relative", marginBottom: 24,
-                  border: `1px solid ${isDark ? "rgba(245, 158, 11, 0.25)" : "rgba(180, 120, 40, 0.25)"}`,
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.4)"
-                }}>
-                  <img src={bannerSettings.image.startsWith("http") || bannerSettings.image.startsWith("Images") ? bannerSettings.image : `Images/${bannerSettings.image}`}
-                    alt="Promotional Banner"
-                    style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }}
-                    onError={e => { e.target.style.display = "none"; }}
-                  />
-                  <div style={{
-                    position: "absolute", inset: 0,
-                    background: "linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.85) 100%)",
-                  }} />
-                  <div style={{ position: "absolute", bottom: 16, left: 20, zIndex: 2 }}>
-                    <span style={{
-                      background: "linear-gradient(90deg, #b86520 0%, #e8a030 100%)",
-                      color: "#fff", fontSize: 10, fontWeight: 800, letterSpacing: "1px",
-                      textTransform: "uppercase", padding: "4px 10px", borderRadius: 12,
-                      fontFamily: "'Georgia', serif", display: "inline-block", marginBottom: 8,
-                      boxShadow: "0 2px 8px rgba(184,101,32,0.4)"
-                    }}>
-                      {bannerSettings.badge}
-                    </span>
-                    <p style={{
-                      color: "#fff", fontSize: 16, fontWeight: 700, margin: 0,
-                      textShadow: "0 2px 4px rgba(0,0,0,0.8)", fontFamily: "'Georgia', serif",
-                      letterSpacing: "0.3px"
-                    }}>
-                      {bannerSettings.text}
-                    </p>
-                  </div>
-                </div>
+                <>
+                  <style>{`
+                    .promo-banner-container {
+                      width: 100%;
+                      height: 240px;
+                      border-radius: 20px;
+                      overflow: hidden;
+                      position: relative;
+                      margin-bottom: 32px;
+                      box-shadow: 0 12px 36px rgba(0,0,0,0.5), 0 0 20px rgba(245,158,11,0.12);
+                      transition: all 0.3s ease;
+                    }
+                    .promo-banner-badge {
+                      font-size: 11px;
+                      padding: 5px 12px;
+                      border-radius: 12px;
+                      margin-bottom: 8px;
+                    }
+                    .promo-banner-text {
+                      font-size: 18px;
+                    }
+                    @media(min-width: 640px) {
+                      .promo-banner-container {
+                        height: 320px !important;
+                      }
+                      .promo-banner-text {
+                        font-size: 24px !important;
+                      }
+                      .promo-banner-badge {
+                        font-size: 12px !important;
+                        padding: 6px 14px !important;
+                      }
+                    }
+                    @media(min-width: 1024px) {
+                      .promo-banner-container {
+                        height: 380px !important;
+                      }
+                      .promo-banner-text {
+                        font-size: 28px !important;
+                      }
+                    }
+                  `}</style>
+                  {(() => {
+                    const bannerImgSrc = bannerSettings.image.startsWith("http") || bannerSettings.image.startsWith("Images")
+                      ? bannerSettings.image
+                      : `Images/${bannerSettings.image}`;
+                    return (
+                      <div className="promo-banner-container" style={{
+                        background: isDark ? "#060a13" : "#1a1208",
+                        border: `1px solid ${isDark ? "rgba(245, 158, 11, 0.35)" : "rgba(180, 120, 40, 0.35)"}`,
+                      }}>
+                        {/* Ambient Blurred Background for seamless margin fill */}
+                        <img
+                          src={bannerImgSrc}
+                          alt=""
+                          style={{
+                            width: "100%", height: "100%", objectFit: "cover",
+                            filter: "blur(24px)", opacity: 0.5, transform: "scale(1.2)",
+                            position: "absolute", inset: 0
+                          }}
+                          onError={e => { e.target.style.display = "none"; }}
+                        />
+                        {/* Main Fully Visible Banner Image */}
+                        <img
+                          src={bannerImgSrc}
+                          alt="Promotional Banner"
+                          style={{
+                            width: "100%", height: "100%", objectFit: "contain",
+                            position: "absolute", inset: 0, zIndex: 1
+                          }}
+                          onError={e => { e.target.style.display = "none"; }}
+                        />
+                        {/* Contrast Gradient Overlay */}
+                        <div style={{
+                          position: "absolute", inset: 0, zIndex: 2, pointerEvents: "none",
+                          background: "linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.35) 50%, rgba(0,0,0,0.85) 100%)",
+                        }} />
+                        {/* Text and Badge Overlay */}
+                        <div style={{ position: "absolute", bottom: 20, left: 24, right: 24, zIndex: 3 }}>
+                          <span className="promo-banner-badge" style={{
+                            background: "linear-gradient(90deg, #b86520 0%, #e8a030 100%)",
+                            color: "#fff", fontWeight: 800, letterSpacing: "1px",
+                            textTransform: "uppercase",
+                            fontFamily: "'Georgia', serif", display: "inline-block",
+                            boxShadow: "0 3px 12px rgba(184,101,32,0.5)"
+                          }}>
+                            {bannerSettings.badge}
+                          </span>
+                          <p className="promo-banner-text" style={{
+                            color: "#fff", fontWeight: 700, margin: 0,
+                            textShadow: "0 2px 8px rgba(0,0,0,0.9)", fontFamily: "'Georgia', serif",
+                            letterSpacing: "0.3px", lineHeight: 1.25
+                          }}>
+                            {bannerSettings.text}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </>
               )}
 
               {/* ── LANDING VIEW: Category Grid ── */}
