@@ -1002,8 +1002,17 @@ function AdminDashboard({
         body: formData,
         credentials: "include"
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Upload failed");
+
+      let data = {};
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        throw new Error(`Server returned HTTP ${res.status}: ${text.substring(0, 80)}`);
+      }
+
+      if (!res.ok) throw new Error(data.error || `Upload failed with status ${res.status}`);
 
       // Cache busting parameter
       const cacheBustUrl = `${data.bgImage}${data.bgImage.includes('?') ? '&' : '?'}t=${Date.now()}`;
@@ -1029,8 +1038,17 @@ function AdminDashboard({
         body: formData,
         credentials: "include"
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Upload failed");
+
+      let data = {};
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        throw new Error(`Server returned HTTP ${res.status}: ${text.substring(0, 80)}`);
+      }
+
+      if (!res.ok) throw new Error(data.error || `Upload failed with status ${res.status}`);
 
       // Cache busting parameter
       const cacheBustUrl = `${data.aboutImage}${data.aboutImage.includes('?') ? '&' : '?'}t=${Date.now()}`;

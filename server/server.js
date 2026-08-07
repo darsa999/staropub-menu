@@ -732,6 +732,9 @@ app.put('/api/dishes/reorder', protect, async (req, res) => {
     res.json({ message: "Dishes order updated successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── Settings Endpoints ──────────────────────────────────────────────────
 
 // GET Settings
@@ -850,6 +853,15 @@ app.put('/api/settings', protect, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// Global JSON Error Handler middleware (ensures API errors always return JSON, never HTML)
+app.use((err, req, res, next) => {
+  console.error("Unhandled Server Error:", err);
+  const statusCode = err.status || err.statusCode || 500;
+  res.status(statusCode).json({
+    error: err.message || "Internal Server Error"
+  });
 });
 
 app.listen(PORT, () => {
