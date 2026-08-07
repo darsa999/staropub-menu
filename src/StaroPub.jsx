@@ -2930,7 +2930,7 @@ export default function StaroPub() {
         inset: 0,
         zIndex: 0,
         pointerEvents: "none",
-        background: bgImage ? (isDark ? "rgba(8,12,24,0.75)" : "rgba(252,247,241,0.75)") : (isDark ? "rgba(8,12,24,0.92)" : "rgba(252,247,241,0.90)"),
+        background: bgImage ? (isDark ? "rgba(8,12,24,0.18)" : "rgba(252,247,241,0.15)") : (isDark ? "rgba(8,12,24,0.92)" : "rgba(252,247,241,0.90)"),
         transition: "background 0.4s"
       }} />
 
@@ -2952,8 +2952,8 @@ export default function StaroPub() {
 
         /* 3D Category grid animations */
         .category-card {
-          background: ${isDark ? "linear-gradient(145deg, rgba(30,41,59,0.7), rgba(15,23,42,0.5))" : "linear-gradient(145deg, rgba(244,241,235,0.8), rgba(237,232,222,0.6))"};
-          border: 1px solid ${isDark ? "rgba(245,158,11,0.22)" : "rgba(180,120,40,0.22)"};
+          background: ${bgImage ? (isDark ? "rgba(15,23,42,0.65)" : "rgba(255,255,255,0.72)") : (isDark ? "linear-gradient(145deg, rgba(30,41,59,0.7), rgba(15,23,42,0.5))" : "linear-gradient(145deg, rgba(244,241,235,0.8), rgba(237,232,222,0.6))")};
+          border: 1px solid ${isDark ? "rgba(245,158,11,0.28)" : "rgba(180,120,40,0.28)"};
           border-radius: 16px;
           padding: 0;
           text-align: center;
@@ -2961,7 +2961,9 @@ export default function StaroPub() {
           transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
           position: relative;
           overflow: hidden;
-          backdrop-filter: blur(12px);
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+          box-shadow: ${bgImage ? "0 8px 24px rgba(0,0,0,0.3)" : "none"};
           display: flex;
           flex-direction: column;
           align-items: stretch;
@@ -3325,7 +3327,16 @@ export default function StaroPub() {
 
                   {/* Grid of Categories */}
                   <div style={{ marginTop: 24 }}>
-                    <h2 style={{ color: t.brandName, fontFamily: "'Georgia', serif", fontSize: 20, fontWeight: 700, marginBottom: 16, borderLeft: `4px solid ${t.brandSub}`, paddingLeft: 10 }}>
+                    <h2 style={{
+                      color: t.brandName,
+                      fontFamily: "'Georgia', serif",
+                      fontSize: 20,
+                      fontWeight: 700,
+                      marginBottom: 16,
+                      borderLeft: `4px solid ${t.brandSub}`,
+                      paddingLeft: 10,
+                      textShadow: bgImage ? (isDark ? "0 2px 8px rgba(0,0,0,0.9)" : "0 1px 4px rgba(255,255,255,0.9)") : "none"
+                    }}>
                       {lang === "ka" ? "კატეგორიები" : lang === "ru" ? "Категории" : "Categories"}
                     </h2>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
@@ -3380,7 +3391,14 @@ export default function StaroPub() {
 
                               {/* Bottom text block */}
                               <div style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1 }}>
-                                <span style={{ color: t.cardName || t.brandName, fontWeight: 700, fontSize: 14, lineHeight: 1.2, textAlign: "center" }}>
+                                <span style={{
+                                  color: t.cardName || t.brandName,
+                                  fontWeight: 700,
+                                  fontSize: 14,
+                                  lineHeight: 1.2,
+                                  textAlign: "center",
+                                  textShadow: bgImage ? (isDark ? "0 2px 6px rgba(0,0,0,0.8)" : "0 1px 4px rgba(255,255,255,0.8)") : "none"
+                                }}>
                                   {labelObj[lang]}
                                 </span>
                                 <span style={{ color: t.tabInactiveClr, fontSize: 11, marginTop: 4, fontWeight: 500 }}>
