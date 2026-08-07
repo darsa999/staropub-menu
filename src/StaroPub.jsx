@@ -33,6 +33,12 @@ const LOADING_TEXT = {
 
 // ─── "Daily Special" badge label ─────────────────────────────────────────────
 const DAILY_SPECIAL_LABEL = { ka: "✦ დღის შეთავაზება", en: "✦ Daily Special", ru: "✦ Блюдо дня" };
+const BANNER_DEFAULT_BADGES = { ka: "დღის შეთავაზება", en: "Daily Special", ru: "Блюдо дня" };
+const BANNER_DEFAULT_TEXTS = {
+  ka: "საფირმო ჩეხური ნეკნები - 15% ფასდაკლება!",
+  en: "Signature Czech Ribs - 15% Off!",
+  ru: "Фирменные чешские ребрышки - Скидка 15%!",
+};
 
 // ─── Category labels ──────────────────────────────────────────────────────────
 const INITIAL_CATEGORY_LABELS = {
@@ -2798,8 +2804,8 @@ export default function StaroPub() {
                     .promo-banner-badge {
                       position: absolute;
                       top: 0;
-                      left: 50%;
-                      transform: translate(-50%, -50%);
+                      left: 20px;
+                      transform: translateY(-50%);
                       z-index: 10;
                       font-size: 11px;
                       padding: 6px 16px;
@@ -2810,15 +2816,16 @@ export default function StaroPub() {
                       font-size: 18px;
                     }
                     @media(min-width: 640px) {
+                      .promo-banner-badge {
+                        left: 28px !important;
+                        font-size: 13px !important;
+                        padding: 7px 22px !important;
+                      }
                       .promo-banner-card {
                         height: 320px !important;
                       }
                       .promo-banner-text {
                         font-size: 24px !important;
-                      }
-                      .promo-banner-badge {
-                        font-size: 13px !important;
-                        padding: 7px 22px !important;
                       }
                     }
                     @media(min-width: 1024px) {
@@ -2834,9 +2841,41 @@ export default function StaroPub() {
                     const bannerImgSrc = bannerSettings.image.startsWith("http") || bannerSettings.image.startsWith("Images")
                       ? bannerSettings.image
                       : `Images/${bannerSettings.image}`;
+
+                    const rawBadge = bannerSettings.badge || "";
+                    const rawText  = bannerSettings.text || "";
+
+                    let activeBadge = "";
+                    if (typeof rawBadge === "object" && rawBadge[lang]) {
+                      activeBadge = rawBadge[lang];
+                    } else if (
+                      !rawBadge ||
+                      rawBadge.replace(/^✦\s*/, "").trim() === "დღის შეთავაზება" ||
+                      rawBadge.replace(/^✦\s*/, "").trim() === "Daily Special" ||
+                      rawBadge.replace(/^✦\s*/, "").trim() === "Блюдо дня"
+                    ) {
+                      activeBadge = `✦ ${BANNER_DEFAULT_BADGES[lang] || BANNER_DEFAULT_BADGES.ka}`;
+                    } else {
+                      activeBadge = rawBadge;
+                    }
+
+                    let activeText = "";
+                    if (typeof rawText === "object" && rawText[lang]) {
+                      activeText = rawText[lang];
+                    } else if (
+                      !rawText ||
+                      rawText.trim() === "საფირმო ჩეხური ნეკნები - 15% ფასდაკლება!" ||
+                      rawText.trim() === "Signature Czech Ribs - 15% Off!" ||
+                      rawText.trim() === "Фирменные чешские ребрышки - Скидка 15%!"
+                    ) {
+                      activeText = BANNER_DEFAULT_TEXTS[lang] || BANNER_DEFAULT_TEXTS.ka;
+                    } else {
+                      activeText = rawText;
+                    }
+
                     return (
                       <div className="promo-banner-wrapper">
-                        {/* 50% Overlapping Top Border Badge */}
+                        {/* 50% Overlapping Top Border Badge (Positioned at Start / Left) */}
                         <span className="promo-banner-badge" style={{
                           background: "linear-gradient(135deg, #b86520 0%, #e8a030 100%)",
                           color: "#fff", fontWeight: 800, letterSpacing: "1px",
@@ -2845,7 +2884,7 @@ export default function StaroPub() {
                           boxShadow: "0 4px 14px rgba(184,101,32,0.6), 0 0 0 2px rgba(12, 10, 9, 0.8)",
                           border: `1px solid ${isDark ? "#f59e0b" : "#b86010"}`,
                         }}>
-                          {bannerSettings.badge}
+                          {activeBadge}
                         </span>
 
                         {/* Main Container Card */}
@@ -2886,7 +2925,7 @@ export default function StaroPub() {
                               textShadow: "0 2px 8px rgba(0,0,0,0.9)", fontFamily: "'Georgia', serif",
                               letterSpacing: "0.3px", lineHeight: 1.25
                             }}>
-                              {bannerSettings.text}
+                              {activeText}
                             </p>
                           </div>
                         </div>
