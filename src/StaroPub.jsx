@@ -910,7 +910,7 @@ function SiteFooter({ lang, visible, th, currentView, setCurrentView, isAdmin })
 // ADMIN DASHBOARD COMPONENT
 // ══════════════════════════════════════════════════════════════════════════════
 function AdminDashboard({
-  lang, onClose, onLogout,
+  lang, onClose, onLogout, onSaveSuccess,
   waiterCalls, setWaiterCalls,
   bannerSettings, setBannerSettings,
   customMenuEnabled, setCustomMenuEnabled,
@@ -927,6 +927,46 @@ function AdminDashboard({
 }) {
   const [activeAdminSection, setActiveAdminSection] = useState("calls");
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  // Global Save states and handler
+  const [isSaving, setIsSaving] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+
+  const handleGlobalSave = async () => {
+    setIsSaving(true);
+    try {
+      if (categoryOrder.length > 0) {
+        await fetch(`${API_URL}/api/categories/reorder`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids: categoryOrder, order: categoryOrder }),
+          credentials: "include"
+        });
+      }
+
+      if (dishOrder.length > 0) {
+        await fetch(`${API_URL}/api/dishes/reorder`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids: dishOrder, order: dishOrder }),
+          credentials: "include"
+        });
+      }
+
+      if (onSaveSuccess) {
+        await onSaveSuccess();
+      }
+
+      const msg = lang === "ka" ? "✓ ცვლილებები წარმატებით შენახულია!" : lang === "ru" ? "✓ Изменения успешно сохранены!" : "✓ Changes saved successfully!";
+      setToastMessage(msg);
+      setTimeout(() => setToastMessage(""), 3500);
+    } catch (err) {
+      setToastMessage(`⚠️ ${err.message}`);
+      setTimeout(() => setToastMessage(""), 4000);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // Visual appearance settings states
   const [bgImageFile, setBgImageFile] = useState(null);
@@ -1359,6 +1399,17 @@ function AdminDashboard({
             backdrop-filter: blur(4px);
             z-index: 1000;
           }
+          .save-spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+          }
+          @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+          @keyframes fadeIn { from { opacity: 0; transform: translate(-50%, -10px); } to { opacity: 1; transform: translate(-50%, 0); } }
         }
       `}</style>
 
@@ -1367,9 +1418,29 @@ function AdminDashboard({
         <button onClick={() => setIsMobileSidebarOpen(true)} className="hamburger-btn">
           ☰ მენიუ
         </button>
-        <span style={{ fontSize: 16, fontWeight: "bold", fontFamily: "'Georgia', serif", color: "#f0c060" }}>
+        <span style={{ fontSize: 14, fontWeight: "bold", fontFamily: "'Georgia', serif", color: "#f0c060" }}>
           ადმინისტრატორი
         </span>
+        <button
+          onClick={handleGlobalSave}
+          disabled={isSaving}
+          style={{
+            background: isSaving ? "rgba(34,197,94,0.4)" : "linear-gradient(135deg, #16a34a, #15803d)",
+            border: "1px solid #4ade80",
+            borderRadius: 8,
+            color: "#fff",
+            padding: "6px 12px",
+            fontSize: 11,
+            fontWeight: 800,
+            cursor: isSaving ? "not-allowed" : "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 5
+          }}
+        >
+          {isSaving ? <span className="save-spinner" /> : "💾"}
+          {lang === "ka" ? "შენახვა" : lang === "ru" ? "Сохранить" : "Save"}
+        </button>
       </div>
 
       {/* Dark backdrop overlay for mobile */}
@@ -1428,8 +1499,39 @@ function AdminDashboard({
           })}
         </div>
 
-        {/* Logout and Close Buttons */}
+        {/* Action Buttons: Save, Logout and Close */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10, borderTop: "1px solid rgba(245,158,11,0.15)", paddingTop: 16 }}>
+          <button
+            onClick={handleGlobalSave}
+            disabled={isSaving}
+            style={{
+              background: isSaving ? "rgba(34,197,94,0.4)" : "linear-gradient(135deg, #16a34a, #15803d)",
+              border: "1px solid #4ade80",
+              borderRadius: 10,
+              color: "#ffffff",
+              padding: "10px 14px",
+              cursor: isSaving ? "not-allowed" : "pointer",
+              fontSize: 13,
+              fontWeight: 800,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              boxShadow: "0 4px 12px rgba(34,197,94,0.3)"
+            }}
+          >
+            {isSaving ? (
+              <>
+                <span className="save-spinner" />
+                {lang === "ka" ? "ინახება..." : lang === "ru" ? "Сохранение..." : "Saving..."}
+              </>
+            ) : (
+              <>
+                💾 {lang === "ka" ? "ცვლილებების შენახვა" : lang === "ru" ? "Сохранить изменения" : "Save Changes"}
+              </>
+            )}
+          </button>
+
           <button
             onClick={onLogout}
             style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 10, color: "#f87171", padding: "10px 14px", cursor: "pointer", fontSize: 13, fontWeight: 700 }}
@@ -1446,6 +1548,91 @@ function AdminDashboard({
       </div>
 
       <div className="admin-content">
+        {/* Floating Toast Notification */}
+        {toastMessage && (
+          <div style={{
+            position: "fixed",
+            top: 24,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 10000,
+            background: toastMessage.startsWith("⚠️") ? "rgba(220,38,38,0.95)" : "linear-gradient(135deg, #15803d, #166534)",
+            color: "#fff",
+            padding: "12px 24px",
+            borderRadius: 14,
+            boxShadow: "0 8px 30px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.2)",
+            fontWeight: 700,
+            fontSize: 14,
+            fontFamily: "'Georgia', serif",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            animation: "fadeIn 0.3s ease"
+          }}>
+            {toastMessage}
+          </div>
+        )}
+
+        {/* Top Header Action Bar inside Admin Content */}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 16,
+          marginBottom: 24,
+          paddingBottom: 16,
+          borderBottom: "1px solid rgba(245,158,11,0.18)"
+        }}>
+          <div>
+            <span style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 700 }}>
+              {lang === "ka" ? "ადმინისტრატორის პანელი" : lang === "ru" ? "Панель администратора" : "Admin Panel"}
+            </span>
+            <h2 style={{ margin: "2px 0 0", fontFamily: "'Georgia', serif", fontSize: 22, color: "#f0c060", fontWeight: 700 }}>
+              {activeAdminSection === "calls" && (lang === "ka" ? "🔔 გამოძახებები" : "🔔 Calls")}
+              {activeAdminSection === "banner" && (lang === "ka" ? "📢 ბანერის პარამეტრები" : "📢 Banner Settings")}
+              {activeAdminSection === "global" && (lang === "ka" ? "⚙️ გლობალური პარამეტრები" : "⚙️ Global Settings")}
+              {activeAdminSection === "look" && (lang === "ka" ? "🎨 საიტის იერსახის მართვა" : "🎨 Appearance")}
+              {activeAdminSection === "reviews" && (lang === "ka" ? "💬 შეფასებები" : "💬 Reviews")}
+              {activeAdminSection === "availability" && (lang === "ka" ? "🚫 ხელმისაწვდომობა" : "🚫 Availability")}
+              {activeAdminSection === "sorting" && (lang === "ka" ? "↕️ სორტირება და რიგითობა" : "↕️ Sorting & Order")}
+              {activeAdminSection === "create" && (lang === "ka" ? "➕ კერძის/კატეგორიის დამატება" : "➕ Add Item/Category")}
+            </h2>
+          </div>
+
+          <button
+            onClick={handleGlobalSave}
+            disabled={isSaving}
+            style={{
+              background: isSaving ? "rgba(34,197,94,0.4)" : "linear-gradient(135deg, #16a34a, #15803d)",
+              border: "1px solid #4ade80",
+              borderRadius: 12,
+              color: "#ffffff",
+              padding: "10px 22px",
+              fontSize: 13,
+              fontWeight: 800,
+              cursor: isSaving ? "not-allowed" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              boxShadow: "0 4px 16px rgba(34,197,94,0.35)",
+              transition: "all 0.2s ease",
+              fontFamily: "'Georgia', serif",
+              whiteSpace: "nowrap"
+            }}
+          >
+            {isSaving ? (
+              <>
+                <span className="save-spinner" />
+                {lang === "ka" ? "ინახება..." : lang === "ru" ? "Сохранение..." : "Saving..."}
+              </>
+            ) : (
+              <>
+                💾 {lang === "ka" ? "ცვლილებების შენახვა" : lang === "ru" ? "Сохранить изменения" : "Save Changes"}
+              </>
+            )}
+          </button>
+        </div>
         
         {activeAdminSection === "calls" && (
           <div>
@@ -2406,6 +2593,47 @@ export default function StaroPub() {
   const [phase, setPhase] = useState("pour");
   const tabsRef     = useRef(null);
 
+  const refreshMenuData = useCallback(async () => {
+    try {
+      const catRes = await fetch(`${API_URL}/api/categories`, { credentials: "include" });
+      if (catRes.ok) {
+        const categoriesData = await catRes.json();
+        const labels = {};
+        const icons = {};
+        const hot = new Set();
+        categoriesData.forEach(cat => {
+          const key = cat.id || cat._id;
+          labels[key] = {
+            ka: cat.name_ka || key,
+            en: cat.name_en || key,
+            ru: cat.name_ru || key,
+          };
+          icons[key] = cat.icon || "🍽️";
+          if (cat.isHot) hot.add(key);
+        });
+
+        setCategoryLabels(labels);
+        setCategoryIcons(icons);
+        setHotCategories(hot);
+        setDbCategories(categoriesData);
+        setCategoryOrder(categoriesData.map(cat => cat.id || cat._id));
+      }
+
+      const dishRes = await fetch(`${API_URL}/api/dishes`, { credentials: "include" });
+      if (dishRes.ok) {
+        const dishesData = await dishRes.json();
+        const formattedDishes = dishesData.map(dish => ({
+          ...dish,
+          id: dish.id || dish._id,
+        }));
+        setAllItems(formattedDishes);
+      }
+      setError(null);
+    } catch (err) {
+      console.error("Failed to refresh menu data:", err);
+    }
+  }, []);
+
   useEffect(() => {
     const startTime = Date.now();
 
@@ -3149,6 +3377,7 @@ export default function StaroPub() {
               u.searchParams.delete("admin");
               window.history.pushState({}, "", u.toString());
             }}
+            onSaveSuccess={refreshMenuData}
             waiterCalls={waiterCalls}
             setWaiterCalls={setWaiterCalls}
             bannerSettings={bannerSettings}
