@@ -3341,11 +3341,19 @@ export default function StaroPub() {
                     </h2>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
                       <style>{`
+                        .category-card-img-wrap {
+                          width: 100%;
+                          height: 140px;
+                          overflow: hidden;
+                          position: relative;
+                        }
                         @media(min-width:640px) {
                           .categories-landing-grid { grid-template-columns: repeat(3, 1fr) !important; }
+                          .category-card-img-wrap { height: 165px !important; }
                         }
                         @media(min-width:1024px) {
                           .categories-landing-grid { grid-template-columns: repeat(4, 1fr) !important; }
+                          .category-card-img-wrap { height: 185px !important; }
                         }
                       `}</style>
                       <div className="categories-landing-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16, width: "100%", gridColumn: "span 2" }}>
@@ -3368,40 +3376,60 @@ export default function StaroPub() {
 
                           return (
                             <div key={cat} onClick={() => scrollTab(cat)} className="category-card">
-                              {/* Top image or icon fallback */}
-                              <div style={{ width: "100%", height: 110, overflow: "hidden", position: "relative", borderBottom: t.cardBorder }}>
+                              {/* Expanded Top image or icon fallback */}
+                              <div className="category-card-img-wrap" style={{ borderBottom: t.cardBorder }}>
                                 {imgSrc ? (
-                                  <img
-                                    src={imgSrc}
-                                    alt={labelObj[lang]}
-                                    style={{
-                                      width: "100%",
-                                      height: "100%",
-                                      objectFit: "cover",
-                                      transition: "transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1)"
-                                    }}
-                                    className="category-card-img"
-                                  />
+                                  <>
+                                    <img
+                                      src={imgSrc}
+                                      alt={labelObj[lang]}
+                                      style={{
+                                        width: "100%",
+                                        height: "100%",
+                                        objectFit: "cover",
+                                        transition: "transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1)"
+                                      }}
+                                      className="category-card-img"
+                                    />
+                                    <div style={{
+                                      position: "absolute", inset: 0, pointerEvents: "none",
+                                      background: "linear-gradient(180deg, transparent 65%, rgba(0,0,0,0.3) 100%)"
+                                    }} />
+                                  </>
                                 ) : (
-                                  <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: t.imgFallbackBg || "rgba(0,0,0,0.1)" }}>
-                                    <span style={{ fontSize: 36 }}>{icon}</span>
+                                  <div style={{
+                                    width: "100%", height: "100%",
+                                    display: "flex", alignItems: "center", justifyContent: "center",
+                                    background: isDark ? "linear-gradient(135deg, rgba(30,41,59,0.8), rgba(15,23,42,0.6))" : "linear-gradient(135deg, rgba(240,235,225,0.9), rgba(225,215,200,0.7))"
+                                  }}>
+                                    <span style={{ fontSize: 44 }}>{icon}</span>
                                   </div>
                                 )}
                               </div>
 
-                              {/* Bottom text block */}
-                              <div style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1 }}>
+                              {/* Prominent Bottom text block */}
+                              <div style={{ padding: "14px 16px 16px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1 }}>
                                 <span style={{
                                   color: t.cardName || t.brandName,
                                   fontWeight: 700,
-                                  fontSize: 14,
-                                  lineHeight: 1.2,
+                                  fontSize: 15,
+                                  lineHeight: 1.25,
                                   textAlign: "center",
+                                  fontFamily: "'Georgia', serif",
                                   textShadow: bgImage ? (isDark ? "0 2px 6px rgba(0,0,0,0.8)" : "0 1px 4px rgba(255,255,255,0.8)") : "none"
                                 }}>
                                   {labelObj[lang]}
                                 </span>
-                                <span style={{ color: t.tabInactiveClr, fontSize: 11, marginTop: 4, fontWeight: 500 }}>
+                                <span style={{
+                                  color: t.brandName,
+                                  fontSize: 11,
+                                  marginTop: 6,
+                                  fontWeight: 600,
+                                  background: isDark ? "rgba(245,158,11,0.12)" : "rgba(180,120,40,0.12)",
+                                  border: `1px solid ${isDark ? "rgba(245,158,11,0.25)" : "rgba(180,120,40,0.25)"}`,
+                                  borderRadius: 12,
+                                  padding: "2px 10px"
+                                }}>
                                   {count} {lang === "ka" ? "კერძი" : lang === "ru" ? "блюд" : "items"}
                                 </span>
                               </div>
@@ -3419,16 +3447,25 @@ export default function StaroPub() {
                             }}
                           >
                             {/* Top Selection Icon Wrapper */}
-                            <div style={{ width: "100%", height: 110, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(245,158,11,0.08)", borderBottom: t.cardBorder }}>
-                              <span style={{ fontSize: 36, animation: "badgePulse 2s infinite" }}>🌟</span>
+                            <div className="category-card-img-wrap" style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(245,158,11,0.08)", borderBottom: t.cardBorder }}>
+                              <span style={{ fontSize: 44, animation: "badgePulse 2s infinite" }}>🌟</span>
                             </div>
 
                             {/* Bottom Selection Title and Count */}
-                            <div style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1 }}>
-                              <span style={{ color: t.brandName, fontWeight: 700, fontSize: 14, lineHeight: 1.2, textAlign: "center" }}>
+                            <div style={{ padding: "14px 16px 16px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1 }}>
+                              <span style={{ color: t.brandName, fontWeight: 700, fontSize: 15, lineHeight: 1.25, textAlign: "center", fontFamily: "'Georgia', serif" }}>
                                 {lang === "ka" ? "ჩემი არჩევანი" : lang === "ru" ? "Мой выбор" : "My Selection"}
                               </span>
-                              <span style={{ color: t.tabInactiveClr, fontSize: 11, marginTop: 4, fontWeight: 500 }}>
+                              <span style={{
+                                color: t.brandName,
+                                fontSize: 11,
+                                marginTop: 6,
+                                fontWeight: 600,
+                                background: isDark ? "rgba(245,158,11,0.12)" : "rgba(180,120,40,0.12)",
+                                border: `1px solid ${isDark ? "rgba(245,158,11,0.25)" : "rgba(180,120,40,0.25)"}`,
+                                borderRadius: 12,
+                                padding: "2px 10px"
+                              }}>
                                 {selectedDishIds.length} {lang === "ka" ? "კერძი" : lang === "ru" ? "блюд" : "items"}
                               </span>
                             </div>
