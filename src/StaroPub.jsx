@@ -1024,6 +1024,7 @@ function AdminDashboard({
       const cacheBustUrl = getTimestampedUrl(data.bgImage);
       setBgImage(cacheBustUrl);
       setBgImageFile(null);
+      if (onSaveSuccess) await onSaveSuccess();
       alert(lang === "ka" ? "ბექგრაუნდის სურათი წარმატებით განახლდა!" : "Background image updated successfully!");
     } catch (err) {
       alert("Error: " + err.message);
@@ -1060,6 +1061,7 @@ function AdminDashboard({
       const cacheBustUrl = getTimestampedUrl(data.aboutImage);
       setAboutImage(cacheBustUrl);
       setAboutImageFile(null);
+      if (onSaveSuccess) await onSaveSuccess();
       alert(lang === "ka" ? "ჩვენს შესახებ სურათი წარმატებით განახლდა!" : "About Us image updated successfully!");
     } catch (err) {
       alert("Error: " + err.message);
@@ -2775,6 +2777,7 @@ export default function StaroPub() {
           id: dish.id || dish._id,
         }));
         setAllItems(formattedDishes);
+        setDishOrder(formattedDishes.map(d => d.id));
       }
       setError(null);
     } catch (err) {
@@ -2801,43 +2804,7 @@ export default function StaroPub() {
           console.warn("Session validation failed:", meErr);
         }
 
-        const catRes = await fetch(`${API_URL}/api/categories`, { credentials: "include" });
-        if (!catRes.ok) throw new Error("კატეგორიების ჩატვირთვა ვერ მოხერხდა");
-        const categoriesData = await catRes.json();
-
-        const dishRes = await fetch(`${API_URL}/api/dishes`, { credentials: "include" });
-        if (!dishRes.ok) throw new Error("კერძების ჩატვირთვა ვერ მოხერხდა");
-        const dishesData = await dishRes.json();
-
-        const labels = {};
-        const icons = {};
-        const hot = new Set();
-        categoriesData.forEach(cat => {
-          const key = cat.id || cat._id;
-          labels[key] = {
-            ka: cat.name_ka || key,
-            en: cat.name_en || key,
-            ru: cat.name_ru || key,
-          };
-          icons[key] = cat.icon || "🍽️";
-          if (cat.isHot) {
-            hot.add(key);
-          }
-        });
-
-        setCategoryLabels(labels);
-        setCategoryIcons(icons);
-        setHotCategories(hot);
-        setDbCategories(categoriesData);
-
-        const formattedDishes = dishesData.map(dish => ({
-          ...dish,
-          id: dish.id || dish._id,
-        }));
-
-        setAllItems(formattedDishes);
-        setCategoryOrder(categoriesData.map(cat => cat.id || cat._id));
-        setError(null);
+        await refreshMenuData();
       } catch (err) {
         setError(`შეცდომა მონაცემების ჩატვირთვისას: ${err.message}`);
       } finally {
@@ -2851,7 +2818,7 @@ export default function StaroPub() {
     };
 
     fetchData();
-  }, []);
+  }, [refreshMenuData]);
 
   useEffect(() => {
     if (allItems.length > 0) {
