@@ -914,6 +914,8 @@ function AdminDashboard({
   waiterCalls, setWaiterCalls,
   bannerSettings, setBannerSettings,
   customMenuEnabled, setCustomMenuEnabled,
+  callWaiterEnabled, setCallWaiterEnabled,
+  requestBillEnabled, setRequestBillEnabled,
   reviewFormEnabled, setReviewFormEnabled,
   reviews, setReviews,
   unavailableDishIds = [], setUnavailableDishIds,
@@ -1689,6 +1691,65 @@ function AdminDashboard({
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {activeAdminSection === "global" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 650 }}>
+            <div>
+              <h3 style={{ margin: "0 0 6px", fontFamily: "'Georgia', serif", fontSize: 22, color: "#f0c060" }}>გლობალური პარამეტრები</h3>
+              <p style={{ margin: 0, fontSize: 13, color: "#8a6040" }}>მომსახურების ფუნქციონალისა და ღილაკების მართვა საიტზე</p>
+            </div>
+
+            {/* Call Waiter Toggle */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(245,158,11,0.18)", borderRadius: 16, padding: "18px 22px", gap: 16 }}>
+              <div>
+                <h4 style={{ margin: "0 0 4px", fontSize: 15, color: "#e8a030", fontWeight: 700 }}>💁‍♂️ ოფიციანტის გამოძახება</h4>
+                <span style={{ fontSize: 12, color: "#8a6040", lineHeight: 1.4, display: "block" }}>სტუმრისთვის ოფიციანტის გამოძახების ფუნქციის ჩართვა/გათიშვა</span>
+              </div>
+              <button
+                onClick={() => setCallWaiterEnabled(prev => !prev)}
+                style={{
+                  background: callWaiterEnabled ? "linear-gradient(135deg, #16a34a, #15803d)" : "rgba(74,48,24,0.6)",
+                  color: callWaiterEnabled ? "#ffffff" : "#94a3b8",
+                  border: `1px solid ${callWaiterEnabled ? "#4ade80" : "rgba(180,120,40,0.3)"}`,
+                  borderRadius: 10,
+                  padding: "8px 18px",
+                  cursor: "pointer",
+                  fontWeight: 800,
+                  fontSize: 12,
+                  transition: "all 0.2s ease",
+                  whiteSpace: "nowrap"
+                }}
+              >
+                {callWaiterEnabled ? "ჩართულია ✓" : "გათიშულია ✕"}
+              </button>
+            </div>
+
+            {/* Request Bill Toggle */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(245,158,11,0.18)", borderRadius: 16, padding: "18px 22px", gap: 16 }}>
+              <div>
+                <h4 style={{ margin: "0 0 4px", fontSize: 15, color: "#e8a030", fontWeight: 700 }}>🧾 ანგარიშის მოთხოვნა</h4>
+                <span style={{ fontSize: 12, color: "#8a6040", lineHeight: 1.4, display: "block" }}>სტუმრისთვის ანგარიშის მოთხოვნის ფუნქციის ჩართვა/გათიშვა</span>
+              </div>
+              <button
+                onClick={() => setRequestBillEnabled(prev => !prev)}
+                style={{
+                  background: requestBillEnabled ? "linear-gradient(135deg, #16a34a, #15803d)" : "rgba(74,48,24,0.6)",
+                  color: requestBillEnabled ? "#ffffff" : "#94a3b8",
+                  border: `1px solid ${requestBillEnabled ? "#4ade80" : "rgba(180,120,40,0.3)"}`,
+                  borderRadius: 10,
+                  padding: "8px 18px",
+                  cursor: "pointer",
+                  fontWeight: 800,
+                  fontSize: 12,
+                  transition: "all 0.2s ease",
+                  whiteSpace: "nowrap"
+                }}
+              >
+                {requestBillEnabled ? "ჩართულია ✓" : "გათიშულია ✕"}
+              </button>
+            </div>
           </div>
         )}
 
@@ -2507,6 +2568,8 @@ export default function StaroPub() {
   // ─── Custom selection and sharing ────────────────────────────────────────
   const [selectedDishIds, setSelectedDishIds] = useState([]);
   const [customMenuEnabled, setCustomMenuEnabled] = useState(true);
+  const [callWaiterEnabled, setCallWaiterEnabled] = useState(true);
+  const [requestBillEnabled, setRequestBillEnabled] = useState(true);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -3384,6 +3447,10 @@ export default function StaroPub() {
             setBannerSettings={setBannerSettings}
             customMenuEnabled={customMenuEnabled}
             setCustomMenuEnabled={setCustomMenuEnabled}
+            callWaiterEnabled={callWaiterEnabled}
+            setCallWaiterEnabled={setCallWaiterEnabled}
+            requestBillEnabled={requestBillEnabled}
+            setRequestBillEnabled={setRequestBillEnabled}
             reviewFormEnabled={reviewFormEnabled}
             setReviewFormEnabled={setReviewFormEnabled}
             reviews={reviews}
@@ -3425,25 +3492,28 @@ export default function StaroPub() {
       )}
 
       {/* ── SERVICE REQUESTS FLOATING WIDGET ── */}
-      {!isPour && (
+      {!isPour && (callWaiterEnabled || requestBillEnabled || reviewFormEnabled) && (
         <div style={{ position: "fixed", bottom: 90, right: 20, zIndex: 1000, display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-end" }}>
           {floatingMenuOpen && (
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 6, animation: "fadeIn 0.2s ease-out" }}>
-              <div className="floating-btn-wrap">
-                <span className="floating-label">{lang === "ka" ? "ოფიციანტის გამოძახება" : lang === "ru" ? "Вызвать официанта" : "Request Waiter"}</span>
-                <button onClick={handleCallWaiter} className="floating-btn">💁‍♂️</button>
-              </div>
-              <div className="floating-btn-wrap">
-                <span className="floating-label">{lang === "ka" ? "ანგარიშის მოთხოვნა" : lang === "ru" ? "Попросить счет" : "Request Bill"}</span>
-                <button onClick={handleCallBill} className="floating-btn">🧾</button>
-              </div>
+              {callWaiterEnabled && (
+                <div className="floating-btn-wrap">
+                  <span className="floating-label">{lang === "ka" ? "ოფიციანტის გამოძახება" : lang === "ru" ? "Вызвать официанта" : "Request Waiter"}</span>
+                  <button onClick={handleCallWaiter} className="floating-btn">💁‍♂️</button>
+                </div>
+              )}
+              {requestBillEnabled && (
+                <div className="floating-btn-wrap">
+                  <span className="floating-label">{lang === "ka" ? "ანგარიშის მოთხოვნა" : lang === "ru" ? "Попросить счет" : "Request Bill"}</span>
+                  <button onClick={handleCallBill} className="floating-btn">🧾</button>
+                </div>
+              )}
               {reviewFormEnabled && (
                 <div className="floating-btn-wrap">
                   <span className="floating-label">{lang === "ka" ? "შეფასების დატოვება" : lang === "ru" ? "Оставить отзыв" : "Write Review"}</span>
                   <button onClick={() => { setFeedbackModalOpen(true); setTempRating(0); setTempName(""); setTempComment(""); setFloatingMenuOpen(false); }} className="floating-btn">✍️</button>
                 </div>
               )}
-
             </div>
           )}
 
