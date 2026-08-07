@@ -76,6 +76,7 @@ if (!fs.existsSync(dataDir)) {
 const categoriesFile = path.join(dataDir, 'categories.json');
 const dishesFile = path.join(dataDir, 'dishes.json');
 const usersFile = path.join(dataDir, 'users.json');
+const settingsFile = path.join(dataDir, 'settings.json');
 
 const readJSON = (filePath) => {
   if (!fs.existsSync(filePath)) return [];
@@ -211,9 +212,15 @@ const dishSchema = new mongoose.Schema({
   }
 });
 
+const settingSchema = new mongoose.Schema({
+  key: { type: String, required: true, unique: true },
+  value: mongoose.Schema.Types.Mixed
+});
+
 const User = mongoose.model('User', userSchema);
 const Category = mongoose.model('Category', categorySchema);
 const Dish = mongoose.model('Dish', dishSchema);
+const Setting = mongoose.model('Setting', settingSchema);
 
 // ─── Middleware: Protect Admin Endpoints ───────────────────────────────
 
@@ -723,6 +730,123 @@ app.put('/api/dishes/reorder', protect, async (req, res) => {
       }
     }
     res.json({ message: "Dishes order updated successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+// ─── Settings Endpoints ──────────────────────────────────────────────────
+
+// GET Settings
+app.get('/api/settings', async (req, res) => {
+  try {
+    if (useLocalFallback) {
+      const settingsList = readJSON(settingsFile);
+      const settingsMap = {};
+      if (Array.isArray(settingsList)) {
+        settingsList.forEach(s => { settingsMap[s.key] = s.value; });
+      }
+      return res.json(settingsMap);
+    }
+
+    const settingsList = await Setting.find();
+    const settingsMap = {};
+    settingsList.forEach(s => { settingsMap[s.key] = s.value; });
+    res.json(settingsMap);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Upload Background Image (PROTECTED)
+app.post('/api/settings/upload-bg', protect, upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No image file provided" });
+    }
+    const imageUrl = await uploadFile(req.file, req);
+
+    if (useLocalFallback) {
+      let settingsList = readJSON(settingsFile);
+      if (!Array.isArray(settingsList)) settingsList = [];
+      const idx = settingsList.findIndex(s => s.key === 'bgImage');
+      if (idx !== -1) {
+        settingsList[idx].value = imageUrl;
+      } else {
+        settingsList.push({ key: 'bgImage', value: imageUrl });
+      }
+      writeJSON(settingsFile, settingsList);
+      return res.json({ message: "Background image updated successfully", bgImage: imageUrl });
+    }
+
+    await Setting.findOneAndUpdate(
+      { key: 'bgImage' },
+      { key: 'bgImage', value: imageUrl },
+      { upsert: true, new: true }
+    );
+    res.json({ message: "Background image updated successfully", bgImage: imageUrl });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Upload About Us Image (PROTECTED)
+app.post('/api/settings/upload-about', protect, upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No image file provided" });
+    }
+    const imageUrl = await uploadFile(req.file, req);
+
+    if (useLocalFallback) {
+      let settingsList = readJSON(settingsFile);
+      if (!Array.isArray(settingsList)) settingsList = [];
+      const idx = settingsList.findIndex(s => s.key === 'aboutImage');
+      if (idx !== -1) {
+        settingsList[idx].value = imageUrl;
+      } else {
+        settingsList.push({ key: 'aboutImage', value: imageUrl });
+      }
+      writeJSON(settingsFile, settingsList);
+      return res.json({ message: "About Us image updated successfully", aboutImage: imageUrl });
+    }
+
+    await Setting.findOneAndUpdate(
+      { key: 'aboutImage' },
+      { key: 'aboutImage', value: imageUrl },
+      { upsert: true, new: true }
+    );
+    res.json({ message: "About Us image updated successfully", aboutImage: imageUrl });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// UPDATE Global Settings (PROTECTED)
+app.put('/api/settings', protect, async (req, res) => {
+  try {
+    const settingsObj = req.body;
+    if (!settingsObj || typeof settingsObj !== 'object') {
+      return res.status(400).json({ error: "Invalid settings object" });
+    }
+
+    if (useLocalFallback) {
+      let settingsList = readJSON(settingsFile);
+      if (!Array.isArray(settingsList)) settingsList = [];
+
+      Object.entries(settingsObj).forEach(([key, value]) => {
+        const idx = settingsList.findIndex(s => s.key === key);
+        if (idx !== -1) {
+          settingsList[idx].value = value;
+        } else {
+          settingsList.push({ key, value });
+        }
+      });
+      writeJSON(settingsFile, settingsList);
+      return res.json({ message: "Settings updated successfully" });
+    }
+
+    for (const [key, value] of Object.entries(settingsObj)) {
+      await Setting.findOneAndUpdate({ key }, { key, value }, { upsert: true });
+    }
+    res.json({ message: "Settings updated successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

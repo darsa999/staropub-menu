@@ -836,7 +836,7 @@ function AboutBeerMug({ isOpen }) {
   );
 }
 
-function AboutView({ lang, th }) {
+function AboutView({ lang, th, aboutImage }) {
   const t      = th || THEME.light;
   const isDark = t === THEME.dark;
   const currentHour = new Date().getHours();
@@ -850,7 +850,7 @@ function AboutView({ lang, th }) {
   return (
     <div style={{ maxWidth:600, margin:"0 auto", padding:"0 16px 120px" }}>
       <div style={{ width:"100%", height:220, borderRadius:"0 0 20px 20px", overflow:"hidden", background:isDark?"linear-gradient(135deg,#0f172a,#1e293b,#020617)":"linear-gradient(135deg,#e8dcc8,#d8ccb0,#efe5cf)", position:"relative", marginBottom:24 }}>
-        <img src="Images/staropub.webp" alt="StaroPub" style={{ width:"100%", height:"100%", objectFit:"cover" }} onError={e => { e.target.style.display="none"; }} />
+        <img src={aboutImage || "Images/staropub.webp"} alt="StaroPub" style={{ width:"100%", height:"100%", objectFit:"cover" }} onError={e => { e.target.style.display="none"; }} />
         <div style={{ position:"absolute", inset:0, background:"linear-gradient(180deg,transparent 40%,rgba(0,0,0,0.72) 100%)" }} />
         <div style={{ position:"absolute", bottom:20, left:20 }}>
           <div style={{ color:"#f59e0b", fontSize:26, fontWeight:700, fontFamily:"'Georgia',serif", letterSpacing:"0.5px", textShadow:"0 2px 16px rgba(0,0,0,0.7)" }}>StaroPub</div>
@@ -918,6 +918,8 @@ function AdminDashboard({
   requestBillEnabled, setRequestBillEnabled,
   reviewFormEnabled, setReviewFormEnabled,
   reviews, setReviews,
+  bgImage, setBgImage,
+  aboutImage, setAboutImage,
   unavailableDishIds = [], setUnavailableDishIds,
   allItems = [], setAllItems,
   categoryOrder = [], setCategoryOrder,
@@ -955,6 +957,18 @@ function AdminDashboard({
         });
       }
 
+      await fetch(`${API_URL}/api/settings`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          callWaiterEnabled,
+          requestBillEnabled,
+          bannerSettings,
+          customMenuEnabled
+        }),
+        credentials: "include"
+      });
+
       if (onSaveSuccess) {
         await onSaveSuccess();
       }
@@ -977,21 +991,55 @@ function AdminDashboard({
   const handleUpdateBgImage = async (e) => {
     e.preventDefault();
     if (!bgImageFile) {
-      alert("გთხოვთ აირჩიოთ ფაილი");
+      alert(lang === "ka" ? "გთხოვთ აირჩიოთ ფაილი" : "Please select an image file");
       return;
     }
-    alert("სურათი წარმატებით განახლდა (სიმულაცია)");
-    setBgImageFile(null);
+    try {
+      const formData = new FormData();
+      formData.append("image", bgImageFile);
+      const res = await fetch(`${API_URL}/api/settings/upload-bg`, {
+        method: "POST",
+        body: formData,
+        credentials: "include"
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed");
+
+      // Cache busting parameter
+      const cacheBustUrl = `${data.bgImage}${data.bgImage.includes('?') ? '&' : '?'}t=${Date.now()}`;
+      setBgImage(cacheBustUrl);
+      setBgImageFile(null);
+      alert(lang === "ka" ? "ბექგრაუნდის სურათი წარმატებით განახლდა!" : "Background image updated successfully!");
+    } catch (err) {
+      alert("Error: " + err.message);
+    }
   };
 
   const handleUpdateAboutImage = async (e) => {
     e.preventDefault();
     if (!aboutImageFile) {
-      alert("გთხოვთ აირჩიოთ ფაილი");
+      alert(lang === "ka" ? "გთხოვთ აირჩიოთ ფაილი" : "Please select an image file");
       return;
     }
-    alert("სურათი წარმატებით განახლდა (სიმულაცია)");
-    setAboutImageFile(null);
+    try {
+      const formData = new FormData();
+      formData.append("image", aboutImageFile);
+      const res = await fetch(`${API_URL}/api/settings/upload-about`, {
+        method: "POST",
+        body: formData,
+        credentials: "include"
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed");
+
+      // Cache busting parameter
+      const cacheBustUrl = `${data.aboutImage}${data.aboutImage.includes('?') ? '&' : '?'}t=${Date.now()}`;
+      setAboutImage(cacheBustUrl);
+      setAboutImageFile(null);
+      alert(lang === "ka" ? "ჩვენს შესახებ სურათი წარმატებით განახლდა!" : "About Us image updated successfully!");
+    } catch (err) {
+      alert("Error: " + err.message);
+    }
   };
 
   const [selectedSortCategory, setSelectedSortCategory] = useState("");
@@ -2570,6 +2618,8 @@ export default function StaroPub() {
   const [customMenuEnabled, setCustomMenuEnabled] = useState(true);
   const [callWaiterEnabled, setCallWaiterEnabled] = useState(true);
   const [requestBillEnabled, setRequestBillEnabled] = useState(true);
+  const [bgImage, setBgImage] = useState("");
+  const [aboutImage, setAboutImage] = useState("");
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -2680,6 +2730,17 @@ export default function StaroPub() {
         setHotCategories(hot);
         setDbCategories(categoriesData);
         setCategoryOrder(categoriesData.map(cat => cat.id || cat._id));
+      }
+
+      const settingsRes = await fetch(`${API_URL}/api/settings`, { credentials: "include" });
+      if (settingsRes.ok) {
+        const settingsMap = await settingsRes.json();
+        if (settingsMap.bgImage) setBgImage(settingsMap.bgImage);
+        if (settingsMap.aboutImage) setAboutImage(settingsMap.aboutImage);
+        if (typeof settingsMap.callWaiterEnabled === 'boolean') setCallWaiterEnabled(settingsMap.callWaiterEnabled);
+        if (typeof settingsMap.requestBillEnabled === 'boolean') setRequestBillEnabled(settingsMap.requestBillEnabled);
+        if (settingsMap.bannerSettings) setBannerSettings(settingsMap.bannerSettings);
+        if (typeof settingsMap.customMenuEnabled === 'boolean') setCustomMenuEnabled(settingsMap.customMenuEnabled);
       }
 
       const dishRes = await fetch(`${API_URL}/api/dishes`, { credentials: "include" });
@@ -3409,7 +3470,7 @@ export default function StaroPub() {
       {/* About View */}
       {!isPour && currentView === "about" && (
         <main style={{ maxWidth:1200, margin:"0 auto", padding:"16px 0 112px", animation:"fadeIn 0.3s ease-out", position:"relative", zIndex:1 }}>
-          <AboutView lang={lang} th={t} />
+          <AboutView lang={lang} th={t} aboutImage={aboutImage} />
         </main>
       )}
 
@@ -3455,6 +3516,10 @@ export default function StaroPub() {
             setReviewFormEnabled={setReviewFormEnabled}
             reviews={reviews}
             setReviews={setReviews}
+            bgImage={bgImage}
+            setBgImage={setBgImage}
+            aboutImage={aboutImage}
+            setAboutImage={setAboutImage}
             unavailableDishIds={unavailableDishIds}
             setUnavailableDishIds={setUnavailableDishIds}
             allItems={allItems}
