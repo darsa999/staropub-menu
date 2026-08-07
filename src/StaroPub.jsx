@@ -21,6 +21,12 @@ export { auth, googleProvider, signInWithPopup };
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+const getTimestampedUrl = (url) => {
+  if (!url) return "";
+  const cleanUrl = url.split("?t=")[0];
+  return `${cleanUrl}?t=${Date.now()}`;
+};
+
 // ─── Timing constants ─────────────────────────────────────────────────────────
 const POUR_DURATION_MS  = 2000;
 
@@ -1015,7 +1021,7 @@ function AdminDashboard({
       if (!res.ok) throw new Error(data.error || `Upload failed with status ${res.status}`);
 
       // Cache busting parameter
-      const cacheBustUrl = `${data.bgImage}${data.bgImage.includes('?') ? '&' : '?'}t=${Date.now()}`;
+      const cacheBustUrl = getTimestampedUrl(data.bgImage);
       setBgImage(cacheBustUrl);
       setBgImageFile(null);
       alert(lang === "ka" ? "ბექგრაუნდის სურათი წარმატებით განახლდა!" : "Background image updated successfully!");
@@ -1051,7 +1057,7 @@ function AdminDashboard({
       if (!res.ok) throw new Error(data.error || `Upload failed with status ${res.status}`);
 
       // Cache busting parameter
-      const cacheBustUrl = `${data.aboutImage}${data.aboutImage.includes('?') ? '&' : '?'}t=${Date.now()}`;
+      const cacheBustUrl = getTimestampedUrl(data.aboutImage);
       setAboutImage(cacheBustUrl);
       setAboutImageFile(null);
       alert(lang === "ka" ? "ჩვენს შესახებ სურათი წარმატებით განახლდა!" : "About Us image updated successfully!");
@@ -2753,8 +2759,8 @@ export default function StaroPub() {
       const settingsRes = await fetch(`${API_URL}/api/settings`, { credentials: "include" });
       if (settingsRes.ok) {
         const settingsMap = await settingsRes.json();
-        if (settingsMap.bgImage) setBgImage(settingsMap.bgImage);
-        if (settingsMap.aboutImage) setAboutImage(settingsMap.aboutImage);
+        if (settingsMap.bgImage) setBgImage(getTimestampedUrl(settingsMap.bgImage));
+        if (settingsMap.aboutImage) setAboutImage(getTimestampedUrl(settingsMap.aboutImage));
         if (typeof settingsMap.callWaiterEnabled === 'boolean') setCallWaiterEnabled(settingsMap.callWaiterEnabled);
         if (typeof settingsMap.requestBillEnabled === 'boolean') setRequestBillEnabled(settingsMap.requestBillEnabled);
         if (settingsMap.bannerSettings) setBannerSettings(settingsMap.bannerSettings);
@@ -2913,13 +2919,20 @@ export default function StaroPub() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: t.appBg,
+      background: bgImage ? `url("${bgImage}") center/cover no-repeat fixed` : t.appBg,
       fontFamily: "'Georgia','DejaVu Serif',serif",
       color: t.bodyText,
       position: "relative",
-      transition: "color 0.35s",
+      transition: "color 0.35s, background 0.4s",
     }}>
-      <div style={{ position:"fixed", inset:0, zIndex:0, pointerEvents:"none", background: isDark ? "rgba(8,12,24,0.92)" : "rgba(252,247,241,0.90)", transition:"background 0.4s" }} />
+      <div style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 0,
+        pointerEvents: "none",
+        background: bgImage ? (isDark ? "rgba(8,12,24,0.75)" : "rgba(252,247,241,0.75)") : (isDark ? "rgba(8,12,24,0.92)" : "rgba(252,247,241,0.90)"),
+        transition: "background 0.4s"
+      }} />
 
       <style>{`
         @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
