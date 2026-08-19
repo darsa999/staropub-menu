@@ -887,6 +887,7 @@ function AboutView({ lang, th, aboutImage }) {
 // FOOTER
 // ══════════════════════════════════════════════════════════════════════════════
 function SiteFooter({ lang, visible, th, currentView, setCurrentView, isAdmin }) {
+  if (currentView === "admin") return null;
   const t = th || THEME.dark;
   return (
     <footer style={{ position:"fixed", left:0, right:0, bottom:0, zIndex:50, background:t.footerBg, borderTop:`1px solid ${t.footerBorder}`, padding:"10px 24px 12px", backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)", transform:visible?"translateY(0)":"translateY(100%)", opacity:visible?1:0, pointerEvents:visible?"auto":"none", transition:"transform 0.32s ease-in-out, opacity 0.32s ease-in-out, background 0.3s" }}>
@@ -1537,7 +1538,7 @@ function AdminDashboard({
   ];
 
   return (
-    <div className="admin-container">
+    <div className="admin-container dark bg-neutral-900 text-white">
       <style>{`
         .admin-container {
           display: flex;
@@ -3469,22 +3470,24 @@ export default function StaroPub() {
   const isMenu = phase === "menu";
 
   return (
-    <div style={{
+    <div className={currentView === "admin" ? "dark bg-neutral-900 text-white" : ""} style={{
       minHeight: "100vh",
-      background: bgImage ? `url("${bgImage}") center/cover no-repeat fixed` : t.appBg,
+      background: currentView === "admin" ? "#0a0f1d" : (bgImage ? `url("${bgImage}") center/cover no-repeat fixed` : t.appBg),
       fontFamily: "'Georgia','DejaVu Serif',serif",
-      color: t.bodyText,
+      color: currentView === "admin" ? "#f0c060" : t.bodyText,
       position: "relative",
       transition: "color 0.35s, background 0.4s",
     }}>
-      <div style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 0,
-        pointerEvents: "none",
-        background: bgImage ? (isDark ? "rgba(8,12,24,0.18)" : "rgba(252,247,241,0.15)") : (isDark ? "rgba(8,12,24,0.92)" : "rgba(252,247,241,0.90)"),
-        transition: "background 0.4s"
-      }} />
+      {currentView !== "admin" && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 0,
+          pointerEvents: "none",
+          background: bgImage ? (isDark ? "rgba(8,12,24,0.18)" : "rgba(252,247,241,0.15)") : (isDark ? "rgba(8,12,24,0.92)" : "rgba(252,247,241,0.90)"),
+          transition: "background 0.4s"
+        }} />
+      )}
 
       <style>{`
         @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
@@ -3594,7 +3597,7 @@ export default function StaroPub() {
       {isPour && <MasterPourScreen lang={lang} isDark={isDark} />}
 
       {/* Header */}
-      {!isPour && (
+      {!isPour && currentView !== "admin" && (
         <header style={{ position:"sticky", top:0, zIndex:100, background:t.headerBg, borderBottom:t.headerBorder, backdropFilter:"blur(12px)", padding:"0 16px", transition:"background 0.3s, border-color 0.3s" }}>
           <div style={{ maxWidth:1200, margin:"0 auto", display:"flex", alignItems:"center", height:64, gap:12 }}>
             <div
@@ -4114,7 +4117,7 @@ export default function StaroPub() {
 
       {/* Admin Panel View */}
       {!isPour && currentView === "admin" && isAuthenticated && (
-        <main style={{ width: "100%", minHeight: "100vh", animation:"fadeIn 0.3s ease-out", position:"relative", zIndex:1 }}>
+        <main className="dark bg-neutral-900 text-white" style={{ width: "100%", minHeight: "100vh", animation:"fadeIn 0.3s ease-out", position:"relative", zIndex:1, background: "#0a0f1d", color: "#f0c060" }}>
           <AdminDashboard
             lang={lang}
             onClose={() => {
@@ -4178,7 +4181,7 @@ export default function StaroPub() {
         </main>
       )}
 
-      {!isPour && <SiteFooter lang={lang} visible={isFooterVisible} th={t} currentView={currentView} setCurrentView={setCurrentView} isAdmin={isAdmin} />}
+      {!isPour && currentView !== "admin" && <SiteFooter lang={lang} visible={isFooterVisible} th={t} currentView={currentView} setCurrentView={setCurrentView} isAdmin={isAdmin} />}
 
       {/* Dish Detail Modal */}
       {selectedDish && (
@@ -4195,7 +4198,7 @@ export default function StaroPub() {
       )}
 
       {/* ── SERVICE REQUESTS FLOATING WIDGET ── */}
-      {!isPour && (callWaiterEnabled || requestBillEnabled || reviewFormEnabled) && (
+      {!isPour && currentView !== "admin" && (callWaiterEnabled || requestBillEnabled || reviewFormEnabled) && (
         <div style={{ position: "fixed", bottom: 90, right: 20, zIndex: 1000, display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-end" }}>
           {floatingMenuOpen && (
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 6, animation: "fadeIn 0.2s ease-out" }}>
