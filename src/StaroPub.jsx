@@ -2244,7 +2244,7 @@ function AdminDashboard({
             {/* Category sorting section */}
             <div style={{ marginBottom: 32 }}>
               <h4 style={{ margin: "0 0 12px", fontFamily: "'Georgia', serif", fontSize: 16 }}>კატეგორიების რიგითობა</h4>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: "none", overflow: "visible" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 260, overflowY: "auto", paddingRight: 6 }}>
                 {categoryOrder.map((cat, idx) => {
                   const catLabelObj = categoryLabels[cat] || { ka: cat, en: cat, ru: cat };
                   return (
