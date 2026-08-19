@@ -1095,6 +1095,181 @@ function AdminDashboard({
   const [newDishCat, setNewDishCat]       = useState("");
   const [newDishImageFile, setNewDishImageFile] = useState(null);
 
+  // Category Edit states
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [editCatKa, setEditCatKa] = useState("");
+  const [editCatEn, setEditCatEn] = useState("");
+  const [editCatRu, setEditCatRu] = useState("");
+  const [editCatIcon, setEditCatIcon] = useState("");
+  const [editCatIsHot, setEditCatIsHot] = useState(false);
+  const [editCatImageFile, setEditCatImageFile] = useState(null);
+  const [editCatImagePreview, setEditCatImagePreview] = useState("");
+  const [isUpdatingCategory, setIsUpdatingCategory] = useState(false);
+
+  // Dish Edit states
+  const [editingDish, setEditingDish] = useState(null);
+  const [editDishNameKa, setEditDishNameKa] = useState("");
+  const [editDishNameEn, setEditDishNameEn] = useState("");
+  const [editDishNameRu, setEditDishNameRu] = useState("");
+  const [editDishDescKa, setEditDishDescKa] = useState("");
+  const [editDishDescEn, setEditDishDescEn] = useState("");
+  const [editDishDescRu, setEditDishDescRu] = useState("");
+  const [editDishPrice, setEditDishPrice] = useState("");
+  const [editDishCat, setEditDishCat] = useState("");
+  const [editDishImageFile, setEditDishImageFile] = useState(null);
+  const [editDishImagePreview, setEditDishImagePreview] = useState("");
+  const [isUpdatingDish, setIsUpdatingDish] = useState(false);
+
+  const resolveImageSrc = (img) => {
+    if (!img) return "";
+    if (img.startsWith("http://") || img.startsWith("https://") || img.startsWith("data:") || img.startsWith("blob:")) {
+      return img;
+    }
+    return `Images/${img}`;
+  };
+
+  const openEditCategory = (catKey) => {
+    const catObj = dbCategories.find(c => (c.id || c._id) === catKey) || {};
+    const labels = categoryLabels[catKey] || {};
+    setEditingCategory(catKey);
+    setEditCatKa(labels.ka || catObj.name_ka || catKey);
+    setEditCatEn(labels.en || catObj.name_en || catKey);
+    setEditCatRu(labels.ru || catObj.name_ru || catKey);
+    setEditCatIcon(categoryIcons[catKey] || catObj.icon || "🍽️");
+    setEditCatIsHot(hotCategories ? hotCategories.has(catKey) || !!catObj.isHot : !!catObj.isHot);
+    setEditCatImageFile(null);
+    setEditCatImagePreview(catObj.image || "");
+  };
+
+  const handleUpdateCategory = async (e) => {
+    e.preventDefault();
+    if (!editingCategory) return;
+    setIsUpdatingCategory(true);
+
+    const formData = new FormData();
+    formData.append("name_ka", editCatKa.trim() || editingCategory);
+    formData.append("name_en", editCatEn.trim() || editingCategory);
+    formData.append("name_ru", editCatRu.trim() || editingCategory);
+    formData.append("icon", editCatIcon.trim() || "🍽️");
+    formData.append("isHot", editCatIsHot ? "true" : "false");
+    if (editCatImageFile) {
+      formData.append("image", editCatImageFile);
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/categories/${editingCategory}`, {
+        method: "PUT",
+        body: formData,
+        credentials: "include"
+      });
+      if (!response.ok) {
+        throw new Error("კატეგორიის განახლება ვერ მოხერხდა");
+      }
+      const updatedCategory = await response.json();
+      const catId = updatedCategory.id || updatedCategory._id || editingCategory;
+
+      setDbCategories(prev => prev.map(c => ((c.id || c._id) === catId ? { ...c, ...updatedCategory } : c)));
+      setCategoryLabels(prev => ({
+        ...prev,
+        [catId]: {
+          ka: updatedCategory.name_ka || catId,
+          en: updatedCategory.name_en || catId,
+          ru: updatedCategory.name_ru || catId,
+        }
+      }));
+      setCategoryIcons(prev => ({
+        ...prev,
+        [catId]: updatedCategory.icon || "🍽️"
+      }));
+      if (setHotCategories) {
+        setHotCategories(prev => {
+          const next = new Set(prev);
+          if (editCatIsHot) next.add(catId);
+          else next.delete(catId);
+          return next;
+        });
+      }
+
+      setEditingCategory(null);
+      const msg = lang === "ka" ? "✓ კატეგორია წარმატებით განახლდა!" : lang === "ru" ? "✓ Категория успешно обновлена!" : "✓ Category updated successfully!";
+      setToastMessage(msg);
+      setTimeout(() => setToastMessage(""), 3500);
+      if (onSaveSuccess) await onSaveSuccess();
+    } catch (err) {
+      alert(`შეცდომა: ${err.message}`);
+    } finally {
+      setIsUpdatingCategory(false);
+    }
+  };
+
+  const openEditDish = (dish) => {
+    if (!dish) return;
+    setEditingDish(dish);
+    setEditDishNameKa(dish.name_ka || "");
+    setEditDishNameEn(dish.name_en || "");
+    setEditDishNameRu(dish.name_ru || "");
+    setEditDishDescKa(dish.desc_ka || "");
+    setEditDishDescEn(dish.desc_en || "");
+    setEditDishDescRu(dish.desc_ru || "");
+    
+    // Extract numerical price cleanly
+    const rawPrice = dish.price ? String(dish.price).replace(/[^\d.]/g, "") : "";
+    setEditDishPrice(rawPrice);
+    setEditDishCat(dish.category || (categoryOrder.length > 0 ? categoryOrder[0] : ""));
+    setEditDishImageFile(null);
+    setEditDishImagePreview(dish.image || "");
+  };
+
+  const handleUpdateDish = async (e) => {
+    e.preventDefault();
+    if (!editingDish) return;
+    if (!editDishNameKa.trim()) return alert("გთხოვთ მიუთითოთ კერძის დასახელება ქართულად!");
+    const priceNum = parseFloat(editDishPrice);
+    if (isNaN(priceNum) || priceNum <= 0) return alert("გთხოვთ მიუთითოთ კერძის სწორი ფასი!");
+
+    setIsUpdatingDish(true);
+    const formData = new FormData();
+    formData.append("name_ka", editDishNameKa.trim());
+    formData.append("name_en", editDishNameEn.trim() || editDishNameKa.trim());
+    formData.append("name_ru", editDishNameRu.trim() || editDishNameKa.trim());
+    formData.append("desc_ka", editDishDescKa.trim());
+    formData.append("desc_en", editDishDescEn.trim());
+    formData.append("desc_ru", editDishDescRu.trim());
+    formData.append("price", `${priceNum} ₾`);
+    formData.append("category", editDishCat || editingDish.category);
+    if (editDishImageFile) {
+      formData.append("image", editDishImageFile);
+    }
+
+    try {
+      const dishId = editingDish.id || editingDish._id;
+      const response = await fetch(`${API_URL}/api/dishes/${dishId}`, {
+        method: "PUT",
+        body: formData,
+        credentials: "include"
+      });
+      if (!response.ok) {
+        throw new Error("კერძის განახლება ვერ მოხერხდა");
+      }
+      const updatedDish = await response.json();
+      const formatted = {
+        ...updatedDish,
+        id: updatedDish.id || updatedDish._id || dishId
+      };
+
+      setAllItems(prev => prev.map(item => ((item.id === formatted.id || item._id === formatted.id) ? formatted : item)));
+      setEditingDish(null);
+      const msg = lang === "ka" ? "✓ კერძი წარმატებით განახლდა!" : lang === "ru" ? "✓ Блюдо успешно обновлено!" : "✓ Dish updated successfully!";
+      setToastMessage(msg);
+      setTimeout(() => setToastMessage(""), 3500);
+      if (onSaveSuccess) await onSaveSuccess();
+    } catch (err) {
+      alert(`შეცდომა: ${err.message}`);
+    } finally {
+      setIsUpdatingDish(false);
+    }
+  };
+
   useEffect(() => {
     if (!newDishCat && categoryOrder.length > 0) {
       setNewDishCat(categoryOrder[0]);
@@ -2029,20 +2204,31 @@ function AdminDashboard({
                         {categoryLabels[dish.category]?.ka || dish.category}
                       </span>
                     </div>
-                    <button
-                      onClick={() => {
-                        setUnavailableDishIds(prev =>
-                          prev.includes(dish.id) ? prev.filter(id => id !== dish.id) : [...prev, dish.id]
-                        );
-                      }}
-                      style={{
-                        background: isAvailable ? "#4ade80" : "#4a3018",
-                        color: isAvailable ? "#000" : "#fff",
-                        border: "none", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 11, fontWeight: "bold", transition: "all 0.2s"
-                      }}
-                    >
-                      {isAvailable ? "აქტიური" : "გათიშული"}
-                    </button>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <button
+                        onClick={() => openEditDish(dish)}
+                        style={{
+                          background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.35)",
+                          borderRadius: 8, color: "#f0c060", padding: "6px 12px", cursor: "pointer", fontSize: 11, fontWeight: "bold", transition: "all 0.2s"
+                        }}
+                      >
+                        ✏️ რედაქტირება
+                      </button>
+                      <button
+                        onClick={() => {
+                          setUnavailableDishIds(prev =>
+                            prev.includes(dish.id) ? prev.filter(id => id !== dish.id) : [...prev, dish.id]
+                          );
+                        }}
+                        style={{
+                          background: isAvailable ? "#4ade80" : "#4a3018",
+                          color: isAvailable ? "#000" : "#fff",
+                          border: "none", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 11, fontWeight: "bold", transition: "all 0.2s"
+                        }}
+                      >
+                        {isAvailable ? "აქტიური" : "გათიშული"}
+                      </button>
+                    </div>
                   </div>
                 );
               })}
@@ -2085,6 +2271,16 @@ function AdminDashboard({
                           }}
                         >
                           ▼
+                        </button>
+                        <button
+                          onClick={() => openEditCategory(cat)}
+                          style={{
+                            background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.35)",
+                            borderRadius: 6, color: "#f0c060",
+                            padding: "0 10px", height: 32, cursor: "pointer", fontSize: 11, fontWeight: "bold"
+                          }}
+                        >
+                          ✏️ რედაქტირება
                         </button>
                         <button
                           onClick={() => handleDeleteCategory(cat)}
@@ -2160,6 +2356,16 @@ function AdminDashboard({
                             }}
                           >
                             ▼
+                          </button>
+                          <button
+                            onClick={() => openEditDish(dish)}
+                            style={{
+                              background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.35)",
+                              borderRadius: 6, color: "#f0c060",
+                              padding: "0 10px", height: 32, cursor: "pointer", fontSize: 11, fontWeight: "bold"
+                            }}
+                          >
+                            ✏️ რედაქტირება
                           </button>
                           <button
                             onClick={() => handleDeleteDish(dish.id)}
@@ -2393,6 +2599,385 @@ function AdminDashboard({
           </div>
         )}
       </div>
+
+      {/* ── Modal: Edit Category ── */}
+      {editingCategory && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0, 0, 0, 0.78)",
+          backdropFilter: "blur(6px)",
+          zIndex: 10050,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 16,
+          animation: "fadeIn 0.2s ease-out"
+        }}>
+          <div style={{
+            background: "#0d1424",
+            border: "1px solid rgba(245, 158, 11, 0.35)",
+            borderRadius: 18,
+            boxShadow: "0 20px 60px rgba(0,0,0,0.8), 0 0 30px rgba(245,158,11,0.15)",
+            width: "100%",
+            maxWidth: 580,
+            maxHeight: "90vh",
+            overflowY: "auto",
+            padding: 24,
+            position: "relative"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, borderBottom: "1px solid rgba(245,158,11,0.15)", paddingBottom: 14 }}>
+              <div>
+                <h3 style={{ margin: 0, fontFamily: "'Georgia', serif", fontSize: 18, color: "#f0c060" }}>
+                  ✏️ კატეგორიის რედაქტირება
+                </h3>
+                <span style={{ fontSize: 11, color: "#8a6040" }}>ID / Key: <strong style={{ color: "#f0c060" }}>{editingCategory}</strong></span>
+              </div>
+              <button
+                onClick={() => setEditingCategory(null)}
+                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(245,158,11,0.2)", color: "#cbd5e1", width: 32, height: 32, borderRadius: "50%", cursor: "pointer", fontSize: 16, fontWeight: "bold" }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateCategory} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>გასაღები (ID - უცვლელია)</label>
+                  <input
+                    type="text"
+                    disabled
+                    value={editingCategory}
+                    style={{ background: "#080c16", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: 10, color: "#94a3b8", fontSize: 13 }}
+                  />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>ემოჯი / იკონი</label>
+                  <input
+                    type="text"
+                    placeholder="მაგ: 🍰"
+                    value={editCatIcon}
+                    onChange={e => setEditCatIcon(e.target.value)}
+                    style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>სახელი (KA)</label>
+                  <input
+                    type="text"
+                    required
+                    value={editCatKa}
+                    onChange={e => setEditCatKa(e.target.value)}
+                    style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
+                  />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>სახელი (EN)</label>
+                  <input
+                    type="text"
+                    value={editCatEn}
+                    onChange={e => setEditCatEn(e.target.value)}
+                    style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
+                  />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>სახელი (RU)</label>
+                  <input
+                    type="text"
+                    value={editCatRu}
+                    onChange={e => setEditCatRu(e.target.value)}
+                    style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "6px 0", background: "rgba(245,158,11,0.06)", padding: "10px 14px", borderRadius: 10, border: "1px solid rgba(245,158,11,0.15)" }}>
+                <input
+                  type="checkbox"
+                  id="edit-cat-is-hot"
+                  checked={editCatIsHot}
+                  onChange={e => setEditCatIsHot(e.target.checked)}
+                  style={{ width: 18, height: 18, accentColor: "#b86520", cursor: "pointer" }}
+                />
+                <label htmlFor="edit-cat-is-hot" style={{ fontSize: 13, color: "#f0c060", cursor: "pointer", fontWeight: 600 }}>
+                  🔥 პოპულარული / Hot კატეგორია
+                </label>
+              </div>
+
+              {/* Image Preview & Replacement */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, background: "rgba(0,0,0,0.2)", padding: 14, borderRadius: 12, border: "1px solid rgba(180,120,40,0.15)" }}>
+                <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase", fontWeight: "bold" }}>
+                  კატეგორიის სურათი
+                </label>
+                {editCatImagePreview && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                    <img
+                      src={resolveImageSrc(editCatImagePreview)}
+                      alt="Category Preview"
+                      style={{ width: 70, height: 70, objectFit: "cover", borderRadius: 10, border: "1px solid rgba(245,158,11,0.3)" }}
+                      onError={e => { e.target.style.display = "none"; }}
+                    />
+                    <div style={{ fontSize: 12, color: "#cbd5e1" }}>
+                      <span style={{ color: "#4ade80", fontWeight: 600 }}>{editCatImageFile ? "✓ ახალი ფაილი შერჩეულია" : "მიმდინარე სურათი"}</span>
+                      <p style={{ margin: "4px 0 0", fontSize: 10, color: "#94a3b8" }}>თუ ახალ ფაილს არ აირჩევთ, ძველი სურათი შენარჩუნდება.</p>
+                    </div>
+                  </div>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => {
+                    if (e.target.files && e.target.files[0]) {
+                      const file = e.target.files[0];
+                      setEditCatImageFile(file);
+                      setEditCatImagePreview(URL.createObjectURL(file));
+                    }
+                  }}
+                  style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 12 }}
+                />
+              </div>
+
+              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 12 }}>
+                <button
+                  type="button"
+                  onClick={() => setEditingCategory(null)}
+                  disabled={isUpdatingCategory}
+                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, color: "#cbd5e1", padding: "10px 18px", cursor: "pointer", fontSize: 13, fontWeight: 700 }}
+                >
+                  გაუქმება
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdatingCategory}
+                  style={{
+                    background: isUpdatingCategory ? "rgba(184,101,32,0.5)" : "linear-gradient(135deg, #16a34a, #15803d)",
+                    border: "1px solid #4ade80",
+                    borderRadius: 10,
+                    color: "#fff",
+                    padding: "10px 22px",
+                    cursor: isUpdatingCategory ? "not-allowed" : "pointer",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6
+                  }}
+                >
+                  {isUpdatingCategory ? <span className="save-spinner" /> : "💾"}
+                  {isUpdatingCategory ? "ინახება..." : "ცვლილებების შენახვა"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: Edit Dish ── */}
+      {editingDish && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0, 0, 0, 0.78)",
+          backdropFilter: "blur(6px)",
+          zIndex: 10050,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 16,
+          animation: "fadeIn 0.2s ease-out"
+        }}>
+          <div style={{
+            background: "#0d1424",
+            border: "1px solid rgba(245, 158, 11, 0.35)",
+            borderRadius: 18,
+            boxShadow: "0 20px 60px rgba(0,0,0,0.8), 0 0 30px rgba(245,158,11,0.15)",
+            width: "100%",
+            maxWidth: 640,
+            maxHeight: "90vh",
+            overflowY: "auto",
+            padding: 24,
+            position: "relative"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, borderBottom: "1px solid rgba(245,158,11,0.15)", paddingBottom: 14 }}>
+              <div>
+                <h3 style={{ margin: 0, fontFamily: "'Georgia', serif", fontSize: 18, color: "#f0c060" }}>
+                  ✏️ კერძის რედაქტირება
+                </h3>
+                <span style={{ fontSize: 11, color: "#8a6040" }}>ID: <strong style={{ color: "#f0c060" }}>{editingDish.id || editingDish._id}</strong></span>
+              </div>
+              <button
+                onClick={() => setEditingDish(null)}
+                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(245,158,11,0.2)", color: "#cbd5e1", width: 32, height: 32, borderRadius: "50%", cursor: "pointer", fontSize: 16, fontWeight: "bold" }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateDish} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>დასახელება (KA)</label>
+                  <input
+                    type="text"
+                    required
+                    value={editDishNameKa}
+                    onChange={e => setEditDishNameKa(e.target.value)}
+                    style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
+                  />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>დასახელება (EN)</label>
+                  <input
+                    type="text"
+                    value={editDishNameEn}
+                    onChange={e => setEditDishNameEn(e.target.value)}
+                    style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
+                  />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>დასახელება (RU)</label>
+                  <input
+                    type="text"
+                    value={editDishNameRu}
+                    onChange={e => setEditDishNameRu(e.target.value)}
+                    style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>აღწერა (KA)</label>
+                  <input
+                    type="text"
+                    value={editDishDescKa}
+                    onChange={e => setEditDishDescKa(e.target.value)}
+                    style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
+                  />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>აღწერა (EN)</label>
+                  <input
+                    type="text"
+                    value={editDishDescEn}
+                    onChange={e => setEditDishDescEn(e.target.value)}
+                    style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
+                  />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>აღწერა (RU)</label>
+                  <input
+                    type="text"
+                    value={editDishDescRu}
+                    onChange={e => setEditDishDescRu(e.target.value)}
+                    style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>ფასი (₾ / ლარი)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    placeholder="12.50"
+                    value={editDishPrice}
+                    onChange={e => setEditDishPrice(e.target.value)}
+                    style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
+                  />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>კატეგორია</label>
+                  <select
+                    value={editDishCat}
+                    onChange={e => setEditDishCat(e.target.value)}
+                    style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13, height: 41 }}
+                  >
+                    {categoryOrder.map(cat => {
+                      const labelObj = categoryLabels[cat] || { ka: cat };
+                      return (
+                        <option key={cat} value={cat}>
+                          {labelObj.ka || cat}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              </div>
+
+              {/* Image Preview & Replacement */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, background: "rgba(0,0,0,0.2)", padding: 14, borderRadius: 12, border: "1px solid rgba(180,120,40,0.15)" }}>
+                <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase", fontWeight: "bold" }}>
+                  კერძის სურათი
+                </label>
+                {editDishImagePreview && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                    <img
+                      src={resolveImageSrc(editDishImagePreview)}
+                      alt="Dish Preview"
+                      style={{ width: 70, height: 70, objectFit: "cover", borderRadius: 10, border: "1px solid rgba(245,158,11,0.3)" }}
+                      onError={e => { e.target.style.display = "none"; }}
+                    />
+                    <div style={{ fontSize: 12, color: "#cbd5e1" }}>
+                      <span style={{ color: "#4ade80", fontWeight: 600 }}>{editDishImageFile ? "✓ ახალი ფაილი შერჩეულია" : "მიმდინარე სურათი"}</span>
+                      <p style={{ margin: "4px 0 0", fontSize: 10, color: "#94a3b8" }}>თუ ახალ ფაილს არ აირჩევთ, ძველი სურათი შენარჩუნდება.</p>
+                    </div>
+                  </div>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => {
+                    if (e.target.files && e.target.files[0]) {
+                      const file = e.target.files[0];
+                      setEditDishImageFile(file);
+                      setEditDishImagePreview(URL.createObjectURL(file));
+                    }
+                  }}
+                  style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 12 }}
+                />
+              </div>
+
+              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 12 }}>
+                <button
+                  type="button"
+                  onClick={() => setEditingDish(null)}
+                  disabled={isUpdatingDish}
+                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, color: "#cbd5e1", padding: "10px 18px", cursor: "pointer", fontSize: 13, fontWeight: 700 }}
+                >
+                  გაუქმება
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdatingDish}
+                  style={{
+                    background: isUpdatingDish ? "rgba(184,101,32,0.5)" : "linear-gradient(135deg, #16a34a, #15803d)",
+                    border: "1px solid #4ade80",
+                    borderRadius: 10,
+                    color: "#fff",
+                    padding: "10px 22px",
+                    cursor: isUpdatingDish ? "not-allowed" : "pointer",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6
+                  }}
+                >
+                  {isUpdatingDish ? <span className="save-spinner" /> : "💾"}
+                  {isUpdatingDish ? "ინახება..." : "ცვლილებების შენახვა"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -572,6 +572,59 @@ app.post('/api/categories', protect, upload.single('image'), async (req, res) =>
   }
 });
 
+// UPDATE Category (multipart upload, PROTECTED)
+const updateCategoryHandler = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name_ka, name_en, name_ru, icon, isHot, image } = req.body;
+
+    let imageUrl = image;
+    if (req.file) {
+      imageUrl = await uploadFile(req.file, req);
+    }
+
+    if (useLocalFallback) {
+      const categories = readJSON(categoriesFile);
+      const catIndex = categories.findIndex(c => c.id === id);
+      if (catIndex === -1) {
+        return res.status(404).json({ error: "Category not found" });
+      }
+      if (name_ka !== undefined) categories[catIndex].name_ka = name_ka;
+      if (name_en !== undefined) categories[catIndex].name_en = name_en;
+      if (name_ru !== undefined) categories[catIndex].name_ru = name_ru;
+      if (icon !== undefined) categories[catIndex].icon = icon;
+      if (isHot !== undefined) categories[catIndex].isHot = isHot === 'true' || isHot === true;
+      if (imageUrl !== undefined) categories[catIndex].image = imageUrl;
+
+      writeJSON(categoriesFile, categories);
+      return res.json(categories[catIndex]);
+    }
+
+    let category = await Category.findOne({ id });
+    if (!category && mongoose.Types.ObjectId.isValid(id)) {
+      category = await Category.findById(id);
+    }
+    if (!category) {
+      return res.status(404).json({ error: "Category not found" });
+    }
+
+    if (name_ka !== undefined) category.name_ka = name_ka;
+    if (name_en !== undefined) category.name_en = name_en;
+    if (name_ru !== undefined) category.name_ru = name_ru;
+    if (icon !== undefined) category.icon = icon;
+    if (isHot !== undefined) category.isHot = isHot === 'true' || isHot === true;
+    if (imageUrl !== undefined) category.image = imageUrl;
+
+    await category.save();
+    res.json(category);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+app.put('/api/categories/:id', protect, upload.single('image'), updateCategoryHandler);
+app.patch('/api/categories/:id', protect, upload.single('image'), updateCategoryHandler);
+
 // DELETE Category (PROTECTED)
 app.delete('/api/categories/:id', protect, async (req, res) => {
   try {
@@ -686,6 +739,72 @@ app.post('/api/dishes', protect, upload.single('image'), async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// UPDATE Dish (multipart upload, PROTECTED)
+const updateDishHandler = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name_ka, name_en, name_ru, desc_ka, desc_en, desc_ru, price, category, image, order } = req.body;
+
+    let imageUrl = image;
+    if (req.file) {
+      imageUrl = await uploadFile(req.file, req);
+    }
+
+    if (useLocalFallback) {
+      const dishes = readJSON(dishesFile);
+      const dishIndex = dishes.findIndex(d => d.id === id || d._id === id);
+      if (dishIndex === -1) {
+        return res.status(404).json({ error: "Dish not found" });
+      }
+      if (name_ka !== undefined) dishes[dishIndex].name_ka = name_ka;
+      if (name_en !== undefined) dishes[dishIndex].name_en = name_en;
+      if (name_ru !== undefined) dishes[dishIndex].name_ru = name_ru;
+      if (desc_ka !== undefined) dishes[dishIndex].desc_ka = desc_ka;
+      if (desc_en !== undefined) dishes[dishIndex].desc_en = desc_en;
+      if (desc_ru !== undefined) dishes[dishIndex].desc_ru = desc_ru;
+      if (price !== undefined) dishes[dishIndex].price = price;
+      if (category !== undefined) dishes[dishIndex].category = category;
+      if (order !== undefined) dishes[dishIndex].order = Number(order);
+      if (imageUrl !== undefined) dishes[dishIndex].image = imageUrl;
+
+      writeJSON(dishesFile, dishes);
+      return res.json(dishes[dishIndex]);
+    }
+
+    let dish = null;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      dish = await Dish.findById(id);
+    }
+    if (!dish) {
+      dish = await Dish.findOne({ id });
+    }
+    if (!dish) {
+      return res.status(404).json({ error: "Dish not found" });
+    }
+
+    if (name_ka !== undefined) dish.name_ka = name_ka;
+    if (name_en !== undefined) dish.name_en = name_en;
+    if (name_ru !== undefined) dish.name_ru = name_ru;
+    if (desc_ka !== undefined) dish.desc_ka = desc_ka;
+    if (desc_en !== undefined) dish.desc_en = desc_en;
+    if (desc_ru !== undefined) dish.desc_ru = desc_ru;
+    if (price !== undefined) dish.price = price;
+    if (category !== undefined) dish.category = category;
+    if (order !== undefined) dish.order = Number(order);
+    if (imageUrl !== undefined) dish.image = imageUrl;
+
+    await dish.save();
+    res.json(dish);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+app.put('/api/dishes/:id', protect, upload.single('image'), updateDishHandler);
+app.patch('/api/dishes/:id', protect, upload.single('image'), updateDishHandler);
+app.put('/api/menu/:id', protect, upload.single('image'), updateDishHandler);
+app.patch('/api/menu/:id', protect, upload.single('image'), updateDishHandler);
 
 // DELETE Dish (PROTECTED)
 app.delete('/api/dishes/:id', protect, async (req, res) => {

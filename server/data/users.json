@@ -25,5 +25,12 @@
     "provider": "google",
     "providerId": "social_id_1783576581382",
     "name": "Google Test User"
+  },
+  {
+    "id": "user_1787127880488",
+    "email": "darsaliamamuka9@gmail.com",
+    "provider": "google.com",
+    "providerId": "4iQ3SiYyJDbPi1CTV1UcNCs9hMu1",
+    "name": "Mamuka Darsalia"
   }
 ]
