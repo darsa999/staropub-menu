@@ -115,9 +115,41 @@ cloudinary.config({
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// Helper function to upload file (Cloudinary with local filesystem fallback)
-const uploadFile = async (file, req) => {
-  if (!file) return "";
+// Helper function to upload file (Cloudinary with local filesystem fallback, supporting buffers and base64)
+const uploadFile = async (fileOrData, req) => {
+  if (!fileOrData) return "";
+
+  let buffer = null;
+  let filename = "";
+
+  // If it's a string
+  if (typeof fileOrData === 'string') {
+    const trimmed = fileOrData.trim();
+    if (trimmed.startsWith('blob:')) {
+      // Temporary client blob URL cannot be fetched or persisted permanently
+      return "";
+    }
+    if (trimmed.startsWith('data:image/')) {
+      const matches = trimmed.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+      if (matches) {
+        const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+        buffer = Buffer.from(matches[2], 'base64');
+        filename = `${Date.now()}-${Math.round(Math.random() * 1E9)}.${ext}`;
+      } else {
+        return trimmed;
+      }
+    } else {
+      // Already a permanent URL (http, https, /uploads)
+      return trimmed;
+    }
+  } else if (fileOrData && fileOrData.buffer) {
+    // Multer memory file
+    buffer = fileOrData.buffer;
+    const ext = path.extname(fileOrData.originalname) || '.png';
+    filename = `${Date.now()}-${Math.round(Math.random() * 1E9)}${ext}`;
+  }
+
+  if (!buffer) return "";
 
   const isCloudinaryConfigured =
     process.env.CLOUDINARY_CLOUD_NAME &&
@@ -133,7 +165,7 @@ const uploadFile = async (file, req) => {
             else resolve(result.secure_url);
           }
         );
-        stream.end(file.buffer);
+        stream.end(buffer);
       });
     } catch (err) {
       console.warn("Cloudinary upload failed, falling back to local storage:", err.message);
@@ -141,16 +173,15 @@ const uploadFile = async (file, req) => {
   }
 
   // Local fallback storage
-  const filename = `${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`;
   const filepath = path.join(uploadsDir, filename);
-  fs.writeFileSync(filepath, file.buffer);
+  fs.writeFileSync(filepath, buffer);
 
   if (req) {
     const host = req.get('host');
-    const protocol = req.protocol;
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
     return `${protocol}://${host}/uploads/${filename}`;
   }
-  return `http://localhost:5000/uploads/${filename}`;
+  return `/uploads/${filename}`;
 };
 
 // ─── Database Schemas and Models ──────────────────────────────────────────
@@ -513,6 +544,28 @@ app.post('/api/auth/logout', (req, res) => {
   res.json({ message: "Logged out successfully" });
 });
 
+// ─── Image Upload REST Endpoints ──────────────────────────────────────────
+
+const handleImageUploadRoute = async (req, res) => {
+  try {
+    const fileOrData = req.file || req.body?.image;
+    if (!fileOrData) {
+      return res.status(400).json({ error: "No image file or image data provided" });
+    }
+    const permanentUrl = await uploadFile(fileOrData, req);
+    if (!permanentUrl) {
+      return res.status(400).json({ error: "Invalid or unprocessed image format" });
+    }
+    return res.status(200).json({ url: permanentUrl, success: true });
+  } catch (err) {
+    console.error("Image upload route error:", err);
+    return res.status(500).json({ error: err.message || "Image upload failed" });
+  }
+};
+
+app.post('/api/upload', protect, upload.single('image'), handleImageUploadRoute);
+app.post('/api/upload-image', protect, upload.single('image'), handleImageUploadRoute);
+
 // ─── Express Menu/Dashboard REST Endpoints ─────────────────────────────────
 
 // GET Categories
@@ -529,13 +582,15 @@ app.get('/api/categories', async (req, res) => {
   }
 });
 
-// POST Category (multipart upload, PROTECTED)
+// POST Category (multipart upload or JSON, PROTECTED)
 app.post('/api/categories', protect, upload.single('image'), async (req, res) => {
   try {
-    const { id, name_ka, name_en, name_ru, icon, isHot } = req.body;
+    const { id, name_ka, name_en, name_ru, icon, isHot, image } = req.body;
     let imageUrl = "";
     if (req.file) {
       imageUrl = await uploadFile(req.file, req);
+    } else if (image) {
+      imageUrl = await uploadFile(image, req);
     }
 
     if (useLocalFallback) {
@@ -547,7 +602,7 @@ app.post('/api/categories', protect, upload.single('image'), async (req, res) =>
         name_ru,
         icon,
         image: imageUrl,
-        isHot: isHot === 'true',
+        isHot: isHot === 'true' || isHot === true,
         order: categories.length
       };
       categories.push(newCategory);
@@ -562,7 +617,7 @@ app.post('/api/categories', protect, upload.single('image'), async (req, res) =>
       name_ru,
       icon,
       image: imageUrl,
-      isHot: isHot === 'true',
+      isHot: isHot === 'true' || isHot === true,
       order: await Category.countDocuments()
     });
     await newCategory.save();
@@ -572,7 +627,7 @@ app.post('/api/categories', protect, upload.single('image'), async (req, res) =>
   }
 });
 
-// UPDATE Category (multipart upload, PROTECTED)
+// UPDATE Category (multipart upload or JSON, PROTECTED)
 const updateCategoryHandler = async (req, res) => {
   try {
     const { id } = req.params;
@@ -581,6 +636,8 @@ const updateCategoryHandler = async (req, res) => {
     let imageUrl = image;
     if (req.file) {
       imageUrl = await uploadFile(req.file, req);
+    } else if (image !== undefined) {
+      imageUrl = await uploadFile(image, req);
     }
 
     if (useLocalFallback) {
@@ -691,13 +748,15 @@ app.get('/api/dishes', async (req, res) => {
   }
 });
 
-// POST Dish (multipart upload, PROTECTED)
+// POST Dish (multipart upload or JSON, PROTECTED)
 app.post('/api/dishes', protect, upload.single('image'), async (req, res) => {
   try {
-    const { name_ka, name_en, name_ru, desc_ka, desc_en, desc_ru, price, category } = req.body;
+    const { name_ka, name_en, name_ru, desc_ka, desc_en, desc_ru, price, category, image } = req.body;
     let imageUrl = "";
     if (req.file) {
       imageUrl = await uploadFile(req.file, req);
+    } else if (image) {
+      imageUrl = await uploadFile(image, req);
     }
 
     if (useLocalFallback) {
@@ -740,7 +799,7 @@ app.post('/api/dishes', protect, upload.single('image'), async (req, res) => {
   }
 });
 
-// UPDATE Dish (multipart upload, PROTECTED)
+// UPDATE Dish (multipart upload or JSON, PROTECTED)
 const updateDishHandler = async (req, res) => {
   try {
     const { id } = req.params;
@@ -749,6 +808,8 @@ const updateDishHandler = async (req, res) => {
     let imageUrl = image;
     if (req.file) {
       imageUrl = await uploadFile(req.file, req);
+    } else if (image !== undefined) {
+      imageUrl = await uploadFile(image, req);
     }
 
     if (useLocalFallback) {
@@ -947,6 +1008,16 @@ app.put('/api/settings', protect, async (req, res) => {
     const settingsObj = req.body;
     if (!settingsObj || typeof settingsObj !== 'object') {
       return res.status(400).json({ error: "Invalid settings object" });
+    }
+
+    // Process nested images if base64 or temporary
+    if (settingsObj.bannerSettings && typeof settingsObj.bannerSettings.image === 'string') {
+      const bannerImg = settingsObj.bannerSettings.image.trim();
+      if (bannerImg.startsWith('data:image/')) {
+        settingsObj.bannerSettings.image = await uploadFile(bannerImg, req);
+      } else if (bannerImg.startsWith('blob:')) {
+        settingsObj.bannerSettings.image = "";
+      }
     }
 
     if (useLocalFallback) {

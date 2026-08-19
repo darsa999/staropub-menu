@@ -27,6 +27,22 @@ const getTimestampedUrl = (url) => {
   return `${cleanUrl}?t=${Date.now()}`;
 };
 
+export const resolveImageSrc = (img) => {
+  if (!img || typeof img !== "string") return "";
+  const trimmed = img.trim();
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("data:") || trimmed.startsWith("blob:")) {
+    return trimmed;
+  }
+  if (trimmed.startsWith("/uploads/") || trimmed.startsWith("uploads/")) {
+    const cleanPath = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+    return `${API_URL}${cleanPath}`;
+  }
+  if (trimmed.startsWith("Images/")) {
+    return trimmed;
+  }
+  return `Images/${trimmed}`;
+};
+
 // ─── Timing constants ─────────────────────────────────────────────────────────
 const POUR_DURATION_MS  = 2000;
 
@@ -458,7 +474,7 @@ function ItemCard({
 
   const name     = item[`name_${lang}`] || item.name_ka || "";
   const desc     = item[`desc_${lang}`] || item.desc_ka || "";
-  const imgSrc   = item.image && typeof item.image === "string" ? (item.image.startsWith("http") || item.image.startsWith("data:") ? item.image : `Images/${item.image}`) : "";
+  const imgSrc   = resolveImageSrc(item.image);
   const category = item.category || "";
   const fallback = (categoryIcons && categoryIcons[category]) || INITIAL_CATEGORY_ICONS[category] || "🍽️";
   const isHot    = (hotCategories && hotCategories.has(category)) || INITIAL_HOT_CATEGORIES.has(category);
@@ -625,7 +641,7 @@ function DishModal({ item, lang, onClose, th, onAddToCart, categoryIcons, catego
 
   const name     = item[`name_${lang}`] || item.name_ka || "";
   const desc     = item[`desc_${lang}`] || item.desc_ka || "";
-  const imgSrc   = item.image && typeof item.image === "string" ? (item.image.startsWith("http") || item.image.startsWith("data:") ? item.image : `Images/${item.image}`) : "";
+  const imgSrc   = resolveImageSrc(item.image);
   const category = item.category || "";
   const fallback = (categoryIcons && categoryIcons[category]) || INITIAL_CATEGORY_ICONS[category] || "🍽️";
   const catObj   = (categoryLabels && categoryLabels[category]) || INITIAL_CATEGORY_LABELS[category];
@@ -856,7 +872,7 @@ function AboutView({ lang, th, aboutImage }) {
   return (
     <div style={{ maxWidth:600, margin:"0 auto", padding:"0 16px 120px" }}>
       <div style={{ width:"100%", height:220, borderRadius:"0 0 20px 20px", overflow:"hidden", background:isDark?"linear-gradient(135deg,#0f172a,#1e293b,#020617)":"linear-gradient(135deg,#e8dcc8,#d8ccb0,#efe5cf)", position:"relative", marginBottom:24 }}>
-        <img src={aboutImage || "Images/staropub.webp"} alt="StaroPub" style={{ width:"100%", height:"100%", objectFit:"cover" }} onError={e => { e.target.style.display="none"; }} />
+        <img src={resolveImageSrc(aboutImage) || "Images/staropub.webp"} alt="StaroPub" style={{ width:"100%", height:"100%", objectFit:"cover" }} onError={e => { e.target.style.display="none"; }} />
         <div style={{ position:"absolute", inset:0, background:"linear-gradient(180deg,transparent 40%,rgba(0,0,0,0.72) 100%)" }} />
         <div style={{ position:"absolute", bottom:20, left:20 }}>
           <div style={{ color:"#f59e0b", fontSize:26, fontWeight:700, fontFamily:"'Georgia',serif", letterSpacing:"0.5px", textShadow:"0 2px 16px rgba(0,0,0,0.7)" }}>StaroPub</div>
@@ -1084,6 +1100,7 @@ function AdminDashboard({
   const [newCatRu, setNewCatRu]     = useState("");
   const [newCatIcon, setNewCatIcon] = useState("");
   const [newCatImageFile, setNewCatImageFile] = useState(null);
+  const [newCatImagePreview, setNewCatImagePreview] = useState("");
 
   // Dish creation states
   const [newDishNameKa, setNewDishNameKa] = useState("");
@@ -1095,6 +1112,7 @@ function AdminDashboard({
   const [newDishPrice, setNewDishPrice]   = useState("");
   const [newDishCat, setNewDishCat]       = useState("");
   const [newDishImageFile, setNewDishImageFile] = useState(null);
+  const [newDishImagePreview, setNewDishImagePreview] = useState("");
 
   // Category Edit states
   const [editingCategory, setEditingCategory] = useState(null);
@@ -1120,14 +1138,6 @@ function AdminDashboard({
   const [editDishImageFile, setEditDishImageFile] = useState(null);
   const [editDishImagePreview, setEditDishImagePreview] = useState("");
   const [isUpdatingDish, setIsUpdatingDish] = useState(false);
-
-  const resolveImageSrc = (img) => {
-    if (!img) return "";
-    if (img.startsWith("http://") || img.startsWith("https://") || img.startsWith("data:") || img.startsWith("blob:")) {
-      return img;
-    }
-    return `Images/${img}`;
-  };
 
   const openEditCategory = (catKey) => {
     const catObj = dbCategories.find(c => (c.id || c._id) === catKey) || {};
@@ -1223,7 +1233,6 @@ function AdminDashboard({
 
   const handleUpdateDish = async (e) => {
     e.preventDefault();
-    if (!editingDish) return;
     if (!editDishNameKa.trim()) return alert("გთხოვთ მიუთითოთ კერძის დასახელება ქართულად!");
     const priceNum = parseFloat(editDishPrice);
     if (isNaN(priceNum) || priceNum <= 0) return alert("გთხოვთ მიუთითოთ კერძის სწორი ფასი!");
@@ -1327,10 +1336,12 @@ function AdminDashboard({
       setNewCatRu("");
       setNewCatIcon("");
       setNewCatImageFile(null);
+      setNewCatImagePreview("");
       // Try to reset file input via standard query selector or key reset
       const fileInput = document.querySelector('input[type="file"][accept="image/*"]');
       if (fileInput) fileInput.value = "";
 
+      if (onSaveSuccess) await onSaveSuccess();
       alert("კატეგორია წარმატებით დაემატა!");
     } catch (err) {
       alert(`შეცდომა: ${err.message}`);
@@ -1382,10 +1393,12 @@ function AdminDashboard({
       setNewDishDescRu("");
       setNewDishPrice("");
       setNewDishImageFile(null);
+      setNewDishImagePreview("");
       // Try to reset file input via standard query selector or key reset
       const fileInputs = document.querySelectorAll('input[type="file"][accept="image/*"]');
       fileInputs.forEach(input => { input.value = ""; });
 
+      if (onSaveSuccess) await onSaveSuccess();
       alert("კერძი წარმატებით დაემატა!");
     } catch (err) {
       alert(`შეცდომა: ${err.message}`);
@@ -2458,10 +2471,32 @@ function AdminDashboard({
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>კატეგორიის სურათი (ატვირთვა)</label>
+                  {newCatImagePreview && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 4 }}>
+                      <img
+                        src={resolveImageSrc(newCatImagePreview)}
+                        alt="Category Preview"
+                        style={{ width: 50, height: 50, objectFit: "cover", borderRadius: 8, border: "1px solid rgba(245,158,11,0.3)" }}
+                        onError={e => { e.target.style.display = "none"; }}
+                      />
+                      <span style={{ color: "#4ade80", fontSize: 11, fontWeight: 600 }}>✓ სურათი შერჩეულია</span>
+                    </div>
+                  )}
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={e => setNewCatImageFile(e.target.files[0])}
+                    onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setNewCatImageFile(file);
+                        const reader = new FileReader();
+                        reader.onloadend = () => setNewCatImagePreview(reader.result);
+                        reader.readAsDataURL(file);
+                      } else {
+                        setNewCatImageFile(null);
+                        setNewCatImagePreview("");
+                      }
+                    }}
                     style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
                   />
                 </div>
@@ -2494,7 +2529,7 @@ function AdminDashboard({
                     />
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>დასახელება (EN)</label>
+                    <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>სახელი (EN)</label>
                     <input
                       type="text"
                       placeholder="Cheesecake"
@@ -2504,7 +2539,7 @@ function AdminDashboard({
                     />
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>დასახელება (RU)</label>
+                    <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>სახელი (RU)</label>
                     <input
                       type="text"
                       placeholder="Чизкейк"
@@ -2580,10 +2615,32 @@ function AdminDashboard({
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>სურათი (ატვირთვა)</label>
+                    {newDishImagePreview && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 4 }}>
+                        <img
+                          src={resolveImageSrc(newDishImagePreview)}
+                          alt="Dish Preview"
+                          style={{ width: 50, height: 50, objectFit: "cover", borderRadius: 8, border: "1px solid rgba(245,158,11,0.3)" }}
+                          onError={e => { e.target.style.display = "none"; }}
+                        />
+                        <span style={{ color: "#4ade80", fontSize: 11, fontWeight: 600 }}>✓ სურათი შერჩეულია</span>
+                      </div>
+                    )}
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={e => setNewDishImageFile(e.target.files[0])}
+                      onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setNewDishImageFile(file);
+                          const reader = new FileReader();
+                          reader.onloadend = () => setNewDishImagePreview(reader.result);
+                          reader.readAsDataURL(file);
+                        } else {
+                          setNewDishImageFile(null);
+                          setNewDishImagePreview("");
+                        }
+                      }}
                       style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
                     />
                   </div>
@@ -2732,10 +2789,12 @@ function AdminDashboard({
                   type="file"
                   accept="image/*"
                   onChange={e => {
-                    if (e.target.files && e.target.files[0]) {
-                      const file = e.target.files[0];
+                    const file = e.target.files?.[0];
+                    if (file) {
                       setEditCatImageFile(file);
-                      setEditCatImagePreview(URL.createObjectURL(file));
+                      const reader = new FileReader();
+                      reader.onloadend = () => setEditCatImagePreview(reader.result);
+                      reader.readAsDataURL(file);
                     }
                   }}
                   style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 12 }}
@@ -2935,10 +2994,12 @@ function AdminDashboard({
                   type="file"
                   accept="image/*"
                   onChange={e => {
-                    if (e.target.files && e.target.files[0]) {
-                      const file = e.target.files[0];
+                    const file = e.target.files?.[0];
+                    if (file) {
                       setEditDishImageFile(file);
-                      setEditDishImagePreview(URL.createObjectURL(file));
+                      const reader = new FileReader();
+                      reader.onloadend = () => setEditDishImagePreview(reader.result);
+                      reader.readAsDataURL(file);
                     }
                   }}
                   style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 12 }}
@@ -3778,9 +3839,7 @@ export default function StaroPub() {
                     }
                   `}</style>
                   {(() => {
-                    const bannerImgSrc = bannerSettings.image.startsWith("http") || bannerSettings.image.startsWith("Images")
-                      ? bannerSettings.image
-                      : `Images/${bannerSettings.image}`;
+                    const bannerImgSrc = resolveImageSrc(bannerSettings?.image);
 
                     const rawBadge = bannerSettings.badge || "";
                     const rawText  = bannerSettings.text || "";
@@ -3923,10 +3982,9 @@ export default function StaroPub() {
 
                           let imgSrc = "";
                           if (catImage) {
-                            imgSrc = catImage;
+                            imgSrc = resolveImageSrc(catImage);
                           } else if (firstDishWithImage) {
-                            const dishImg = firstDishWithImage.image;
-                            imgSrc = (dishImg.startsWith("http://") || dishImg.startsWith("https://") || dishImg.startsWith("data:")) ? dishImg : `Images/${dishImg}`;
+                            imgSrc = resolveImageSrc(firstDishWithImage.image);
                           }
 
                           return (
@@ -4593,7 +4651,7 @@ export default function StaroPub() {
             ) : (
               cartItems.map((cItem) => {
                 const title = cItem[`name_${lang}`] || cItem.name_ka || "";
-                const imgPath = cItem.image ? (cItem.image.startsWith("http") || cItem.image.startsWith("data:") ? cItem.image : `Images/${cItem.image}`) : "";
+                const imgPath = resolveImageSrc(cItem.image);
                 const fallbackIcon = categoryIcons[cItem.category] || INITIAL_CATEGORY_ICONS[cItem.category] || "🍽️";
                 return (
                   <div key={cItem.id} style={{ display: "flex", gap: 10, background: "rgba(0,0,0,0.14)", border: `1px solid ${t.cardBorder}`, borderRadius: 12, padding: 10, position: "relative" }}>
