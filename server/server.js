@@ -61,13 +61,6 @@ app.use(cors({
   credentials: true
 }));
 
-// Ensure public/uploads directory exists for local fallback storage
-const uploadsDir = path.join(__dirname, 'public', 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
-
 // ─── local JSON fallback database setup ──────────────────────────────────────
 const dataDir = path.join(__dirname, 'data');
 if (!fs.existsSync(dataDir)) {
@@ -111,77 +104,61 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Configure Multer (Memory Storage)
+// Configure Multer (Strict In-Memory Storage - Zero Local Filesystem Storage)
 const storage = multer.memoryStorage();
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  limits: { fileSize: 15 * 1024 * 1024 } // 15MB limit
+});
 
-// Helper function to upload file (Cloudinary with local filesystem fallback, supporting buffers and base64)
-const uploadFile = async (fileOrData, req) => {
+// Helper function to stream files directly to Cloudinary and return permanent HTTPS secure_url
+const uploadFile = async (fileOrData) => {
   if (!fileOrData) return "";
-
-  let buffer = null;
-  let filename = "";
 
   // If it's a string
   if (typeof fileOrData === 'string') {
     const trimmed = fileOrData.trim();
     if (trimmed.startsWith('blob:')) {
-      // Temporary client blob URL cannot be fetched or persisted permanently
+      // Temporary client blob URL cannot be persisted
       return "";
     }
-    if (trimmed.startsWith('data:image/')) {
-      const matches = trimmed.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
-      if (matches) {
-        const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
-        buffer = Buffer.from(matches[2], 'base64');
-        filename = `${Date.now()}-${Math.round(Math.random() * 1E9)}.${ext}`;
-      } else {
-        return trimmed;
-      }
-    } else {
-      // Already a permanent URL (http, https, /uploads)
+    // Already a permanent remote HTTPS URL (Cloudinary or CDN)
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
       return trimmed;
     }
-  } else if (fileOrData && fileOrData.buffer) {
-    // Multer memory file
-    buffer = fileOrData.buffer;
-    const ext = path.extname(fileOrData.originalname) || '.png';
-    filename = `${Date.now()}-${Math.round(Math.random() * 1E9)}${ext}`;
-  }
-
-  if (!buffer) return "";
-
-  const isCloudinaryConfigured =
-    process.env.CLOUDINARY_CLOUD_NAME &&
-    process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloud_name_here';
-
-  if (isCloudinaryConfigured) {
-    try {
-      return await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          { folder: "staropub" },
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result.secure_url);
-          }
-        );
-        stream.end(buffer);
+    // Base64 data URI
+    if (trimmed.startsWith('data:image/')) {
+      const result = await cloudinary.uploader.upload(trimmed, {
+        folder: "staropub",
+        resource_type: "image"
       });
-    } catch (err) {
-      console.warn("Cloudinary upload failed, falling back to local storage:", err.message);
+      return result.secure_url;
     }
+    // Pre-existing relative asset path (e.g. bundled Images/...)
+    return trimmed;
   }
 
-  // Local fallback storage
-  const filepath = path.join(uploadsDir, filename);
-  fs.writeFileSync(filepath, buffer);
-
-  if (req) {
-    const host = req.get('host');
-    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
-    return `${protocol}://${host}/uploads/${filename}`;
+  // If it's a Multer file with memory buffer
+  if (fileOrData && fileOrData.buffer) {
+    return new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: "staropub",
+          resource_type: "image"
+        },
+        (error, result) => {
+          if (error) {
+            console.error("Cloudinary upload_stream error:", error);
+            return reject(new Error(`Cloudinary streaming upload failed: ${error.message}`));
+          }
+          resolve(result.secure_url);
+        }
+      );
+      uploadStream.end(fileOrData.buffer);
+    });
   }
-  return `/uploads/${filename}`;
+
+  return "";
 };
 
 // ─── Database Schemas and Models ──────────────────────────────────────────

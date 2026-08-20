@@ -1,5 +1,8 @@
 node_modules/
 .env
+.env.*
 .env.local
+server/.env
+server/.env.*
 dist/
 server/node_modules/
