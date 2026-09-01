@@ -916,16 +916,26 @@ app.get('/api/settings', async (req, res) => {
   try {
     if (useLocalFallback) {
       const settingsList = readJSON(settingsFile);
-      const settingsMap = {};
+      const settingsMap = {
+        isCartEnabled: true
+      };
       if (Array.isArray(settingsList)) {
         settingsList.forEach(s => { settingsMap[s.key] = s.value; });
+      }
+      if (typeof settingsMap.isCartEnabled !== 'boolean') {
+        settingsMap.isCartEnabled = true;
       }
       return res.json(settingsMap);
     }
 
     const settingsList = await Setting.find();
-    const settingsMap = {};
+    const settingsMap = {
+      isCartEnabled: true
+    };
     settingsList.forEach(s => { settingsMap[s.key] = s.value; });
+    if (typeof settingsMap.isCartEnabled !== 'boolean') {
+      settingsMap.isCartEnabled = true;
+    }
     res.json(settingsMap);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -997,7 +1007,7 @@ app.post('/api/settings/upload-about', protect, upload.single('image'), async (r
 });
 
 // UPDATE Global Settings (PROTECTED)
-app.put('/api/settings', protect, async (req, res) => {
+const updateSettingsHandler = async (req, res) => {
   try {
     const settingsObj = req.body;
     if (!settingsObj || typeof settingsObj !== 'object') {
@@ -1037,7 +1047,10 @@ app.put('/api/settings', protect, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+};
+
+app.put('/api/settings', protect, updateSettingsHandler);
+app.patch('/api/settings', protect, updateSettingsHandler);
 
 // Global JSON Error Handler middleware (ensures API errors always return JSON, never HTML)
 app.use((err, req, res, next) => {

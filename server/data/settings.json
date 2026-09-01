@@ -1,0 +1,27 @@
+[
+  {
+    "key": "callWaiterEnabled",
+    "value": false
+  },
+  {
+    "key": "requestBillEnabled",
+    "value": false
+  },
+  {
+    "key": "isCartEnabled",
+    "value": false
+  },
+  {
+    "key": "bannerSettings",
+    "value": {
+      "enabled": true,
+      "text": "საფირმო ჩეხური ნეკნები - 15% ფასდაკლება!",
+      "image": "sapirmo chexuri neknebi.jpg",
+      "badge": "დღის შეთავაზება"
+    }
+  },
+  {
+    "key": "customMenuEnabled",
+    "value": false
+  }
+]

@@ -518,7 +518,8 @@ function ItemCard({
   item, lang, onOpen, th,
   customMenuEnabled = false, selected = false, onToggleSelect = null,
   cartItems = [], onAddToCart, onUpdateQuantity,
-  categoryIcons, hotCategories
+  categoryIcons, hotCategories,
+  isCartEnabled = true
 }) {
   const t = th || THEME.light;
   if (!item) return null;
@@ -593,83 +594,85 @@ function ItemCard({
         <PriceBlock item={item} th={t} />
 
         {/* Inline Card Cart Selector */}
-        {totalQty === 0 ? (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              if (multi) {
-                onOpen && onOpen(item);
-              } else {
-                const priceNum = parseFloat(item.price) || 0;
-                onAddToCart && onAddToCart(item, "", priceNum);
-              }
-            }}
-            style={{
-              background: "linear-gradient(135deg, #b86520, #7a3a08)",
-              border: `1px solid ${t.brandName}`,
-              borderRadius: 8, color: "#fff",
-              padding: "8px 12px", fontSize: 12, fontWeight: 700,
-              cursor: "pointer", marginTop: 12, transition: "all 0.2s",
-              width: "100%", textAlign: "center", fontFamily: "'Georgia', serif",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
-            }}
-          >
-            🛒 {lang === "ka" ? "კალათაში დამატება" : lang === "ru" ? "В корзину" : "Add to Cart"}
-          </button>
-        ) : (
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              marginTop: 12, width: "100%", background: "rgba(0,0,0,0.15)",
-              border: `1.5px solid ${t.brandName}`, borderRadius: 8, padding: "4px 8px",
-              boxSizing: "border-box"
-            }}
-          >
+        {isCartEnabled && (
+          totalQty === 0 ? (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 if (multi) {
-                  const match = cartEntries[0];
-                  if (match) onUpdateQuantity && onUpdateQuantity(match.id, -1);
+                  onOpen && onOpen(item);
                 } else {
-                  onUpdateQuantity && onUpdateQuantity(`${item.id}-default`, -1);
+                  const priceNum = parseFloat(item.price) || 0;
+                  onAddToCart && onAddToCart(item, "", priceNum);
                 }
               }}
               style={{
-                background: "none", border: "none", color: t.brandName,
-                fontSize: 16, fontWeight: "bold", cursor: "pointer", width: 24, height: 24,
-                display: "flex", alignItems: "center", justifyContent: "center"
+                background: "linear-gradient(135deg, #b86520, #7a3a08)",
+                border: `1px solid ${t.brandName}`,
+                borderRadius: 8, color: "#fff",
+                padding: "8px 12px", fontSize: 12, fontWeight: 700,
+                cursor: "pointer", marginTop: 12, transition: "all 0.2s",
+                width: "100%", textAlign: "center", fontFamily: "'Georgia', serif",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
               }}
             >
-              -
+              🛒 {lang === "ka" ? "კალათაში დამატება" : lang === "ru" ? "В корзину" : "Add to Cart"}
             </button>
-            <span style={{ fontSize: 13, fontWeight: "bold", color: t.modalName }}>
-              {totalQty}
-            </span>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                if (multi) {
-                  const match = cartEntries[0];
-                  if (match) {
-                    onUpdateQuantity && onUpdateQuantity(match.id, 1);
+          ) : (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                marginTop: 12, width: "100%", background: "rgba(0,0,0,0.15)",
+                border: `1.5px solid ${t.brandName}`, borderRadius: 8, padding: "4px 8px",
+                boxSizing: "border-box"
+              }}
+            >
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (multi) {
+                    const match = cartEntries[0];
+                    if (match) onUpdateQuantity && onUpdateQuantity(match.id, -1);
                   } else {
-                    onOpen && onOpen(item);
+                    onUpdateQuantity && onUpdateQuantity(`${item.id}-default`, -1);
                   }
-                } else {
-                  onUpdateQuantity && onUpdateQuantity(`${item.id}-default`, 1);
-                }
-              }}
-              style={{
-                background: "none", border: "none", color: t.brandName,
-                fontSize: 16, fontWeight: "bold", cursor: "pointer", width: 24, height: 24,
-                display: "flex", alignItems: "center", justifyContent: "center"
-              }}
-            >
-              +
-            </button>
-          </div>
+                }}
+                style={{
+                  background: "none", border: "none", color: t.brandName,
+                  fontSize: 16, fontWeight: "bold", cursor: "pointer", width: 24, height: 24,
+                  display: "flex", alignItems: "center", justifyContent: "center"
+                }}
+              >
+                -
+              </button>
+              <span style={{ fontSize: 13, fontWeight: "bold", color: t.modalName }}>
+                {totalQty}
+              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (multi) {
+                    const match = cartEntries[0];
+                    if (match) {
+                      onUpdateQuantity && onUpdateQuantity(match.id, 1);
+                    } else {
+                      onOpen && onOpen(item);
+                    }
+                  } else {
+                    onUpdateQuantity && onUpdateQuantity(`${item.id}-default`, 1);
+                  }
+                }}
+                style={{
+                  background: "none", border: "none", color: t.brandName,
+                  fontSize: 16, fontWeight: "bold", cursor: "pointer", width: 24, height: 24,
+                  display: "flex", alignItems: "center", justifyContent: "center"
+                }}
+              >
+                +
+              </button>
+            </div>
+          )
         )}
       </div>
       <div style={{ position: "absolute", inset: 0, borderRadius: 12, pointerEvents: "none", zIndex: 3, overflow: "hidden" }}>
@@ -686,7 +689,7 @@ function ItemCard({
 // ══════════════════════════════════════════════════════════════════════════════
 // DISH DETAIL MODAL
 // ══════════════════════════════════════════════════════════════════════════════
-function DishModal({ item, lang, onClose, th, onAddToCart, categoryIcons, categoryLabels, hotCategories }) {
+function DishModal({ item, lang, onClose, th, onAddToCart, categoryIcons, categoryLabels, hotCategories, isCartEnabled = true }) {
   const t = th || THEME.light;
   if (!item) return null;
 
@@ -780,29 +783,31 @@ function DishModal({ item, lang, onClose, th, onAddToCart, categoryIcons, catego
                   <PriceBlock item={item} modal={true} th={t} />
                 )}
               </div>
-              <button
-                onClick={() => {
-                  if (multi && selectedOpt) {
-                    const priceNum = parseFloat(selectedOpt.price.replace("₾", "").replace(",", ".")) || 0;
-                    onAddToCart(item, selectedOpt.size, priceNum);
-                  } else {
-                    const priceNum = parseFloat(item.price) || 0;
-                    onAddToCart(item, "", priceNum);
-                  }
-                  onClose();
-                }}
-                style={{
-                  background: "linear-gradient(135deg, #b86520, #7a3a08)",
-                  border: `1px solid ${t.brandName}`,
-                  borderRadius: 12, color: "#fff",
-                  padding: "12px 24px", fontSize: 14, fontWeight: 700,
-                  cursor: "pointer", transition: "all 0.2s",
-                  width: "100%", marginTop: 16, fontFamily: "'Georgia', serif",
-                  boxShadow: "0 4px 14px rgba(184,101,32,0.4)"
-                }}
-              >
-                🛒 {lang === "ka" ? "კალათაში დამატება" : lang === "ru" ? "Добавить в корзину" : "Add to Cart"}
-              </button>
+              {isCartEnabled && (
+                <button
+                  onClick={() => {
+                    if (multi && selectedOpt) {
+                      const priceNum = parseFloat(selectedOpt.price.replace("₾", "").replace(",", ".")) || 0;
+                      onAddToCart(item, selectedOpt.size, priceNum);
+                    } else {
+                      const priceNum = parseFloat(item.price) || 0;
+                      onAddToCart(item, "", priceNum);
+                    }
+                    onClose();
+                  }}
+                  style={{
+                    background: "linear-gradient(135deg, #b86520, #7a3a08)",
+                    border: `1px solid ${t.brandName}`,
+                    borderRadius: 12, color: "#fff",
+                    padding: "12px 24px", fontSize: 14, fontWeight: 700,
+                    cursor: "pointer", transition: "all 0.2s",
+                    width: "100%", marginTop: 16, fontFamily: "'Georgia', serif",
+                    boxShadow: "0 4px 14px rgba(184,101,32,0.4)"
+                  }}
+                >
+                  🛒 {lang === "ka" ? "კალათაში დამატება" : lang === "ru" ? "Добавить в корзину" : "Add to Cart"}
+                </button>
+              )}
             </div>
           </div>
           <button onClick={onClose} className="modal-close" style={{ position:"absolute", top:14, right:14, zIndex:10, width:36, height:36, borderRadius:10, background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.11)", color:"#909090", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:17, lineHeight:1, transition:"all 0.2s" }} aria-label="Close">✕</button>
@@ -990,6 +995,7 @@ function AdminDashboard({
   customMenuEnabled, setCustomMenuEnabled,
   callWaiterEnabled, setCallWaiterEnabled,
   requestBillEnabled, setRequestBillEnabled,
+  isCartEnabled, setIsCartEnabled,
   reviewFormEnabled, setReviewFormEnabled,
   reviews, setReviews,
   bgImage, setBgImage,
@@ -1037,6 +1043,7 @@ function AdminDashboard({
         body: JSON.stringify({
           callWaiterEnabled,
           requestBillEnabled,
+          isCartEnabled,
           bannerSettings,
           customMenuEnabled
         }),
@@ -2119,6 +2126,31 @@ function AdminDashboard({
                 }}
               >
                 {requestBillEnabled ? "ჩართულია ✓" : "გათიშულია ✕"}
+              </button>
+            </div>
+
+            {/* Cart / Ordering Toggle */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(245,158,11,0.18)", borderRadius: 16, padding: "18px 22px", gap: 16 }}>
+              <div>
+                <h4 style={{ margin: "0 0 4px", fontSize: 15, color: "#e8a030", fontWeight: 700 }}>🛒 კალათაში დამატება / შეკვეთა</h4>
+                <span style={{ fontSize: 12, color: "#8a6040", lineHeight: 1.4, display: "block" }}>სტუმრისთვის კალათის და შეკვეთის ფუნქციონალის ჩართვა/გათიშვა</span>
+              </div>
+              <button
+                onClick={() => setIsCartEnabled(prev => !prev)}
+                style={{
+                  background: isCartEnabled ? "linear-gradient(135deg, #16a34a, #15803d)" : "rgba(74,48,24,0.6)",
+                  color: isCartEnabled ? "#ffffff" : "#94a3b8",
+                  border: `1px solid ${isCartEnabled ? "#4ade80" : "rgba(180,120,40,0.3)"}`,
+                  borderRadius: 10,
+                  padding: "8px 18px",
+                  cursor: "pointer",
+                  fontWeight: 800,
+                  fontSize: 12,
+                  transition: "all 0.2s ease",
+                  whiteSpace: "nowrap"
+                }}
+              >
+                {isCartEnabled ? "ჩართულია ✓" : "გათიშულია ✕"}
               </button>
             </div>
           </div>
@@ -3469,6 +3501,7 @@ export default function StaroPub() {
   const [customMenuEnabled, setCustomMenuEnabled] = useState(true);
   const [callWaiterEnabled, setCallWaiterEnabled] = useState(true);
   const [requestBillEnabled, setRequestBillEnabled] = useState(true);
+  const [isCartEnabled, setIsCartEnabled] = useState(true);
   const [bgImage, setBgImage] = useState("");
   const [aboutImage, setAboutImage] = useState("");
 
@@ -3590,6 +3623,7 @@ export default function StaroPub() {
         if (settingsMap.aboutImage) setAboutImage(getTimestampedUrl(settingsMap.aboutImage));
         if (typeof settingsMap.callWaiterEnabled === 'boolean') setCallWaiterEnabled(settingsMap.callWaiterEnabled);
         if (typeof settingsMap.requestBillEnabled === 'boolean') setRequestBillEnabled(settingsMap.requestBillEnabled);
+        if (typeof settingsMap.isCartEnabled === 'boolean') setIsCartEnabled(settingsMap.isCartEnabled);
         if (settingsMap.bannerSettings) setBannerSettings(settingsMap.bannerSettings);
         if (typeof settingsMap.customMenuEnabled === 'boolean') setCustomMenuEnabled(settingsMap.customMenuEnabled);
       }
@@ -3862,19 +3896,19 @@ export default function StaroPub() {
             {/* Desktop-only Header Actions */}
             <div className="desktop-header-actions">
               {/* Shopping Cart Trigger */}
-              <button onClick={() => setCartOpen(true)} title="Shopping Cart"
-                style={{ background:"rgba(255,255,255,0.06)", border:`1px solid ${isDark ? "rgba(245,158,11,0.28)" : "rgba(180,120,40,0.28)"}`, color: t.brandName, borderRadius:8, padding:"6px 10px", cursor:"pointer", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.25s", position: "relative" }}
-                aria-label="Shopping Cart">
-                🛒
-                {cartItems.reduce((acc, x) => acc + x.quantity, 0) > 0 && (
-                  <span style={{ position: "absolute", top: -6, right: -6, background: "linear-gradient(135deg, #b86520, #e8a030)", color: "#fff", fontSize: 9, fontWeight: 900, borderRadius: "50%", width: 16, height: 16, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${t.brandName}`, boxShadow: "0 2px 6px rgba(0,0,0,0.4)" }}>
-                    {cartItems.reduce((acc, x) => acc + x.quantity, 0)}
-                  </span>
-                )}
-              </button>
+              {isCartEnabled && (
+                <button onClick={() => setCartOpen(true)} title="Shopping Cart"
+                  style={{ background:"rgba(255,255,255,0.06)", border:`1px solid ${isDark ? "rgba(245,158,11,0.28)" : "rgba(180,120,40,0.28)"}`, color: t.brandName, borderRadius:8, padding:"6px 10px", cursor:"pointer", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.25s", position: "relative" }}
+                  aria-label="Shopping Cart">
+                  🛒
+                  {cartItems.reduce((acc, x) => acc + x.quantity, 0) > 0 && (
+                    <span style={{ position: "absolute", top: -6, right: -6, background: "linear-gradient(135deg, #b86520, #e8a030)", color: "#fff", fontSize: 9, fontWeight: 900, borderRadius: "50%", width: 16, height: 16, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${t.brandName}`, boxShadow: "0 2px 6px rgba(0,0,0,0.4)" }}>
+                      {cartItems.reduce((acc, x) => acc + x.quantity, 0)}
+                    </span>
+                  )}
+                </button>
+              )}
 
-
-              
               {/* Restored Theme Switcher */}
               <button onClick={() => setIsDark(d => !d)} title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
                 style={{ background:"rgba(255,255,255,0.06)", border:`1px solid ${isDark ? "rgba(245,158,11,0.28)" : "rgba(180,120,40,0.28)"}`, color: t.brandName, borderRadius:8, padding:"6px 10px", cursor:"pointer", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.25s" }}
@@ -3886,18 +3920,20 @@ export default function StaroPub() {
             </div>
 
             {/* Mobile Shopping Cart Trigger */}
-            <button onClick={() => setCartOpen(true)} className="mobile-hamburger-btn" style={{
-              background: "none", border: "none", color: t.brandName,
-              fontSize: 22, cursor: "pointer", padding: 6, lineHeight: 1, position: "relative",
-              marginRight: 6
-            }} aria-label="Open Cart">
-              🛒
-              {cartItems.reduce((acc, x) => acc + x.quantity, 0) > 0 && (
-                <span style={{ position: "absolute", top: -2, right: -2, background: "linear-gradient(135deg, #b86520, #e8a030)", color: "#fff", fontSize: 9, fontWeight: 900, borderRadius: "50%", width: 15, height: 15, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${t.brandName}`, boxShadow: "0 2px 4px rgba(0,0,0,0.4)" }}>
-                  {cartItems.reduce((acc, x) => acc + x.quantity, 0)}
-                </span>
-              )}
-            </button>
+            {isCartEnabled && (
+              <button onClick={() => setCartOpen(true)} className="mobile-hamburger-btn" style={{
+                background: "none", border: "none", color: t.brandName,
+                fontSize: 22, cursor: "pointer", padding: 6, lineHeight: 1, position: "relative",
+                marginRight: 6
+              }} aria-label="Open Cart">
+                🛒
+                {cartItems.reduce((acc, x) => acc + x.quantity, 0) > 0 && (
+                  <span style={{ position: "absolute", top: -2, right: -2, background: "linear-gradient(135deg, #b86520, #e8a030)", color: "#fff", fontSize: 9, fontWeight: 900, borderRadius: "50%", width: 15, height: 15, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${t.brandName}`, boxShadow: "0 2px 4px rgba(0,0,0,0.4)" }}>
+                    {cartItems.reduce((acc, x) => acc + x.quantity, 0)}
+                  </span>
+                )}
+              </button>
+            )}
 
             {/* Mobile Hamburger Button */}
             <button onClick={() => setMobileMenuOpen(true)} className="mobile-hamburger-btn" style={{
@@ -4333,6 +4369,7 @@ export default function StaroPub() {
                           onUpdateQuantity={updateQuantity}
                           categoryIcons={categoryIcons}
                           hotCategories={hotCategories}
+                          isCartEnabled={isCartEnabled}
                         />
                       ))}
                     </div>
@@ -4389,6 +4426,8 @@ export default function StaroPub() {
             setCallWaiterEnabled={setCallWaiterEnabled}
             requestBillEnabled={requestBillEnabled}
             setRequestBillEnabled={setRequestBillEnabled}
+            isCartEnabled={isCartEnabled}
+            setIsCartEnabled={setIsCartEnabled}
             reviewFormEnabled={reviewFormEnabled}
             setReviewFormEnabled={setReviewFormEnabled}
             reviews={reviews}
@@ -4430,6 +4469,7 @@ export default function StaroPub() {
           categoryIcons={categoryIcons}
           categoryLabels={categoryLabels}
           hotCategories={hotCategories}
+          isCartEnabled={isCartEnabled}
         />
       )}
 
