@@ -418,34 +418,85 @@ function MasterPourScreen({ lang = "ka", isDark = false }) {
 
 
 // ══════════════════════════════════════════════════════════════════════════════
-// PRICE BLOCK
+// PRICE BLOCK & VOLUME UTILS
 // ══════════════════════════════════════════════════════════════════════════════
-function parseMultiPrice(raw) {
-  if (typeof raw !== "string") return null;
-  if (!raw) return null;
-  const lines = raw.split(/\\n|\n/).map(l => l.trim()).filter(Boolean);
+export function parseMultiPrice(rawOrItem) {
+  if (!rawOrItem) return null;
+
+  let pricesArray = null;
+  if (typeof rawOrItem === "object") {
+    if (Array.isArray(rawOrItem.prices) && rawOrItem.prices.length > 0) {
+      pricesArray = rawOrItem.prices;
+    } else if (typeof rawOrItem.price === "string") {
+      return parseMultiPrice(rawOrItem.price);
+    }
+  }
+
+  if (pricesArray) {
+    const valid = pricesArray.filter(p => p && p.size && (p.price !== undefined && p.price !== null && p.price !== ""));
+    if (valid.length > 0) {
+      return valid.map(p => {
+        const num = typeof p.price === "number" ? p.price : parseFloat(String(p.price).replace("₾", "").replace(",", ".").trim());
+        const priceStr = isNaN(num) ? String(p.price) : `₾${num.toFixed(2)}`;
+        return { size: p.size, price: priceStr, priceNum: isNaN(num) ? 0 : num };
+      });
+    }
+  }
+
+  if (typeof rawOrItem !== "string") return null;
+  const lines = rawOrItem.split(/\\n|\n/).map(l => l.trim()).filter(Boolean);
   if (lines.length < 2) return null;
   return lines.map(line => {
-    const sizeMatch = line.match(/^([\d.,]+\s*[ლმლმ][\w]*)/u);
+    const sizeMatch = line.match(/^([\d.,]+\s*[ლმლმL][\w]*)/u);
     const size = sizeMatch ? sizeMatch[1].trim() : "";
     const rest = sizeMatch ? line.slice(sizeMatch[0].length).trim() : line;
     const numMatch = rest.match(/([\d.,]+)/);
     const num = numMatch ? parseFloat(numMatch[1].replace(",", ".")) : NaN;
     const priceStr = isNaN(num) ? rest : `₾${num.toFixed(2)}`;
-    return { size, price: priceStr };
+    return { size, price: priceStr, priceNum: isNaN(num) ? 0 : num };
   });
+}
+
+export function getVolumeSizesForDish(categoryKey, dishName, categoryLabels = {}, dbCategories = []) {
+  const catObj = dbCategories.find(c => (c.id || c._id) === categoryKey) || {};
+  const catLabel = (categoryLabels[categoryKey]?.ka || catObj.name_ka || categoryKey || "").toLowerCase();
+  const nameKa = (dishName || "").toLowerCase();
+
+  const isBeer = categoryKey === "beer" || catLabel.includes("ლუდი") || catLabel.includes("beer") || catLabel.includes("пиво");
+  const isSpirits = categoryKey === "Alcohol" || categoryKey === "spirits" || catLabel.includes("სპირტიანი") || catLabel.includes("spirits") || catLabel.includes("крепкие");
+  const isChacha = nameKa.includes("სოფლის ჭაჭა") || nameKa.includes("ჭაჭა");
+
+  if (isBeer) {
+    return ["0.4 ლ", "1.0 ლ"];
+  }
+  if (isChacha || (isSpirits && isChacha)) {
+    return ["0.25 ლ", "0.5 ლ"];
+  }
+  return null;
 }
 
 function PriceBlock({ item, modal = false, th }) {
   const t = th || THEME.light;
-  const multi = parseMultiPrice(item.price);
-  if (multi) {
+  const multi = parseMultiPrice(item);
+  if (multi && multi.length > 0) {
+    if (modal) {
+      return (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
+          {multi.map(({ size, price }, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+              <span style={{ color: t.modalPriceLbl, fontFamily: "'Georgia', serif", fontSize: 14, fontWeight: 600, letterSpacing: "0.3px" }}>{size}</span>
+              <span style={{ color: "#e8a030", fontFamily: "'Georgia', serif", fontSize: 22, fontWeight: 700 }}>{price}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: modal ? 10 : 5, width: "100%" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, width: "100%", marginTop: 4 }}>
         {multi.map(({ size, price }, i) => (
-          <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-            <span style={{ color: modal ? t.modalPriceLbl : "#a08060", fontFamily: "'Georgia', serif", fontSize: modal ? 14 : 12, fontWeight: 600, letterSpacing: "0.3px" }}>{size}</span>
-            <span style={{ color: "#e8a030", fontFamily: "'Georgia', serif", fontSize: modal ? 22 : 15, fontWeight: 700 }}>{price}</span>
+          <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", background: "rgba(245,158,11,0.06)", padding: "4px 8px", borderRadius: 6, border: "1px solid rgba(245,158,11,0.12)" }}>
+            <span style={{ color: t.cardDesc || "#a08060", fontFamily: "'Georgia', serif", fontSize: 12, fontWeight: 600 }}>{size}</span>
+            <span style={{ color: "#e8a030", fontFamily: "'Georgia', serif", fontSize: 13, fontWeight: 700 }}>{price}</span>
           </div>
         ))}
       </div>
@@ -1110,6 +1161,7 @@ function AdminDashboard({
   const [newDishDescEn, setNewDishDescEn] = useState("");
   const [newDishDescRu, setNewDishDescRu] = useState("");
   const [newDishPrice, setNewDishPrice]   = useState("");
+  const [newDishVolumePrices, setNewDishVolumePrices] = useState({});
   const [newDishCat, setNewDishCat]       = useState("");
   const [newDishImageFile, setNewDishImageFile] = useState(null);
   const [newDishImagePreview, setNewDishImagePreview] = useState("");
@@ -1134,6 +1186,7 @@ function AdminDashboard({
   const [editDishDescEn, setEditDishDescEn] = useState("");
   const [editDishDescRu, setEditDishDescRu] = useState("");
   const [editDishPrice, setEditDishPrice] = useState("");
+  const [editDishVolumePrices, setEditDishVolumePrices] = useState({});
   const [editDishCat, setEditDishCat] = useState("");
   const [editDishImageFile, setEditDishImageFile] = useState(null);
   const [editDishImagePreview, setEditDishImagePreview] = useState("");
@@ -1222,20 +1275,51 @@ function AdminDashboard({
     setEditDishDescKa(dish.desc_ka || "");
     setEditDishDescEn(dish.desc_en || "");
     setEditDishDescRu(dish.desc_ru || "");
-    
-    // Extract numerical price cleanly
-    const rawPrice = dish.price ? String(dish.price).replace(/[^\d.]/g, "") : "";
-    setEditDishPrice(rawPrice);
     setEditDishCat(dish.category || (categoryOrder.length > 0 ? categoryOrder[0] : ""));
     setEditDishImageFile(null);
     setEditDishImagePreview(dish.image || "");
+
+    const rawPrice = dish.price ? String(dish.price).replace(/[^\d.]/g, "") : "";
+    setEditDishPrice(rawPrice);
+
+    const volPrices = {};
+    if (Array.isArray(dish.prices) && dish.prices.length > 0) {
+      dish.prices.forEach(p => {
+        if (p && p.size) volPrices[p.size] = p.price !== undefined ? String(p.price) : "";
+      });
+    } else {
+      const parsed = parseMultiPrice(dish.price);
+      if (parsed) {
+        parsed.forEach(p => {
+          if (p && p.size) volPrices[p.size] = p.priceNum !== undefined ? String(p.priceNum) : "";
+        });
+      }
+    }
+    setEditDishVolumePrices(volPrices);
   };
 
   const handleUpdateDish = async (e) => {
     e.preventDefault();
     if (!editDishNameKa.trim()) return alert("გთხოვთ მიუთითოთ კერძის დასახელება ქართულად!");
-    const priceNum = parseFloat(editDishPrice);
-    if (isNaN(priceNum) || priceNum <= 0) return alert("გთხოვთ მიუთითოთ კერძის სწორი ფასი!");
+
+    const targetSizes = getVolumeSizesForDish(editDishCat, editDishNameKa, categoryLabels, dbCategories);
+
+    let priceVal = "";
+    let pricesArray = null;
+
+    if (targetSizes && targetSizes.length > 0) {
+      pricesArray = targetSizes.map(size => {
+        const val = parseFloat(editDishVolumePrices[size]);
+        return { size, price: isNaN(val) ? 0 : val };
+      });
+      const hasInvalid = pricesArray.some(p => p.price <= 0);
+      if (hasInvalid) return alert("გთხოვთ მიუთითოთ ყველა მოცულობის სწორი ფასი!");
+      priceVal = pricesArray.map(p => `${p.size.replace(/\s+/g, '')} - ${p.price}₾`).join(" | ");
+    } else {
+      const priceNum = parseFloat(editDishPrice);
+      if (isNaN(priceNum) || priceNum <= 0) return alert("გთხოვთ მიუთითოთ კერძის სწორი ფასი!");
+      priceVal = `${priceNum} ₾`;
+    }
 
     setIsUpdatingDish(true);
     const formData = new FormData();
@@ -1245,7 +1329,10 @@ function AdminDashboard({
     formData.append("desc_ka", editDishDescKa.trim());
     formData.append("desc_en", editDishDescEn.trim());
     formData.append("desc_ru", editDishDescRu.trim());
-    formData.append("price", `${priceNum} ₾`);
+    formData.append("price", priceVal);
+    if (pricesArray) {
+      formData.append("prices", JSON.stringify(pricesArray));
+    }
     formData.append("category", editDishCat || editingDish.category);
     if (editDishImageFile) {
       formData.append("image", editDishImageFile);
@@ -1264,7 +1351,8 @@ function AdminDashboard({
       const updatedDish = await response.json();
       const formatted = {
         ...updatedDish,
-        id: updatedDish.id || updatedDish._id || dishId
+        id: updatedDish.id || updatedDish._id || dishId,
+        prices: pricesArray || updatedDish.prices || []
       };
 
       setAllItems(prev => prev.map(item => ((item.id === formatted.id || item._id === formatted.id) ? formatted : item)));
@@ -1352,8 +1440,25 @@ function AdminDashboard({
     e.preventDefault();
     if (!newDishNameKa.trim()) return alert("გთხოვთ მიუთითოთ კერძის დასახელება ქართულად!");
     if (!newDishCat) return alert("გთხოვთ აირჩიოთ კერძის კატეგორია!");
-    const priceNum = parseFloat(newDishPrice);
-    if (isNaN(priceNum) || priceNum <= 0) return alert("გთხოვთ მიუთითოთ კერძის ფასი!");
+
+    const targetSizes = getVolumeSizesForDish(newDishCat, newDishNameKa, categoryLabels, dbCategories);
+
+    let priceVal = "";
+    let pricesArray = null;
+
+    if (targetSizes && targetSizes.length > 0) {
+      pricesArray = targetSizes.map(size => {
+        const val = parseFloat(newDishVolumePrices[size]);
+        return { size, price: isNaN(val) ? 0 : val };
+      });
+      const hasInvalid = pricesArray.some(p => p.price <= 0);
+      if (hasInvalid) return alert("გთხოვთ მიუთითოთ ყველა მოცულობის სწორი ფასი!");
+      priceVal = pricesArray.map(p => `${p.size.replace(/\s+/g, '')} - ${p.price}₾`).join(" | ");
+    } else {
+      const priceNum = parseFloat(newDishPrice);
+      if (isNaN(priceNum) || priceNum <= 0) return alert("გთხოვთ მიუთითოთ კერძის ფასი!");
+      priceVal = `${priceNum} ₾`;
+    }
 
     const formData = new FormData();
     formData.append("name_ka", newDishNameKa.trim());
@@ -1362,7 +1467,10 @@ function AdminDashboard({
     formData.append("desc_ka", newDishDescKa.trim());
     formData.append("desc_en", newDishDescEn.trim());
     formData.append("desc_ru", newDishDescRu.trim());
-    formData.append("price", `${priceNum} ₾`);
+    formData.append("price", priceVal);
+    if (pricesArray) {
+      formData.append("prices", JSON.stringify(pricesArray));
+    }
     formData.append("category", newDishCat);
     if (newDishImageFile) {
       formData.append("image", newDishImageFile);
@@ -2585,18 +2693,6 @@ function AdminDashboard({
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>ფასი (₾ / ლარი)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      required
-                      placeholder="12.50"
-                      value={newDishPrice}
-                      onChange={e => setNewDishPrice(e.target.value)}
-                      style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
-                    />
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>კატეგორია</label>
                     <select
                       value={newDishCat}
@@ -2613,37 +2709,84 @@ function AdminDashboard({
                       })}
                     </select>
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>სურათი (ატვირთვა)</label>
-                    {newDishImagePreview && (
-                      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 4 }}>
-                        <img
-                          src={resolveImageSrc(newDishImagePreview)}
-                          alt="Dish Preview"
-                          style={{ width: 50, height: 50, objectFit: "cover", borderRadius: 8, border: "1px solid rgba(245,158,11,0.3)" }}
-                          onError={e => { e.target.style.display = "none"; }}
-                        />
-                        <span style={{ color: "#4ade80", fontSize: 11, fontWeight: 600 }}>✓ სურათი შერჩეულია</span>
-                      </div>
-                    )}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={e => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          setNewDishImageFile(file);
-                          const reader = new FileReader();
-                          reader.onloadend = () => setNewDishImagePreview(reader.result);
-                          reader.readAsDataURL(file);
-                        } else {
-                          setNewDishImageFile(null);
-                          setNewDishImagePreview("");
-                        }
-                      }}
-                      style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
-                    />
+                  <div style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: 6 }}>
+                    {(() => {
+                      const targetSizes = getVolumeSizesForDish(newDishCat, newDishNameKa, categoryLabels, dbCategories);
+                      if (targetSizes && targetSizes.length > 0) {
+                        return (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 6, background: "rgba(245,158,11,0.06)", padding: 10, borderRadius: 10, border: "1px solid rgba(245,158,11,0.2)" }}>
+                            <label style={{ fontSize: 11, color: "#f0c060", textTransform: "uppercase", fontWeight: "bold" }}>
+                              🍺 / 🥃 მოცულობების მიხედვით ფასები (ლარი)
+                            </label>
+                            <div style={{ display: "grid", gridTemplateColumns: `repeat(${targetSizes.length}, 1fr)`, gap: 10 }}>
+                              {targetSizes.map(size => (
+                                <div key={size} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                  <label style={{ fontSize: 11, color: "#8a6040" }}>{size}</label>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    required
+                                    placeholder="5.00"
+                                    value={newDishVolumePrices[size] || ""}
+                                    onChange={e => {
+                                      const val = e.target.value;
+                                      setNewDishVolumePrices(prev => ({ ...prev, [size]: val }));
+                                    }}
+                                    style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 8, color: "#f0c060", outline: "none", fontSize: 13 }}
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>ფასი (₾ / ლარი)</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            required
+                            placeholder="12.50"
+                            value={newDishPrice}
+                            onChange={e => setNewDishPrice(e.target.value)}
+                          />
+                        </div>
+                      );
+                    })()}
                   </div>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>სურათი (ატვირთვა)</label>
+                  {newDishImagePreview && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 4 }}>
+                      <img
+                        src={resolveImageSrc(newDishImagePreview)}
+                        alt="Dish Preview"
+                        style={{ width: 50, height: 50, objectFit: "cover", borderRadius: 8, border: "1px solid rgba(245,158,11,0.3)" }}
+                        onError={e => { e.target.style.display = "none"; }}
+                      />
+                      <span style={{ color: "#4ade80", fontSize: 11, fontWeight: 600 }}>✓ სურათი შერჩეულია</span>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setNewDishImageFile(file);
+                        const reader = new FileReader();
+                        reader.onloadend = () => setNewDishImagePreview(reader.result);
+                        reader.readAsDataURL(file);
+                      } else {
+                        setNewDishImageFile(null);
+                        setNewDishImagePreview("");
+                      }
+                    }}
+                    style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
+                  />
                 </div>
 
                 <button
@@ -2941,18 +3084,6 @@ function AdminDashboard({
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>ფასი (₾ / ლარი)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    required
-                    placeholder="12.50"
-                    value={editDishPrice}
-                    onChange={e => setEditDishPrice(e.target.value)}
-                    style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
-                  />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>კატეგორია</label>
                   <select
                     value={editDishCat}
@@ -2968,6 +3099,53 @@ function AdminDashboard({
                       );
                     })}
                   </select>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {(() => {
+                    const targetSizes = getVolumeSizesForDish(editDishCat, editDishNameKa, categoryLabels, dbCategories);
+                    if (targetSizes && targetSizes.length > 0) {
+                      return (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6, background: "rgba(245,158,11,0.06)", padding: 10, borderRadius: 10, border: "1px solid rgba(245,158,11,0.2)" }}>
+                          <label style={{ fontSize: 11, color: "#f0c060", textTransform: "uppercase", fontWeight: "bold" }}>
+                            🍺 / 🥃 მოცულობების მიხედვით ფასები (ლარი)
+                          </label>
+                          <div style={{ display: "grid", gridTemplateColumns: `repeat(${targetSizes.length}, 1fr)`, gap: 10 }}>
+                            {targetSizes.map(size => (
+                              <div key={size} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                <label style={{ fontSize: 11, color: "#8a6040" }}>{size}</label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  required
+                                  placeholder="5.00"
+                                  value={editDishVolumePrices[size] || ""}
+                                  onChange={e => {
+                                    const val = e.target.value;
+                                    setEditDishVolumePrices(prev => ({ ...prev, [size]: val }));
+                                  }}
+                                  style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 8, color: "#f0c060", outline: "none", fontSize: 13 }}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>ფასი (₾ / ლარი)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          required
+                          placeholder="12.50"
+                          value={editDishPrice}
+                          onChange={e => setEditDishPrice(e.target.value)}
+                          style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
+                        />
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 

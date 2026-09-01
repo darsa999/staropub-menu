@@ -205,6 +205,10 @@ const dishSchema = new mongoose.Schema({
   desc_en: String,
   desc_ru: String,
   price: String,
+  prices: [{
+    size: String,
+    price: mongoose.Schema.Types.Mixed
+  }],
   category: String,
   image: String,
   order: { type: Number, default: 0 }
@@ -729,6 +733,11 @@ app.get('/api/dishes', async (req, res) => {
 app.post('/api/dishes', protect, upload.single('image'), async (req, res) => {
   try {
     const { name_ka, name_en, name_ru, desc_ka, desc_en, desc_ru, price, category, image } = req.body;
+    let prices = req.body.prices;
+    if (typeof prices === 'string') {
+      try { prices = JSON.parse(prices); } catch (e) { /* keep as string/ignore */ }
+    }
+
     let imageUrl = "";
     if (req.file) {
       imageUrl = await uploadFile(req.file, req);
@@ -747,6 +756,7 @@ app.post('/api/dishes', protect, upload.single('image'), async (req, res) => {
         desc_en,
         desc_ru,
         price,
+        prices: Array.isArray(prices) ? prices : [],
         category,
         image: imageUrl,
         order: dishes.filter(d => d.category === category).length
@@ -764,6 +774,7 @@ app.post('/api/dishes', protect, upload.single('image'), async (req, res) => {
       desc_en,
       desc_ru,
       price,
+      prices: Array.isArray(prices) ? prices : [],
       category,
       image: imageUrl,
       order: await Dish.countDocuments({ category })
@@ -781,6 +792,10 @@ const updateDishHandler = async (req, res) => {
   try {
     const { id } = req.params;
     const { name_ka, name_en, name_ru, desc_ka, desc_en, desc_ru, price, category, image, order } = req.body;
+    let prices = req.body.prices;
+    if (typeof prices === 'string') {
+      try { prices = JSON.parse(prices); } catch (e) { /* keep as string/ignore */ }
+    }
 
     let imageUrl = image;
     if (req.file) {
@@ -802,6 +817,7 @@ const updateDishHandler = async (req, res) => {
       if (desc_en !== undefined) dishes[dishIndex].desc_en = desc_en;
       if (desc_ru !== undefined) dishes[dishIndex].desc_ru = desc_ru;
       if (price !== undefined) dishes[dishIndex].price = price;
+      if (prices !== undefined) dishes[dishIndex].prices = Array.isArray(prices) ? prices : [];
       if (category !== undefined) dishes[dishIndex].category = category;
       if (order !== undefined) dishes[dishIndex].order = Number(order);
       if (imageUrl !== undefined) dishes[dishIndex].image = imageUrl;
@@ -828,6 +844,7 @@ const updateDishHandler = async (req, res) => {
     if (desc_en !== undefined) dish.desc_en = desc_en;
     if (desc_ru !== undefined) dish.desc_ru = desc_ru;
     if (price !== undefined) dish.price = price;
+    if (prices !== undefined) dish.prices = Array.isArray(prices) ? prices : [];
     if (category !== undefined) dish.category = category;
     if (order !== undefined) dish.order = Number(order);
     if (imageUrl !== undefined) dish.image = imageUrl;

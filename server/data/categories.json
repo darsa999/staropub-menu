@@ -8,5 +8,25 @@
     "image": "",
     "isHot": false,
     "order": 0
+  },
+  {
+    "id": "beer",
+    "name_ka": "ლუდი",
+    "name_en": "Beer",
+    "name_ru": "Пиво",
+    "icon": "🍺",
+    "image": "",
+    "isHot": false,
+    "order": 1
+  },
+  {
+    "id": "Alcohol",
+    "name_ka": "სპირტიანი სასმელები",
+    "name_en": "Spirits",
+    "name_ru": "Крепкие напитки",
+    "icon": "🥃",
+    "image": "",
+    "isHot": false,
+    "order": 2
   }
 ]

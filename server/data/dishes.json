@@ -1,1 +1,53 @@
-[]
+[
+  {
+    "id": "dish_beer_1",
+    "name_ka": "სტაროპაბის ლუდი",
+    "name_en": "StaroPub Beer",
+    "name_ru": "Пиво СтароПаб",
+    "desc_ka": "ჩეხური ჩამოსასხმელი ცოცხალი ლუდი",
+    "desc_en": "Czech draft fresh beer",
+    "desc_ru": "Чешское разливное свежее пиво",
+    "price": "0.4ლ - 5.00₾ | 1.0ლ - 10.00₾",
+    "prices": [
+      { "size": "0.4 ლ", "price": 5 },
+      { "size": "1.0 ლ", "price": 10 }
+    ],
+    "category": "beer",
+    "image": "staro.png",
+    "order": 0
+  },
+  {
+    "id": "dish_beer_2",
+    "name_ka": "ბიტბურგერი",
+    "name_en": "Bitburger",
+    "name_ru": "Битбургер",
+    "desc_ka": "გერმანული ჩამოსასხმელი ლუდი",
+    "desc_en": "German draft beer",
+    "desc_ru": "Немецкое разливное пиво",
+    "price": "0.4ლ - 6.00₾ | 1.0ლ - 12.00₾",
+    "prices": [
+      { "size": "0.4 ლ", "price": 6 },
+      { "size": "1.0 ლ", "price": 12 }
+    ],
+    "category": "beer",
+    "image": "bitburger.png",
+    "order": 1
+  },
+  {
+    "id": "dish_chacha_1",
+    "name_ka": "სოფლის ჭაჭა",
+    "name_en": "Village Chacha",
+    "name_ru": "Деревенская чача",
+    "desc_ka": "ტრადიციული ქართული სოფლის ჭაჭა",
+    "desc_en": "Traditional Georgian village chacha",
+    "desc_ru": "Традиционная грузинская деревенская чача",
+    "price": "0.25ლ - 8.00₾ | 0.5ლ - 15.00₾",
+    "prices": [
+      { "size": "0.25 ლ", "price": 8 },
+      { "size": "0.5 ლ", "price": 15 }
+    ],
+    "category": "Alcohol",
+    "image": "chacha.png",
+    "order": 0
+  }
+]
