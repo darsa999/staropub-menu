@@ -433,9 +433,13 @@ export function parseMultiPrice(rawOrItem) {
   }
 
   if (pricesArray) {
-    const valid = pricesArray.filter(p => p && p.size && (p.price !== undefined && p.price !== null && p.price !== ""));
-    if (valid.length > 0) {
-      return valid.map(p => {
+    const valid = pricesArray.filter(p => p && p.size && (p.price !== undefined && p.price !== null && String(p.price).trim() !== ""));
+    const nonZero = valid.filter(p => {
+      const n = typeof p.price === "number" ? p.price : parseFloat(String(p.price).replace("₾", "").replace(",", ".").trim());
+      return !isNaN(n) && n > 0;
+    });
+    if (nonZero.length > 0) {
+      return nonZero.map(p => {
         const num = typeof p.price === "number" ? p.price : parseFloat(String(p.price).replace("₾", "").replace(",", ".").trim());
         const priceStr = isNaN(num) ? String(p.price) : `₾${num.toFixed(2)}`;
         return { size: p.size, price: priceStr, priceNum: isNaN(num) ? 0 : num };
@@ -444,17 +448,22 @@ export function parseMultiPrice(rawOrItem) {
   }
 
   if (typeof rawOrItem !== "string") return null;
-  const lines = rawOrItem.split(/\\n|\n/).map(l => l.trim()).filter(Boolean);
-  if (lines.length < 2) return null;
-  return lines.map(line => {
+  const lines = rawOrItem.split(/\\n|\n|\|/).map(l => l.trim()).filter(Boolean);
+  const parsed = [];
+  for (const line of lines) {
     const sizeMatch = line.match(/^([\d.,]+\s*[ლმლმL][\w]*)/u);
-    const size = sizeMatch ? sizeMatch[1].trim() : "";
-    const rest = sizeMatch ? line.slice(sizeMatch[0].length).trim() : line;
-    const numMatch = rest.match(/([\d.,]+)/);
-    const num = numMatch ? parseFloat(numMatch[1].replace(",", ".")) : NaN;
-    const priceStr = isNaN(num) ? rest : `₾${num.toFixed(2)}`;
-    return { size, price: priceStr, priceNum: isNaN(num) ? 0 : num };
-  });
+    if (sizeMatch) {
+      const size = sizeMatch[1].trim();
+      const rest = line.slice(sizeMatch[0].length).replace(/^[-:–—\s]+/, "").trim();
+      const numMatch = rest.match(/([\d.,]+)/);
+      const num = numMatch ? parseFloat(numMatch[1].replace(",", ".")) : NaN;
+      if (!isNaN(num) && num > 0) {
+        const priceStr = `₾${num.toFixed(2)}`;
+        parsed.push({ size, price: priceStr, priceNum: num });
+      }
+    }
+  }
+  return parsed.length > 0 ? parsed : null;
 }
 
 export function getVolumeSizesForDish(categoryKey, dishName, categoryLabels = {}, dbCategories = []) {
@@ -463,13 +472,13 @@ export function getVolumeSizesForDish(categoryKey, dishName, categoryLabels = {}
   const nameKa = (dishName || "").toLowerCase();
 
   const isBeer = categoryKey === "beer" || catLabel.includes("ლუდი") || catLabel.includes("beer") || catLabel.includes("пиво");
-  const isSpirits = categoryKey === "Alcohol" || categoryKey === "spirits" || catLabel.includes("სპირტიანი") || catLabel.includes("spirits") || catLabel.includes("крепкие");
+  const isSpirits = categoryKey === "Alcohol" || categoryKey === "alcohol" || categoryKey === "spirits" || catLabel.includes("სპირტიანი") || catLabel.includes("spirits") || catLabel.includes("крепкие") || catLabel.includes("alcohol");
   const isChacha = nameKa.includes("სოფლის ჭაჭა") || nameKa.includes("ჭაჭა");
 
   if (isBeer) {
     return ["0.4 ლ", "1.0 ლ"];
   }
-  if (isChacha || (isSpirits && isChacha)) {
+  if (isSpirits || isChacha) {
     return ["0.25 ლ", "0.5 ლ"];
   }
   return null;
@@ -537,7 +546,7 @@ function ItemCard({
     [item.id || item.name_ka]
   );
 
-  const multi = parseMultiPrice(item.price);
+  const multi = parseMultiPrice(item);
   const cartEntries = cartItems.filter(x => x.dishId === item.id);
   const totalQty = cartEntries.reduce((acc, x) => acc + x.quantity, 0);
 
@@ -703,8 +712,16 @@ function DishModal({ item, lang, onClose, th, onAddToCart, categoryIcons, catego
   const isHot    = (hotCategories && hotCategories.has(category)) || INITIAL_HOT_CATEGORIES.has(category);
   const PRICE_LABEL = { ka: "ფასი", en: "Price", ru: "Цена" };
 
-  const multi = parseMultiPrice(item.price);
-  const [selectedOpt, setSelectedOpt] = useState(multi ? multi[0] : null);
+  const multi = parseMultiPrice(item);
+  const [selectedOpt, setSelectedOpt] = useState(multi && multi.length > 0 ? multi[0] : null);
+
+  useEffect(() => {
+    if (multi && multi.length > 0) {
+      setSelectedOpt(multi[0]);
+    } else {
+      setSelectedOpt(null);
+    }
+  }, [item]);
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
@@ -762,23 +779,34 @@ function DishModal({ item, lang, onClose, th, onAddToCart, categoryIcons, catego
               <div style={{ padding:"16px 18px", background: t.modalPriceBg, border:`1px solid ${t.modalPriceBdr}`, borderRadius:14, marginTop:"auto" }}>
                 <div style={{ color: t.modalPriceLbl, fontSize:10, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:10 }}>{PRICE_LABEL[lang] || "ფასი"}</div>
                 {multi ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {multi.map((opt, i) => (
-                      <label key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <input
-                            type="radio"
-                            name="modal-size-opt"
-                            checked={selectedOpt?.size === opt.size}
-                            onChange={() => setSelectedOpt(opt)}
-                            style={{ accentColor: "#e8a030" }}
-                          />
-                          <span style={{ color: t.modalPriceLbl, fontSize: 13, fontWeight: 600 }}>{opt.size}</span>
+                  isCartEnabled ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {multi.map((opt, i) => (
+                        <label key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <input
+                              type="radio"
+                              name="modal-size-opt"
+                              checked={selectedOpt?.size === opt.size}
+                              onChange={() => setSelectedOpt(opt)}
+                              style={{ accentColor: "#e8a030" }}
+                            />
+                            <span style={{ color: t.modalPriceLbl, fontSize: 13, fontWeight: 600 }}>{opt.size}</span>
+                          </div>
+                          <span style={{ color: "#e8a030", fontSize: 16, fontWeight: 700 }}>{opt.price}</span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
+                      {multi.map(({ size, price }, i) => (
+                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                          <span style={{ color: t.modalPriceLbl, fontFamily: "'Georgia', serif", fontSize: 14, fontWeight: 600, letterSpacing: "0.3px" }}>{size}</span>
+                          <span style={{ color: "#e8a030", fontFamily: "'Georgia', serif", fontSize: 22, fontWeight: 700 }}>{price}</span>
                         </div>
-                        <span style={{ color: "#e8a030", fontSize: 16, fontWeight: 700 }}>{opt.price}</span>
-                      </label>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )
                 ) : (
                   <PriceBlock item={item} modal={true} th={t} />
                 )}
@@ -1044,6 +1072,8 @@ function AdminDashboard({
           callWaiterEnabled,
           requestBillEnabled,
           isCartEnabled,
+          reviewFormEnabled,
+          isFeedbackEnabled: reviewFormEnabled,
           bannerSettings,
           customMenuEnabled
         }),
@@ -1143,7 +1173,29 @@ function AdminDashboard({
     }
   };
 
+  const handleToggleReviewForm = async () => {
+    const nextVal = !reviewFormEnabled;
+    setReviewFormEnabled(nextVal);
+    try {
+      await fetch(`${API_URL}/api/settings`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reviewFormEnabled: nextVal,
+          isFeedbackEnabled: nextVal
+        }),
+        credentials: "include"
+      });
+    } catch (err) {
+      console.error("Failed to update review form setting:", err);
+    }
+  };
+
   const [selectedSortCategory, setSelectedSortCategory] = useState("");
+  const [draggedCatIdx, setDraggedCatIdx] = useState(null);
+  const [dragOverCatIdx, setDragOverCatIdx] = useState(null);
+  const [draggedDishIdx, setDraggedDishIdx] = useState(null);
+  const [dragOverDishIdx, setDragOverDishIdx] = useState(null);
 
   useEffect(() => {
     if (!selectedSortCategory && categoryOrder.length > 0) {
@@ -1292,10 +1344,10 @@ function AdminDashboard({
     const volPrices = {};
     if (Array.isArray(dish.prices) && dish.prices.length > 0) {
       dish.prices.forEach(p => {
-        if (p && p.size) volPrices[p.size] = p.price !== undefined ? String(p.price) : "";
+        if (p && p.size) volPrices[p.size] = p.price !== undefined && p.price !== null ? String(p.price) : "";
       });
     } else {
-      const parsed = parseMultiPrice(dish.price);
+      const parsed = parseMultiPrice(dish);
       if (parsed) {
         parsed.forEach(p => {
           if (p && p.size) volPrices[p.size] = p.priceNum !== undefined ? String(p.priceNum) : "";
@@ -1315,13 +1367,24 @@ function AdminDashboard({
     let pricesArray = null;
 
     if (targetSizes && targetSizes.length > 0) {
-      pricesArray = targetSizes.map(size => {
-        const val = parseFloat(editDishVolumePrices[size]);
-        return { size, price: isNaN(val) ? 0 : val };
-      });
-      const hasInvalid = pricesArray.some(p => p.price <= 0);
-      if (hasInvalid) return alert("გთხოვთ მიუთითოთ ყველა მოცულობის სწორი ფასი!");
-      priceVal = pricesArray.map(p => `${p.size.replace(/\s+/g, '')} - ${p.price}₾`).join(" | ");
+      const validPrices = targetSizes
+        .map(size => {
+          const raw = editDishVolumePrices[size];
+          const val = raw !== undefined && raw !== null && String(raw).trim() !== "" ? parseFloat(raw) : NaN;
+          return { size, price: val };
+        })
+        .filter(p => !isNaN(p.price) && p.price > 0);
+
+      if (validPrices.length > 0) {
+        pricesArray = validPrices;
+        priceVal = pricesArray.map(p => `${p.size.replace(/\s+/g, '')} - ${p.price}₾`).join(" | ");
+      } else {
+        const priceNum = parseFloat(editDishPrice);
+        if (isNaN(priceNum) || priceNum <= 0) {
+          return alert("გთხოვთ მიუთითოთ მინიმუმ ერთი მოცულობის ფასი ან კერძის ფასი!");
+        }
+        priceVal = `${priceNum} ₾`;
+      }
     } else {
       const priceNum = parseFloat(editDishPrice);
       if (isNaN(priceNum) || priceNum <= 0) return alert("გთხოვთ მიუთითოთ კერძის სწორი ფასი!");
@@ -1337,8 +1400,10 @@ function AdminDashboard({
     formData.append("desc_en", editDishDescEn.trim());
     formData.append("desc_ru", editDishDescRu.trim());
     formData.append("price", priceVal);
-    if (pricesArray) {
+    if (pricesArray && pricesArray.length > 0) {
       formData.append("prices", JSON.stringify(pricesArray));
+    } else {
+      formData.append("prices", JSON.stringify([]));
     }
     formData.append("category", editDishCat || editingDish.category);
     if (editDishImageFile) {
@@ -1359,7 +1424,7 @@ function AdminDashboard({
       const formatted = {
         ...updatedDish,
         id: updatedDish.id || updatedDish._id || dishId,
-        prices: pricesArray || updatedDish.prices || []
+        prices: (pricesArray && pricesArray.length > 0) ? pricesArray : (updatedDish.prices || [])
       };
 
       setAllItems(prev => prev.map(item => ((item.id === formatted.id || item._id === formatted.id) ? formatted : item)));
@@ -1454,13 +1519,24 @@ function AdminDashboard({
     let pricesArray = null;
 
     if (targetSizes && targetSizes.length > 0) {
-      pricesArray = targetSizes.map(size => {
-        const val = parseFloat(newDishVolumePrices[size]);
-        return { size, price: isNaN(val) ? 0 : val };
-      });
-      const hasInvalid = pricesArray.some(p => p.price <= 0);
-      if (hasInvalid) return alert("გთხოვთ მიუთითოთ ყველა მოცულობის სწორი ფასი!");
-      priceVal = pricesArray.map(p => `${p.size.replace(/\s+/g, '')} - ${p.price}₾`).join(" | ");
+      const validPrices = targetSizes
+        .map(size => {
+          const raw = newDishVolumePrices[size];
+          const val = raw !== undefined && raw !== null && String(raw).trim() !== "" ? parseFloat(raw) : NaN;
+          return { size, price: val };
+        })
+        .filter(p => !isNaN(p.price) && p.price > 0);
+
+      if (validPrices.length > 0) {
+        pricesArray = validPrices;
+        priceVal = pricesArray.map(p => `${p.size.replace(/\s+/g, '')} - ${p.price}₾`).join(" | ");
+      } else {
+        const priceNum = parseFloat(newDishPrice);
+        if (isNaN(priceNum) || priceNum <= 0) {
+          return alert("გთხოვთ მიუთითოთ მინიმუმ ერთი მოცულობის ფასი ან კერძის ფასი!");
+        }
+        priceVal = `${priceNum} ₾`;
+      }
     } else {
       const priceNum = parseFloat(newDishPrice);
       if (isNaN(priceNum) || priceNum <= 0) return alert("გთხოვთ მიუთითოთ კერძის ფასი!");
@@ -1475,7 +1551,7 @@ function AdminDashboard({
     formData.append("desc_en", newDishDescEn.trim());
     formData.append("desc_ru", newDishDescRu.trim());
     formData.append("price", priceVal);
-    if (pricesArray) {
+    if (pricesArray && pricesArray.length > 0) {
       formData.append("prices", JSON.stringify(pricesArray));
     }
     formData.append("category", newDishCat);
@@ -1495,7 +1571,8 @@ function AdminDashboard({
       const createdDish = await response.json();
       const dishObj = {
         ...createdDish,
-        id: createdDish.id || createdDish._id
+        id: createdDish.id || createdDish._id,
+        prices: (pricesArray && pricesArray.length > 0) ? pricesArray : (createdDish.prices || [])
       };
 
       setAllItems(prev => [...prev, dishObj]);
@@ -1507,6 +1584,7 @@ function AdminDashboard({
       setNewDishDescEn("");
       setNewDishDescRu("");
       setNewDishPrice("");
+      setNewDishVolumePrices({});
       setNewDishImageFile(null);
       setNewDishImagePreview("");
       // Try to reset file input via standard query selector or key reset
@@ -1587,59 +1665,76 @@ function AdminDashboard({
     }
   };
 
-  const moveCategory = async (index, direction) => {
-    const newIndex = index + direction;
-    if (newIndex < 0 || newIndex >= categoryOrder.length) return;
+  const handleReorderCategory = async (fromIdx, toIdx) => {
+    if (fromIdx === toIdx || fromIdx < 0 || toIdx < 0 || toIdx >= categoryOrder.length) return;
 
-    const newOrder = [...categoryOrder];
-    const temp = newOrder[index];
-    newOrder[index] = newOrder[newIndex];
-    newOrder[newIndex] = temp;
+    const items = Array.from(categoryOrder);
+    const [moved] = items.splice(fromIdx, 1);
+    items.splice(toIdx, 0, moved);
 
-    setCategoryOrder(newOrder);
+    setCategoryOrder(items);
 
     try {
       const response = await fetch(`${API_URL}/api/categories/reorder`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: newOrder, order: newOrder }),
+        body: JSON.stringify({ ids: items, order: items }),
         credentials: "include"
       });
       if (!response.ok) {
         throw new Error("კატეგორიების რიგითობის განახლება ვერ მოხერხდა");
       }
     } catch (err) {
+      console.error(err);
       alert(`შეცდომა: ${err.message}`);
-      // Revert if error
       setCategoryOrder(categoryOrder);
     }
+  };
+
+  const moveCategory = (index, direction) => {
+    handleReorderCategory(index, index + direction);
   };
 
   const categoryDishes = allItems
     .filter(dish => dish.category === selectedSortCategory)
     .sort((a, b) => {
-      const idxA = dishOrder.indexOf(a.id);
-      const idxB = dishOrder.indexOf(b.id);
+      const idxA = dishOrder.indexOf(a.id || a._id);
+      const idxB = dishOrder.indexOf(b.id || b._id);
       return (idxA === -1 ? 999999 : idxA) - (idxB === -1 ? 999999 : idxB);
     });
 
-  const moveDish = async (dishId, direction) => {
-    const indexInOrder = dishOrder.indexOf(dishId);
-    if (indexInOrder === -1) return;
-    const currentFilteredIndex = categoryDishes.findIndex(d => d.id === dishId);
-    const targetFilteredIndex = currentFilteredIndex + direction;
-    if (targetFilteredIndex < 0 || targetFilteredIndex >= categoryDishes.length) return;
+  const handleReorderDish = async (fromFilteredIdx, toFilteredIdx) => {
+    if (fromFilteredIdx === toFilteredIdx || fromFilteredIdx < 0 || toFilteredIdx < 0 || toFilteredIdx >= categoryDishes.length) return;
 
-    const targetDishId = categoryDishes[targetFilteredIndex].id;
-    const targetIndexInOrder = dishOrder.indexOf(targetDishId);
-    if (targetIndexInOrder === -1) return;
+    const currentList = Array.from(categoryDishes);
+    const [movedDish] = currentList.splice(fromFilteredIdx, 1);
+    currentList.splice(toFilteredIdx, 0, movedDish);
 
-    const newOrder = [...dishOrder];
-    const temp = newOrder[indexInOrder];
-    newOrder[indexInOrder] = newOrder[targetIndexInOrder];
-    newOrder[targetIndexInOrder] = temp;
+    const categoryDishIds = new Set(currentList.map(d => d.id || d._id));
+    const newOrder = [];
+    let categoryInserted = false;
+
+    for (const id of dishOrder) {
+      if (categoryDishIds.has(id)) {
+        if (!categoryInserted) {
+          currentList.forEach(d => newOrder.push(d.id || d._id));
+          categoryInserted = true;
+        }
+      } else {
+        newOrder.push(id);
+      }
+    }
+    if (!categoryInserted) {
+      currentList.forEach(d => newOrder.push(d.id || d._id));
+    }
+
+    const updatedAllItems = allItems.map(item => {
+      const orderIdx = newOrder.indexOf(item.id || item._id);
+      return orderIdx !== -1 ? { ...item, order: orderIdx } : item;
+    });
 
     setDishOrder(newOrder);
+    setAllItems(updatedAllItems);
 
     try {
       const response = await fetch(`${API_URL}/api/dishes/reorder`, {
@@ -1652,10 +1747,16 @@ function AdminDashboard({
         throw new Error("კერძების რიგითობის განახლება ვერ მოხერხდა");
       }
     } catch (err) {
+      console.error(err);
       alert(`შეცდომა: ${err.message}`);
-      // Revert if error
       setDishOrder(dishOrder);
     }
+  };
+
+  const moveDish = (dishId, direction) => {
+    const currentFilteredIndex = categoryDishes.findIndex(d => (d.id === dishId || d._id === dishId));
+    if (currentFilteredIndex === -1) return;
+    handleReorderDish(currentFilteredIndex, currentFilteredIndex + direction);
   };
 
   const bannerImages = [
@@ -2297,7 +2398,7 @@ function AdminDashboard({
                 <div style={{ fontSize: 11, color: "#8a6040" }}>აჩვენებს ღილაკს სტუმრებისთვის შეფასების დასაწერად.</div>
               </div>
               <button
-                onClick={() => setReviewFormEnabled(!reviewFormEnabled)}
+                onClick={handleToggleReviewForm}
                 style={{
                   background: reviewFormEnabled ? "#4ade80" : "#4a3018",
                   color: reviewFormEnabled ? "#000" : "#fff",
@@ -2396,17 +2497,69 @@ function AdminDashboard({
             
             {/* Category sorting section */}
             <div style={{ marginBottom: 32 }}>
-              <h4 style={{ margin: "0 0 12px", fontFamily: "'Georgia', serif", fontSize: 16 }}>კატეგორიების რიგითობა</h4>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 260, overflowY: "auto", paddingRight: 6 }}>
+              <h4 style={{ margin: "0 0 12px", fontFamily: "'Georgia', serif", fontSize: 16, display: "flex", alignItems: "center", gap: 8 }}>
+                <span>📁 კატეგორიების რიგითობა</span>
+                <span style={{ fontSize: 11, color: "#8a6040", fontWeight: "normal" }}>(გადაათრიეთ ან გამოიყენეთ ისრები)</span>
+              </h4>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 320, overflowY: "auto", paddingRight: 6 }}>
                 {categoryOrder.map((cat, idx) => {
                   const catLabelObj = categoryLabels[cat] || { ka: cat, en: cat, ru: cat };
+                  const isDragging = draggedCatIdx === idx;
+                  const isDragOver = dragOverCatIdx === idx;
+
                   return (
-                    <div key={cat} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(180,120,40,0.12)", borderRadius: 10, padding: "8px 12px" }}>
-                      <span style={{ fontSize: 13, fontWeight: "bold" }}>{catLabelObj.ka || cat}</span>
-                      <div style={{ display: "flex", gap: 6 }}>
+                    <div
+                      key={cat}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData("text/plain", idx.toString());
+                        e.dataTransfer.effectAllowed = "move";
+                        setDraggedCatIdx(idx);
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                        if (dragOverCatIdx !== idx) setDragOverCatIdx(idx);
+                      }}
+                      onDragLeave={() => {
+                        if (dragOverCatIdx === idx) setDragOverCatIdx(null);
+                      }}
+                      onDragEnd={() => {
+                        setDraggedCatIdx(null);
+                        setDragOverCatIdx(null);
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const sourceIdx = draggedCatIdx !== null ? draggedCatIdx : parseInt(e.dataTransfer.getData("text/plain"), 10);
+                        setDraggedCatIdx(null);
+                        setDragOverCatIdx(null);
+                        if (!isNaN(sourceIdx)) {
+                          handleReorderCategory(sourceIdx, idx);
+                        }
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        background: isDragging ? "rgba(245,158,11,0.15)" : isDragOver ? "rgba(245,158,11,0.25)" : "rgba(0,0,0,0.2)",
+                        border: isDragOver ? "1.5px dashed #f0c060" : "1px solid rgba(180,120,40,0.12)",
+                        borderRadius: 10,
+                        padding: "8px 12px",
+                        cursor: "grab",
+                        opacity: isDragging ? 0.5 : 1,
+                        transition: "background 0.2s, border 0.2s, opacity 0.2s",
+                        userSelect: "none"
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ color: "#8a6040", fontSize: 16, lineHeight: 1, userSelect: "none" }}>⠿</span>
+                        <span style={{ fontSize: 13, fontWeight: "bold" }}>{catLabelObj.ka || cat}</span>
+                      </div>
+                      <div style={{ display: "flex", gap: 6 }} onClick={e => e.stopPropagation()}>
                         <button
                           onClick={() => moveCategory(idx, -1)}
                           disabled={idx === 0}
+                          title="ზემოთ ატანა"
                           style={{
                             background: "rgba(180,120,40,0.1)", border: "1px solid rgba(180,120,40,0.3)",
                             borderRadius: 6, color: idx === 0 ? "#4a3018" : "#f0c060",
@@ -2418,6 +2571,7 @@ function AdminDashboard({
                         <button
                           onClick={() => moveCategory(idx, 1)}
                           disabled={idx === categoryOrder.length - 1}
+                          title="ქვემოთ ჩამოტანა"
                           style={{
                             background: "rgba(180,120,40,0.1)", border: "1px solid rgba(180,120,40,0.3)",
                             borderRadius: 6, color: idx === categoryOrder.length - 1 ? "#4a3018" : "#f0c060",
@@ -2455,7 +2609,10 @@ function AdminDashboard({
 
             {/* Dishes sorting section */}
             <div>
-              <h4 style={{ margin: "0 0 12px", fontFamily: "'Georgia', serif", fontSize: 16 }}>კერძების რიგითობა</h4>
+              <h4 style={{ margin: "0 0 12px", fontFamily: "'Georgia', serif", fontSize: 16, display: "flex", alignItems: "center", gap: 8 }}>
+                <span>🍽️ კერძების რიგითობა</span>
+                <span style={{ fontSize: 11, color: "#8a6040", fontWeight: "normal" }}>(გადაათრიეთ ან გამოიყენეთ ისრები)</span>
+              </h4>
               
               <div style={{ marginBottom: 24, display: "flex", flexDirection: "column", gap: 6, overflow: "visible" }}>
                 <label style={{ fontSize: 12, color: "#8a6040", textTransform: "uppercase", fontWeight: "bold" }}>აირჩიეთ კატეგორია</label>
@@ -2479,19 +2636,68 @@ function AdminDashboard({
                 </select>
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 260, overflowY: "auto", paddingRight: 6 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 320, overflowY: "auto", paddingRight: 6 }}>
                 {categoryDishes.length === 0 ? (
                   <p style={{ color: "#8a6040", fontSize: 12, textAlign: "center", margin: "20px 0" }}>ამ კატეგორიაში კერძები არ არის.</p>
                 ) : (
                   categoryDishes.map((dish, idx) => {
                     const dishName = dish.name_ka || dish.name_en || "";
+                    const isDragging = draggedDishIdx === idx;
+                    const isDragOver = dragOverDishIdx === idx;
+
                     return (
-                      <div key={dish.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(180,120,40,0.12)", borderRadius: 10, padding: "8px 12px" }}>
-                        <span style={{ fontSize: 13, color: "#cbd5e1" }}>{dishName}</span>
-                        <div style={{ display: "flex", gap: 6 }}>
+                      <div
+                        key={dish.id || dish._id}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData("text/plain", idx.toString());
+                          e.dataTransfer.effectAllowed = "move";
+                          setDraggedDishIdx(idx);
+                        }}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = "move";
+                          if (dragOverDishIdx !== idx) setDragOverDishIdx(idx);
+                        }}
+                        onDragLeave={() => {
+                          if (dragOverDishIdx === idx) setDragOverDishIdx(null);
+                        }}
+                        onDragEnd={() => {
+                          setDraggedDishIdx(null);
+                          setDragOverDishIdx(null);
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          const sourceIdx = draggedDishIdx !== null ? draggedDishIdx : parseInt(e.dataTransfer.getData("text/plain"), 10);
+                          setDraggedDishIdx(null);
+                          setDragOverDishIdx(null);
+                          if (!isNaN(sourceIdx)) {
+                            handleReorderDish(sourceIdx, idx);
+                          }
+                        }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          background: isDragging ? "rgba(245,158,11,0.15)" : isDragOver ? "rgba(245,158,11,0.25)" : "rgba(0,0,0,0.2)",
+                          border: isDragOver ? "1.5px dashed #f0c060" : "1px solid rgba(180,120,40,0.12)",
+                          borderRadius: 10,
+                          padding: "8px 12px",
+                          cursor: "grab",
+                          opacity: isDragging ? 0.5 : 1,
+                          transition: "background 0.2s, border 0.2s, opacity 0.2s",
+                          userSelect: "none"
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <span style={{ color: "#8a6040", fontSize: 16, lineHeight: 1, userSelect: "none" }}>⠿</span>
+                          <span style={{ fontSize: 13, color: "#cbd5e1" }}>{dishName}</span>
+                        </div>
+                        <div style={{ display: "flex", gap: 6 }} onClick={e => e.stopPropagation()}>
                           <button
                             onClick={() => moveDish(dish.id, -1)}
                             disabled={idx === 0}
+                            title="ზემოთ ატანა"
                             style={{
                               background: "rgba(180,120,40,0.1)", border: "1px solid rgba(180,120,40,0.3)",
                               borderRadius: 6, color: idx === 0 ? "#4a3018" : "#f0c060",
@@ -2503,6 +2709,7 @@ function AdminDashboard({
                           <button
                             onClick={() => moveDish(dish.id, 1)}
                             disabled={idx === categoryDishes.length - 1}
+                            title="ქვემოთ ჩამოტანა"
                             style={{
                               background: "rgba(180,120,40,0.1)", border: "1px solid rgba(180,120,40,0.3)",
                               borderRadius: 6, color: idx === categoryDishes.length - 1 ? "#4a3018" : "#f0c060",
@@ -2729,7 +2936,7 @@ function AdminDashboard({
                     <select
                       value={newDishCat}
                       onChange={e => setNewDishCat(e.target.value)}
-                      style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13, height: 41 }}
+                      style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: "8px 10px", color: "#f0c060", outline: "none", fontSize: 13, height: 41, boxSizing: "border-box" }}
                     >
                       {categoryOrder.map(cat => {
                         const labelObj = categoryLabels[cat] || { ka: cat };
@@ -2757,14 +2964,13 @@ function AdminDashboard({
                                   <input
                                     type="number"
                                     step="0.01"
-                                    required
                                     placeholder="5.00"
                                     value={newDishVolumePrices[size] || ""}
                                     onChange={e => {
                                       const val = e.target.value;
                                       setNewDishVolumePrices(prev => ({ ...prev, [size]: val }));
                                     }}
-                                    style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 8, color: "#f0c060", outline: "none", fontSize: 13 }}
+                                    style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: "8px 10px", color: "#f0c060", outline: "none", fontSize: 13, boxSizing: "border-box" }}
                                   />
                                 </div>
                               ))}
@@ -2782,6 +2988,7 @@ function AdminDashboard({
                             placeholder="12.50"
                             value={newDishPrice}
                             onChange={e => setNewDishPrice(e.target.value)}
+                            style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: "8px 10px", color: "#f0c060", outline: "none", fontSize: 13, height: 41, boxSizing: "border-box" }}
                           />
                         </div>
                       );
@@ -3120,7 +3327,7 @@ function AdminDashboard({
                   <select
                     value={editDishCat}
                     onChange={e => setEditDishCat(e.target.value)}
-                    style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13, height: 41 }}
+                    style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: "8px 10px", color: "#f0c060", outline: "none", fontSize: 13, height: 41, boxSizing: "border-box" }}
                   >
                     {categoryOrder.map(cat => {
                       const labelObj = categoryLabels[cat] || { ka: cat };
@@ -3148,14 +3355,13 @@ function AdminDashboard({
                                 <input
                                   type="number"
                                   step="0.01"
-                                  required
                                   placeholder="5.00"
                                   value={editDishVolumePrices[size] || ""}
                                   onChange={e => {
                                     const val = e.target.value;
                                     setEditDishVolumePrices(prev => ({ ...prev, [size]: val }));
                                   }}
-                                  style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 8, color: "#f0c060", outline: "none", fontSize: 13 }}
+                                  style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: "8px 10px", color: "#f0c060", outline: "none", fontSize: 13, boxSizing: "border-box" }}
                                 />
                               </div>
                             ))}
@@ -3173,7 +3379,7 @@ function AdminDashboard({
                           placeholder="12.50"
                           value={editDishPrice}
                           onChange={e => setEditDishPrice(e.target.value)}
-                          style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: 10, color: "#f0c060", outline: "none", fontSize: 13 }}
+                          style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: "8px 10px", color: "#f0c060", outline: "none", fontSize: 13, height: 41, boxSizing: "border-box" }}
                         />
                       </div>
                     );
@@ -3624,6 +3830,11 @@ export default function StaroPub() {
         if (typeof settingsMap.callWaiterEnabled === 'boolean') setCallWaiterEnabled(settingsMap.callWaiterEnabled);
         if (typeof settingsMap.requestBillEnabled === 'boolean') setRequestBillEnabled(settingsMap.requestBillEnabled);
         if (typeof settingsMap.isCartEnabled === 'boolean') setIsCartEnabled(settingsMap.isCartEnabled);
+        if (typeof settingsMap.reviewFormEnabled === 'boolean') {
+          setReviewFormEnabled(settingsMap.reviewFormEnabled);
+        } else if (typeof settingsMap.isFeedbackEnabled === 'boolean') {
+          setReviewFormEnabled(settingsMap.isFeedbackEnabled);
+        }
         if (settingsMap.bannerSettings) setBannerSettings(settingsMap.bannerSettings);
         if (typeof settingsMap.customMenuEnabled === 'boolean') setCustomMenuEnabled(settingsMap.customMenuEnabled);
       }

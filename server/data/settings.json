@@ -9,7 +9,7 @@
   },
   {
     "key": "isCartEnabled",
-    "value": false
+    "value": true
   },
   {
     "key": "bannerSettings",
@@ -23,5 +23,13 @@
   {
     "key": "customMenuEnabled",
     "value": false
+  },
+  {
+    "key": "reviewFormEnabled",
+    "value": true
+  },
+  {
+    "key": "isFeedbackEnabled",
+    "value": true
   }
 ]

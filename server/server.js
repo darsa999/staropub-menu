@@ -660,6 +660,40 @@ const updateCategoryHandler = async (req, res) => {
   }
 };
 
+// REORDER Categories (PROTECTED - must precede /api/categories/:id)
+app.put('/api/categories/reorder', protect, async (req, res) => {
+  try {
+    const ids = req.body.ids || req.body.order;
+    if (!Array.isArray(ids)) {
+      return res.status(400).json({ error: "ids must be an array" });
+    }
+
+    if (useLocalFallback) {
+      const categories = readJSON(categoriesFile);
+      categories.forEach(cat => {
+        const newIdx = ids.indexOf(cat.id || cat._id);
+        if (newIdx !== -1) cat.order = newIdx;
+      });
+      categories.sort((a, b) => (a.order || 0) - (b.order || 0));
+      writeJSON(categoriesFile, categories);
+      return res.json({ message: "Categories order updated successfully" });
+    }
+
+    const bulkOps = ids.map((id, index) => ({
+      updateOne: {
+        filter: { id },
+        update: { $set: { order: index } }
+      }
+    }));
+    if (bulkOps.length > 0) {
+      await Category.bulkWrite(bulkOps);
+    }
+    res.json({ message: "Categories order updated successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.put('/api/categories/:id', protect, upload.single('image'), updateCategoryHandler);
 app.patch('/api/categories/:id', protect, upload.single('image'), updateCategoryHandler);
 
@@ -683,33 +717,6 @@ app.delete('/api/categories/:id', protect, async (req, res) => {
     await Category.findOneAndDelete({ id });
     await Dish.deleteMany({ category: id });
     res.json({ message: "Category and associated dishes deleted successfully" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// REORDER Categories (PROTECTED)
-app.put('/api/categories/reorder', protect, async (req, res) => {
-  try {
-    const { ids } = req.body;
-    if (!Array.isArray(ids)) {
-      return res.status(400).json({ error: "ids must be an array" });
-    }
-
-    if (useLocalFallback) {
-      const categories = readJSON(categoriesFile);
-      categories.forEach(cat => {
-        const newIdx = ids.indexOf(cat.id);
-        if (newIdx !== -1) cat.order = newIdx;
-      });
-      writeJSON(categoriesFile, categories);
-      return res.json({ message: "Categories order updated successfully" });
-    }
-
-    for (let i = 0; i < ids.length; i++) {
-      await Category.findOneAndUpdate({ id: ids[i] }, { order: i });
-    }
-    res.json({ message: "Categories order updated successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -856,6 +863,52 @@ const updateDishHandler = async (req, res) => {
   }
 };
 
+// REORDER Dishes (PROTECTED - must precede /api/dishes/:id)
+app.put('/api/dishes/reorder', protect, async (req, res) => {
+  try {
+    const ids = req.body.ids || req.body.order;
+    if (!Array.isArray(ids)) {
+      return res.status(400).json({ error: "ids must be an array" });
+    }
+
+    if (useLocalFallback) {
+      const dishes = readJSON(dishesFile);
+      dishes.forEach(dish => {
+        const newIdx = ids.indexOf(dish.id || dish._id);
+        if (newIdx !== -1) dish.order = newIdx;
+      });
+      dishes.sort((a, b) => (a.order || 0) - (b.order || 0));
+      writeJSON(dishesFile, dishes);
+      return res.json({ message: "Dishes order updated successfully" });
+    }
+
+    const bulkOps = [];
+    ids.forEach((id, index) => {
+      if (mongoose.Types.ObjectId.isValid(id)) {
+        bulkOps.push({
+          updateOne: {
+            filter: { _id: id },
+            update: { $set: { order: index } }
+          }
+        });
+      } else {
+        bulkOps.push({
+          updateOne: {
+            filter: { id: id },
+            update: { $set: { order: index } }
+          }
+        });
+      }
+    });
+    if (bulkOps.length > 0) {
+      await Dish.bulkWrite(bulkOps);
+    }
+    res.json({ message: "Dishes order updated successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.put('/api/dishes/:id', protect, upload.single('image'), updateDishHandler);
 app.patch('/api/dishes/:id', protect, upload.single('image'), updateDishHandler);
 app.put('/api/menu/:id', protect, upload.single('image'), updateDishHandler);
@@ -880,35 +933,6 @@ app.delete('/api/dishes/:id', protect, async (req, res) => {
   }
 });
 
-// REORDER Dishes (PROTECTED)
-app.put('/api/dishes/reorder', protect, async (req, res) => {
-  try {
-    const { ids } = req.body;
-    if (!Array.isArray(ids)) {
-      return res.status(400).json({ error: "ids must be an array" });
-    }
-
-    if (useLocalFallback) {
-      const dishes = readJSON(dishesFile);
-      dishes.forEach(dish => {
-        const newIdx = ids.indexOf(dish.id);
-        if (newIdx !== -1) dish.order = newIdx;
-      });
-      writeJSON(dishesFile, dishes);
-      return res.json({ message: "Dishes order updated successfully" });
-    }
-
-    for (let i = 0; i < ids.length; i++) {
-      if (mongoose.Types.ObjectId.isValid(ids[i])) {
-        await Dish.findByIdAndUpdate(ids[i], { order: i });
-      }
-    }
-    res.json({ message: "Dishes order updated successfully" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 // ─── Settings Endpoints ──────────────────────────────────────────────────
 
 // GET Settings
@@ -917,7 +941,9 @@ app.get('/api/settings', async (req, res) => {
     if (useLocalFallback) {
       const settingsList = readJSON(settingsFile);
       const settingsMap = {
-        isCartEnabled: true
+        isCartEnabled: true,
+        reviewFormEnabled: true,
+        isFeedbackEnabled: true
       };
       if (Array.isArray(settingsList)) {
         settingsList.forEach(s => { settingsMap[s.key] = s.value; });
@@ -925,16 +951,28 @@ app.get('/api/settings', async (req, res) => {
       if (typeof settingsMap.isCartEnabled !== 'boolean') {
         settingsMap.isCartEnabled = true;
       }
+      if (typeof settingsMap.reviewFormEnabled === 'boolean') {
+        settingsMap.isFeedbackEnabled = settingsMap.reviewFormEnabled;
+      } else if (typeof settingsMap.isFeedbackEnabled === 'boolean') {
+        settingsMap.reviewFormEnabled = settingsMap.isFeedbackEnabled;
+      }
       return res.json(settingsMap);
     }
 
     const settingsList = await Setting.find();
     const settingsMap = {
-      isCartEnabled: true
+      isCartEnabled: true,
+      reviewFormEnabled: true,
+      isFeedbackEnabled: true
     };
     settingsList.forEach(s => { settingsMap[s.key] = s.value; });
     if (typeof settingsMap.isCartEnabled !== 'boolean') {
       settingsMap.isCartEnabled = true;
+    }
+    if (typeof settingsMap.reviewFormEnabled === 'boolean') {
+      settingsMap.isFeedbackEnabled = settingsMap.reviewFormEnabled;
+    } else if (typeof settingsMap.isFeedbackEnabled === 'boolean') {
+      settingsMap.reviewFormEnabled = settingsMap.isFeedbackEnabled;
     }
     res.json(settingsMap);
   } catch (err) {
@@ -1012,6 +1050,12 @@ const updateSettingsHandler = async (req, res) => {
     const settingsObj = req.body;
     if (!settingsObj || typeof settingsObj !== 'object') {
       return res.status(400).json({ error: "Invalid settings object" });
+    }
+
+    if (typeof settingsObj.reviewFormEnabled === 'boolean' && settingsObj.isFeedbackEnabled === undefined) {
+      settingsObj.isFeedbackEnabled = settingsObj.reviewFormEnabled;
+    } else if (typeof settingsObj.isFeedbackEnabled === 'boolean' && settingsObj.reviewFormEnabled === undefined) {
+      settingsObj.reviewFormEnabled = settingsObj.isFeedbackEnabled;
     }
 
     // Process nested images if base64 or temporary
