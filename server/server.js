@@ -799,6 +799,7 @@ const updateDishHandler = async (req, res) => {
   try {
     const { id } = req.params;
     const { name_ka, name_en, name_ru, desc_ka, desc_en, desc_ru, price, category, image, order } = req.body;
+    const categoryToSet = category !== undefined ? category : req.body.categoryId;
     let prices = req.body.prices;
     if (typeof prices === 'string') {
       try { prices = JSON.parse(prices); } catch (e) { /* keep as string/ignore */ }
@@ -825,7 +826,7 @@ const updateDishHandler = async (req, res) => {
       if (desc_ru !== undefined) dishes[dishIndex].desc_ru = desc_ru;
       if (price !== undefined) dishes[dishIndex].price = price;
       if (prices !== undefined) dishes[dishIndex].prices = Array.isArray(prices) ? prices : [];
-      if (category !== undefined) dishes[dishIndex].category = category;
+      if (categoryToSet !== undefined) dishes[dishIndex].category = categoryToSet;
       if (order !== undefined) dishes[dishIndex].order = Number(order);
       if (imageUrl !== undefined) dishes[dishIndex].image = imageUrl;
 
@@ -852,7 +853,7 @@ const updateDishHandler = async (req, res) => {
     if (desc_ru !== undefined) dish.desc_ru = desc_ru;
     if (price !== undefined) dish.price = price;
     if (prices !== undefined) dish.prices = Array.isArray(prices) ? prices : [];
-    if (category !== undefined) dish.category = category;
+    if (categoryToSet !== undefined) dish.category = categoryToSet;
     if (order !== undefined) dish.order = Number(order);
     if (imageUrl !== undefined) dish.image = imageUrl;
 

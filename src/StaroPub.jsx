@@ -1251,6 +1251,37 @@ function AdminDashboard({
   const [editDishImagePreview, setEditDishImagePreview] = useState("");
   const [isUpdatingDish, setIsUpdatingDish] = useState(false);
 
+  // Standardized categories list for form selectors
+  const categories = React.useMemo(() => {
+    const rawKeys = Array.from(new Set([
+      ...categoryOrder,
+      ...dbCategories.map(c => c.id || c._id).filter(Boolean),
+      ...Object.keys(categoryLabels || {}),
+      ...Object.keys(INITIAL_CATEGORY_LABELS),
+      ...(editingDish?.category ? [editingDish.category] : []),
+      ...(editingDish?.categoryId ? [editingDish.categoryId] : []),
+      ...(editDishCat ? [editDishCat] : [])
+    ])).filter(Boolean);
+
+    return rawKeys.map(key => {
+      const catObj = dbCategories.find(c => (c.id || c._id) === key) || {};
+      const labelObj = (categoryLabels && categoryLabels[key]) || INITIAL_CATEGORY_LABELS[key] || {};
+      const nameKa = labelObj.ka || catObj.name_ka || catObj.name || key;
+      const nameEn = labelObj.en || catObj.name_en || key;
+      const nameRu = labelObj.ru || catObj.name_ru || key;
+      return {
+        id: key,
+        key: key,
+        title: nameKa,
+        name: {
+          ka: nameKa,
+          en: nameEn,
+          ru: nameRu
+        }
+      };
+    });
+  }, [categoryOrder, dbCategories, categoryLabels, editingDish, editDishCat]);
+
   const openEditCategory = (catKey) => {
     const catObj = dbCategories.find(c => (c.id || c._id) === catKey) || {};
     const labels = categoryLabels[catKey] || {};
@@ -1327,18 +1358,42 @@ function AdminDashboard({
 
   const openEditDish = (dish) => {
     if (!dish) return;
-    setEditingDish(dish);
+    const currentCat = dish.category || dish.categoryId || "";
+    const allKnownCats = Array.from(new Set([
+      ...categoryOrder,
+      ...dbCategories.map(c => c.id || c._id).filter(Boolean),
+      ...Object.keys(categoryLabels || {}),
+      ...Object.keys(INITIAL_CATEGORY_LABELS)
+    ]));
+    const matchedCat = allKnownCats.find(c => c.toLowerCase() === currentCat.toLowerCase()) || currentCat || (allKnownCats.length > 0 ? allKnownCats[0] : "");
+    setEditingDish({
+      ...dish,
+      category: matchedCat,
+      categoryId: matchedCat
+    });
     setEditDishNameKa(dish.name_ka || "");
     setEditDishNameEn(dish.name_en || "");
     setEditDishNameRu(dish.name_ru || "");
     setEditDishDescKa(dish.desc_ka || "");
     setEditDishDescEn(dish.desc_en || "");
     setEditDishDescRu(dish.desc_ru || "");
-    setEditDishCat(dish.category || (categoryOrder.length > 0 ? categoryOrder[0] : ""));
+    setEditDishCat(matchedCat);
     setEditDishImageFile(null);
     setEditDishImagePreview(dish.image || "");
 
-    const rawPrice = dish.price ? String(dish.price).replace(/[^\d.]/g, "") : "";
+    let rawPrice = "";
+    if (dish.price) {
+      if (String(dish.price).includes("|")) {
+        if (Array.isArray(dish.prices) && dish.prices.length > 0 && dish.prices[0].price !== undefined) {
+          rawPrice = String(dish.prices[0].price);
+        } else {
+          const match = String(dish.price).match(/[\d.]+/);
+          rawPrice = match ? match[0] : "";
+        }
+      } else {
+        rawPrice = String(dish.price).replace(/[^\d.]/g, "");
+      }
+    }
     setEditDishPrice(rawPrice);
 
     const volPrices = {};
@@ -1361,7 +1416,8 @@ function AdminDashboard({
     e.preventDefault();
     if (!editDishNameKa.trim()) return alert("გთხოვთ მიუთითოთ კერძის დასახელება ქართულად!");
 
-    const targetSizes = getVolumeSizesForDish(editDishCat, editDishNameKa, categoryLabels, dbCategories);
+    const targetCategory = editingDish?.category || editingDish?.categoryId || editDishCat;
+    const targetSizes = getVolumeSizesForDish(targetCategory, editDishNameKa, categoryLabels, dbCategories);
 
     let priceVal = "";
     let pricesArray = null;
@@ -1405,7 +1461,8 @@ function AdminDashboard({
     } else {
       formData.append("prices", JSON.stringify([]));
     }
-    formData.append("category", editDishCat || editingDish.category);
+    formData.append("category", targetCategory);
+    formData.append("categoryId", targetCategory);
     if (editDishImageFile) {
       formData.append("image", editDishImageFile);
     }
@@ -1421,9 +1478,11 @@ function AdminDashboard({
         throw new Error("კერძის განახლება ვერ მოხერხდა");
       }
       const updatedDish = await response.json();
+      const finalCategory = updatedDish.category || targetCategory;
       const formatted = {
         ...updatedDish,
         id: updatedDish.id || updatedDish._id || dishId,
+        category: finalCategory,
         prices: (pricesArray && pricesArray.length > 0) ? pricesArray : (updatedDish.prices || [])
       };
 
@@ -3321,27 +3380,45 @@ function AdminDashboard({
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <label style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>კატეგორია</label>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                <div className="flex flex-col gap-1" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <label className="text-xs text-amber-200/70" style={{ fontSize: 11, color: "#8a6040", textTransform: "uppercase" }}>
+                    კატეგორია
+                  </label>
                   <select
-                    value={editDishCat}
-                    onChange={e => setEditDishCat(e.target.value)}
-                    style={{ background: "#141210", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: "8px 10px", color: "#f0c060", outline: "none", fontSize: 13, height: 41, boxSizing: "border-box" }}
+                    value={editingDish?.category || editingDish?.categoryId || editDishCat || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEditDishCat(val);
+                      setEditingDish(prev => prev ? { ...prev, category: val, categoryId: val } : prev);
+                    }}
+                    className="h-[41px] bg-[#141210] border border-[#2a2e3d] text-[#f0c060] rounded px-3 text-sm focus:outline-none"
+                    style={{
+                      height: 41,
+                      background: "#141210",
+                      border: "1px solid rgba(245, 158, 11, 0.2)",
+                      color: "#f0c060",
+                      borderRadius: 10,
+                      padding: "8px 10px",
+                      outline: "none",
+                      fontSize: 13,
+                      width: "100%",
+                      boxSizing: "border-box",
+                      colorScheme: "dark",
+                      cursor: "pointer"
+                    }}
                   >
-                    {categoryOrder.map(cat => {
-                      const labelObj = categoryLabels[cat] || { ka: cat };
-                      return (
-                        <option key={cat} value={cat}>
-                          {labelObj.ka || cat}
-                        </option>
-                      );
-                    })}
+                    {categories.map((cat) => (
+                      <option key={cat.id || cat.key} value={cat.id || cat.key} style={{ background: "#141210", color: "#f0c060" }}>
+                        {cat.name?.ka || cat.name || cat.title}
+                      </option>
+                    ))}
                   </select>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: 6 }}>
                   {(() => {
-                    const targetSizes = getVolumeSizesForDish(editDishCat, editDishNameKa, categoryLabels, dbCategories);
+                    const currentCategory = editingDish?.category || editingDish?.categoryId || editDishCat;
+                    const targetSizes = getVolumeSizesForDish(currentCategory, editDishNameKa, categoryLabels, dbCategories);
                     if (targetSizes && targetSizes.length > 0) {
                       return (
                         <div style={{ display: "flex", flexDirection: "column", gap: 6, background: "rgba(245,158,11,0.06)", padding: 10, borderRadius: 10, border: "1px solid rgba(245,158,11,0.2)" }}>
@@ -3597,7 +3674,7 @@ export default function StaroPub() {
   }, []);
 
   const [unavailableDishIds, setUnavailableDishIds] = useState([]);
-  const [categoryOrder, setCategoryOrder]             = useState([]);
+  const [categoryOrder, setCategoryOrder]             = useState(() => Object.keys(INITIAL_CATEGORY_LABELS));
   const [dishOrder, setDishOrder]                     = useState([]);
 
   // Cart and checkout states
