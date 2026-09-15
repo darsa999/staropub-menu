@@ -4083,7 +4083,9 @@ export default function StaroPub() {
           display: flex;
           flex-direction: column;
           align-items: stretch;
-          justify-content: flex-start;
+          justify-content: space-between;
+          height: 100%;
+          min-height: 260px;
         }
         .category-card:hover {
           transform: translateY(-8px) rotateX(4deg) rotateY(-4deg);
@@ -4455,138 +4457,197 @@ export default function StaroPub() {
                     }}>
                       {lang === "ka" ? "კატეგორიები" : lang === "ru" ? "Категории" : "Categories"}
                     </h2>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
-                      <style>{`
-                        .category-card-img-wrap {
-                          width: 100%;
-                          height: 140px;
-                          overflow: hidden;
-                          position: relative;
+                    <style>{`
+                      .categories-landing-grid {
+                        display: grid;
+                        grid-template-columns: repeat(1, 1fr);
+                        gap: 16px;
+                        width: 100%;
+                      }
+                      @media(min-width:500px) {
+                        .categories-landing-grid {
+                          grid-template-columns: repeat(2, 1fr) !important;
+                          gap: 20px !important;
                         }
-                        @media(min-width:640px) {
-                          .categories-landing-grid { grid-template-columns: repeat(3, 1fr) !important; }
-                          .category-card-img-wrap { height: 165px !important; }
+                      }
+                      @media(min-width:1024px) {
+                        .categories-landing-grid {
+                          grid-template-columns: repeat(3, 1fr) !important;
+                          gap: 24px !important;
                         }
-                        @media(min-width:1024px) {
-                          .categories-landing-grid { grid-template-columns: repeat(4, 1fr) !important; }
-                          .category-card-img-wrap { height: 185px !important; }
-                        }
-                      `}</style>
-                      <div className="categories-landing-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16, width: "100%", gridColumn: "span 2" }}>
-                        {categories.map(cat => {
-                          const labelObj = categoryLabels[cat] || { ka: cat, en: cat, ru: cat };
-                          const icon = categoryIcons[cat] || "🍽️";
-                          const count = allItems.filter(item => item.category === cat && !unavailableDishIds.includes(item.id)).length;
-                          
-                          const catObj = dbCategories.find(c => (c.id || c._id) === cat);
-                          const catImage = catObj?.image;
-                          const firstDishWithImage = allItems.find(item => item.category === cat && !unavailableDishIds.includes(item.id) && item.image);
+                      }
+                      .category-card-img-wrap {
+                        width: 100%;
+                        aspect-ratio: 16 / 10;
+                        min-height: 200px;
+                        overflow: hidden;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                      }
+                      @media(min-width:500px) {
+                        .category-card-img-wrap { min-height: 190px !important; }
+                      }
+                      @media(min-width:768px) {
+                        .category-card-img-wrap { min-height: 220px !important; }
+                      }
+                      @media(min-width:1024px) {
+                        .category-card-img-wrap { min-height: 240px !important; }
+                      }
+                    `}</style>
+                    <div className="categories-landing-grid">
+                      {categories.map(cat => {
+                        const labelObj = categoryLabels[cat] || { ka: cat, en: cat, ru: cat };
+                        const icon = categoryIcons[cat] || "🍽️";
+                        const count = allItems.filter(item => item.category === cat && !unavailableDishIds.includes(item.id)).length;
+                        
+                        const catObj = dbCategories.find(c => (c.id || c._id) === cat);
+                        const catImage = catObj?.image;
+                        const firstDishWithImage = allItems.find(item => item.category === cat && !unavailableDishIds.includes(item.id) && item.image);
 
-                          let imgSrc = "";
-                          if (catImage) {
-                            imgSrc = resolveImageSrc(catImage);
-                          } else if (firstDishWithImage) {
-                            imgSrc = resolveImageSrc(firstDishWithImage.image);
-                          }
+                        let imgSrc = "";
+                        if (catImage) {
+                          imgSrc = resolveImageSrc(catImage);
+                        } else if (firstDishWithImage) {
+                          imgSrc = resolveImageSrc(firstDishWithImage.image);
+                        }
 
-                          return (
-                            <div key={cat} onClick={() => scrollTab(cat)} className="category-card">
-                              {/* Expanded Top image or icon fallback */}
-                              <div className="category-card-img-wrap" style={{ borderBottom: t.cardBorder }}>
-                                {imgSrc ? (
-                                  <>
-                                    <img
-                                      src={imgSrc}
-                                      alt={labelObj[lang]}
-                                      style={{
-                                        width: "100%",
-                                        height: "100%",
-                                        objectFit: "cover",
-                                        transition: "transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1)"
-                                      }}
-                                      className="category-card-img"
-                                    />
-                                    <div style={{
-                                      position: "absolute", inset: 0, pointerEvents: "none",
-                                      background: "linear-gradient(180deg, transparent 65%, rgba(0,0,0,0.3) 100%)"
-                                    }} />
-                                  </>
-                                ) : (
+                        return (
+                          <div key={cat} onClick={() => scrollTab(cat)} className="category-card">
+                            {/* Expanded Top image or icon fallback */}
+                            <div className="category-card-img-wrap" style={{ borderBottom: t.cardBorder }}>
+                              {imgSrc ? (
+                                <>
+                                  <img
+                                    src={imgSrc}
+                                    alt={labelObj[lang]}
+                                    style={{
+                                      width: "100%",
+                                      height: "100%",
+                                      objectFit: "cover",
+                                      display: "block",
+                                      transition: "transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1)"
+                                    }}
+                                    className="category-card-img"
+                                  />
                                   <div style={{
-                                    width: "100%", height: "100%",
-                                    display: "flex", alignItems: "center", justifyContent: "center",
-                                    background: isDark ? "linear-gradient(135deg, rgba(30,41,59,0.8), rgba(15,23,42,0.6))" : "linear-gradient(135deg, rgba(240,235,225,0.9), rgba(225,215,200,0.7))"
-                                  }}>
-                                    <span style={{ fontSize: 44 }}>{icon}</span>
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Prominent Bottom text block */}
-                              <div style={{ padding: "14px 16px 16px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1 }}>
-                                <span style={{
-                                  color: t.cardName || t.brandName,
-                                  fontWeight: 700,
-                                  fontSize: 15,
-                                  lineHeight: 1.25,
-                                  textAlign: "center",
-                                  fontFamily: "'Georgia', serif",
-                                  textShadow: bgImage ? (isDark ? "0 2px 6px rgba(0,0,0,0.8)" : "0 1px 4px rgba(255,255,255,0.8)") : "none"
+                                    position: "absolute", inset: 0, pointerEvents: "none",
+                                    background: "linear-gradient(180deg, transparent 65%, rgba(0,0,0,0.3) 100%)"
+                                  }} />
+                                </>
+                              ) : (
+                                <div style={{
+                                  width: "100%", height: "100%",
+                                  display: "flex", alignItems: "center", justifyContent: "center",
+                                  background: isDark ? "linear-gradient(135deg, rgba(30,41,59,0.8), rgba(15,23,42,0.6))" : "linear-gradient(135deg, rgba(240,235,225,0.9), rgba(225,215,200,0.7))"
                                 }}>
-                                  {labelObj[lang]}
-                                </span>
-                                <span style={{
-                                  color: t.brandName,
-                                  fontSize: 11,
-                                  marginTop: 6,
-                                  fontWeight: 600,
-                                  background: isDark ? "rgba(245,158,11,0.12)" : "rgba(180,120,40,0.12)",
-                                  border: `1px solid ${isDark ? "rgba(245,158,11,0.25)" : "rgba(180,120,40,0.25)"}`,
-                                  borderRadius: 12,
-                                  padding: "2px 10px"
-                                }}>
-                                  {count} {lang === "ka" ? "კერძი" : lang === "ru" ? "блюд" : "items"}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                        {/* Custom Selection Grid Item */}
-                        {customMenuEnabled && selectedDishIds.length > 0 && (
-                          <div
-                            onClick={() => setActiveTab("selection")}
-                            className="category-card"
-                            style={{
-                              border: `1.5px dashed ${t.brandName}`,
-                              background: "rgba(245,158,11,0.04)"
-                            }}
-                          >
-                            {/* Top Selection Icon Wrapper */}
-                            <div className="category-card-img-wrap" style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(245,158,11,0.08)", borderBottom: t.cardBorder }}>
-                              <span style={{ fontSize: 44, animation: "badgePulse 2s infinite" }}>🌟</span>
+                                  <span style={{ fontSize: 52 }}>{icon}</span>
+                                </div>
+                              )}
                             </div>
 
-                            {/* Bottom Selection Title and Count */}
-                            <div style={{ padding: "14px 16px 16px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1 }}>
-                              <span style={{ color: t.brandName, fontWeight: 700, fontSize: 15, lineHeight: 1.25, textAlign: "center", fontFamily: "'Georgia', serif" }}>
-                                {lang === "ka" ? "ჩემი არჩევანი" : lang === "ru" ? "Мой выбор" : "My Selection"}
+                            {/* Prominent Bottom text block */}
+                            <div style={{
+                              padding: "16px 18px",
+                              display: "flex",
+                              flexDirection: "column",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              flex: 1,
+                              minHeight: 88,
+                              gap: 10,
+                              boxSizing: "border-box"
+                            }}>
+                              <span style={{
+                                color: t.cardName || t.brandName,
+                                fontWeight: 700,
+                                fontSize: 16,
+                                lineHeight: 1.3,
+                                textAlign: "center",
+                                fontFamily: "'Georgia', serif",
+                                textShadow: bgImage ? (isDark ? "0 2px 6px rgba(0,0,0,0.8)" : "0 1px 4px rgba(255,255,255,0.8)") : "none",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                flex: 1
+                              }}>
+                                {labelObj[lang]}
                               </span>
                               <span style={{
                                 color: t.brandName,
                                 fontSize: 11,
-                                marginTop: 6,
                                 fontWeight: 600,
                                 background: isDark ? "rgba(245,158,11,0.12)" : "rgba(180,120,40,0.12)",
                                 border: `1px solid ${isDark ? "rgba(245,158,11,0.25)" : "rgba(180,120,40,0.25)"}`,
                                 borderRadius: 12,
-                                padding: "2px 10px"
+                                padding: "3px 12px",
+                                whiteSpace: "nowrap",
+                                letterSpacing: "0.2px"
                               }}>
-                                {selectedDishIds.length} {lang === "ka" ? "კერძი" : lang === "ru" ? "блюд" : "items"}
+                                {count} {lang === "ka" ? "კერძი" : lang === "ru" ? "блюд" : "items"}
                               </span>
                             </div>
                           </div>
-                        )}
-                      </div>
+                        );
+                      })}
+                      {/* Custom Selection Grid Item */}
+                      {customMenuEnabled && selectedDishIds.length > 0 && (
+                        <div
+                          onClick={() => setActiveTab("selection")}
+                          className="category-card"
+                          style={{
+                            border: `1.5px dashed ${t.brandName}`,
+                            background: "rgba(245,158,11,0.04)"
+                          }}
+                        >
+                          {/* Top Selection Icon Wrapper */}
+                          <div className="category-card-img-wrap" style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(245,158,11,0.08)", borderBottom: t.cardBorder }}>
+                            <span style={{ fontSize: 52, animation: "badgePulse 2s infinite" }}>🌟</span>
+                          </div>
+
+                          {/* Bottom Selection Title and Count */}
+                          <div style={{
+                            padding: "16px 18px",
+                            display: "flex",
+                            flexDirection: "column",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            flex: 1,
+                            minHeight: 88,
+                            gap: 10,
+                            boxSizing: "border-box"
+                          }}>
+                            <span style={{
+                              color: t.brandName,
+                              fontWeight: 700,
+                              fontSize: 16,
+                              lineHeight: 1.3,
+                              textAlign: "center",
+                              fontFamily: "'Georgia', serif",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              flex: 1
+                            }}>
+                              {lang === "ka" ? "ჩემი არჩევანი" : lang === "ru" ? "Мой выбор" : "My Selection"}
+                            </span>
+                            <span style={{
+                              color: t.brandName,
+                              fontSize: 11,
+                              fontWeight: 600,
+                              background: isDark ? "rgba(245,158,11,0.12)" : "rgba(180,120,40,0.12)",
+                              border: `1px solid ${isDark ? "rgba(245,158,11,0.25)" : "rgba(180,120,40,0.25)"}`,
+                              borderRadius: 12,
+                              padding: "3px 12px",
+                              whiteSpace: "nowrap",
+                              letterSpacing: "0.2px"
+                            }}>
+                              {selectedDishIds.length} {lang === "ka" ? "კერძი" : lang === "ru" ? "блюд" : "items"}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </>
