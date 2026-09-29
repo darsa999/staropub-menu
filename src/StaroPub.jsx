@@ -1246,7 +1246,7 @@ function AboutView({ lang, th, aboutImage }) {
             </div>
           </div>
           <a
-            href="https://maps.google.com/?q=20+Ilia+Vekua+St,+Tbilisi"
+            href="https://www.google.com/maps?q=StaroPub+Tbilisi"
             target="_blank"
             rel="noopener noreferrer"
             style={{
@@ -1281,8 +1281,8 @@ function AboutView({ lang, th, aboutImage }) {
           background: isDark ? "#0b0f19" : "#f0ebe0",
         }}>
           <iframe
-            title="StaroPub Location - 20 Ilia Vekua St, Tbilisi"
-            src="https://maps.google.com/maps?q=20+Ilia+Vekua+St,+Tbilisi&t=&z=16&ie=UTF8&iwloc=&output=embed"
+            title="StaroPub Location"
+            src="https://www.google.com/maps?q=StaroPub+Tbilisi&output=embed"
             width="100%"
             height="100%"
             style={{ border: 0, display: "block" }}
