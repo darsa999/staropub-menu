@@ -983,274 +983,237 @@ function AboutView({ lang, th, aboutImage }) {
   const labelColor = isDark ? "#94a3b8" : "#9a7040";
   const valueColor = isDark ? "#f59e0b" : "#1c1510";
 
-  const sloganText = lang === "ka" ? "სტარო პაბში შეკრების დროა" : (ABOUT_TEXT.slogan[lang] || ABOUT_TEXT.slogan.ka);
+  const sloganText = "სტაროპაბში შეკრების დროა!";
   const scheduleSubtext = lang === "ka" ? "მატჩის დღეებში პაბი მუშაობს მატჩის ბოლომდე" : (ABOUT_TEXT.matchDay[lang] || ABOUT_TEXT.matchDay.ka);
   const addressText = lang === "ka" ? "ილია ვეკუას 20" : (ABOUT_TEXT.address[lang] || ABOUT_TEXT.address.ka);
 
   return (
-    <div style={{ maxWidth: 680, margin: "0 auto", padding: "0 16px 120px" }}>
-      {/* ── Top Hero / Info Banner ── */}
+    <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 16px 120px" }}>
+      {/* ── Top Hero Banner (Original photo only) ── */}
       <div style={{
         width: "100%",
-        minHeight: 340,
-        borderRadius: 24,
+        height: 240,
+        borderRadius: "0 0 20px 20px",
         overflow: "hidden",
+        background: isDark ? "linear-gradient(135deg,#0f172a,#1e293b,#020617)" : "linear-gradient(135deg,#e8dcc8,#d8ccb0,#efe5cf)",
         position: "relative",
         marginBottom: 20,
-        border: `1px solid ${isDark ? "rgba(245,158,11,0.3)" : "rgba(180,120,40,0.3)"}`,
-        boxShadow: isDark ? "0 16px 44px rgba(0,0,0,0.65), 0 0 24px rgba(245,158,11,0.08)" : "0 12px 36px rgba(180,120,40,0.16)",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
+        boxShadow: isDark ? "0 8px 30px rgba(0,0,0,0.5)" : "0 4px 20px rgba(180,120,40,0.12)",
       }}>
-        {/* Background Image */}
         <img
           src={resolveImageSrc(aboutImage) || "Images/staropub.webp"}
           alt="StaroPub"
           loading="lazy"
           decoding="async"
-          style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }}
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
           onError={e => { e.target.style.display = "none"; }}
         />
-
-        {/* High-Contrast Multi-Layer Overlay for Solid Legibility */}
-        <div style={{
-          position: "absolute",
-          inset: 0,
-          background: "linear-gradient(180deg, rgba(8,12,22,0.80) 0%, rgba(12,10,9,0.88) 50%, rgba(2,6,23,0.95) 100%)",
-          backdropFilter: "blur(3px)",
-          WebkitBackdropFilter: "blur(3px)",
-        }} />
-
-        {/* Central Content Section */}
-        <div style={{
-          position: "relative",
-          zIndex: 2,
-          padding: "32px 20px",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          textAlign: "center",
-          gap: 14,
-          width: "100%",
-          maxWidth: 540,
-        }}>
-          {/* Brand Name Tag */}
-          <div style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "4px 14px",
-            borderRadius: 20,
-            background: "rgba(245,158,11,0.12)",
-            border: "1px solid rgba(245,158,11,0.3)",
-          }}>
-            <span style={{ fontSize: 13, color: "#f59e0b", fontWeight: 700, letterSpacing: "1px", fontFamily: "'Georgia', serif" }}>
-              StaroPub · სტაროპაბი
-            </span>
-          </div>
-
-          {/* Central Slogan */}
-          <h1 style={{
-            margin: 0,
-            color: "#f59e0b",
-            fontSize: "clamp(22px, 5.5vw, 30px)",
-            fontWeight: 800,
-            fontFamily: "'Georgia', serif",
-            letterSpacing: "0.5px",
-            lineHeight: 1.25,
-            textShadow: "0 2px 14px rgba(0,0,0,0.9), 0 0 20px rgba(245,158,11,0.3)",
-          }}>
-            {sloganText}
-          </h1>
-
-          {/* Operating Schedule Subtext */}
-          <div style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 6,
-            background: "rgba(255,255,255,0.06)",
-            border: "1px solid rgba(255,255,255,0.15)",
-            borderRadius: 16,
-            padding: "6px 16px",
-            color: "#e2e8f0",
-            fontSize: "clamp(12px, 3.2vw, 13.5px)",
-            fontWeight: 500,
-            lineHeight: 1.4,
-            textShadow: "0 1px 4px rgba(0,0,0,0.8)",
-          }}>
-            <span>⚽</span>
-            <span>{scheduleSubtext}</span>
-          </div>
-
-          {/* Contact and Location Details */}
-          <div style={{
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 12,
-            marginTop: 4,
-          }}>
-            {/* Phone Number Link */}
-            <a
-              href="tel:+995595931119"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                background: "rgba(245,158,11,0.14)",
-                border: "1px solid rgba(245,158,11,0.35)",
-                borderRadius: 20,
-                padding: "8px 16px",
-                color: "#fbbf24",
-                fontSize: 13,
-                fontWeight: 700,
-                textDecoration: "none",
-                fontFamily: "'Georgia', serif",
-                letterSpacing: "0.3px",
-                transition: "all 0.25s ease",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.background = "rgba(245,158,11,0.28)";
-                e.currentTarget.style.transform = "translateY(-1px)";
-                e.currentTarget.style.boxShadow = "0 4px 14px rgba(245,158,11,0.3)";
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = "rgba(245,158,11,0.14)";
-                e.currentTarget.style.transform = "";
-                e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.4)";
-              }}
-            >
-              <IconPhone size={15} />
-              <span>+995 595 93 11 19</span>
-            </a>
-
-            {/* Address */}
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.18)",
-                borderRadius: 20,
-                padding: "8px 16px",
-                color: "#cbd5e1",
-                fontSize: 13,
-                fontWeight: 600,
-                fontFamily: "'Georgia', serif",
-                letterSpacing: "0.2px",
-              }}
-            >
-              <IconMapPin size={15} />
-              <span>{addressText}</span>
-            </div>
-          </div>
-
-          {/* Social Media Icons and Links */}
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 14,
-            marginTop: 4,
-          }}>
-            {/* Facebook Link */}
-            <a
-              href="https://www.facebook.com/StaroPub1"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="StaroPub Facebook"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 42,
-                height: 42,
-                borderRadius: "50%",
-                background: "rgba(255,255,255,0.08)",
-                border: "1px solid rgba(255,255,255,0.2)",
-                color: "#60a5fa",
-                transition: "all 0.25s ease",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.background = "rgba(59,130,246,0.22)";
-                e.currentTarget.style.borderColor = "#60a5fa";
-                e.currentTarget.style.color = "#93c5fd";
-                e.currentTarget.style.transform = "translateY(-2px) scale(1.08)";
-                e.currentTarget.style.boxShadow = "0 4px 14px rgba(59,130,246,0.35)";
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = "rgba(255,255,255,0.08)";
-                e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)";
-                e.currentTarget.style.color = "#60a5fa";
-                e.currentTarget.style.transform = "";
-                e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.4)";
-              }}
-            >
-              <IconFacebook size={20} />
-            </a>
-
-            {/* Instagram Link */}
-            <a
-              href="https://www.instagram.com/staropub/"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="StaroPub Instagram"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 42,
-                height: 42,
-                borderRadius: "50%",
-                background: "rgba(255,255,255,0.08)",
-                border: "1px solid rgba(255,255,255,0.2)",
-                color: "#f472b6",
-                transition: "all 0.25s ease",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.background = "rgba(236,72,153,0.22)";
-                e.currentTarget.style.borderColor = "#f472b6";
-                e.currentTarget.style.color = "#fbcfe8";
-                e.currentTarget.style.transform = "translateY(-2px) scale(1.08)";
-                e.currentTarget.style.boxShadow = "0 4px 14px rgba(236,72,153,0.35)";
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = "rgba(255,255,255,0.08)";
-                e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)";
-                e.currentTarget.style.color = "#f472b6";
-                e.currentTarget.style.transform = "";
-                e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.4)";
-              }}
-            >
-              <IconInstagram size={20} />
-            </a>
-          </div>
-        </div>
       </div>
 
-      {/* ── Working Hours Card ── */}
-      <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 20, padding: "20px 22px", marginBottom: 20, boxShadow: isDark ? "0 8px 32px rgba(0,0,0,0.4)" : "0 4px 20px rgba(180,120,40,0.1)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", borderRadius: 30, background: isOpen ? "rgba(74,222,128,0.12)" : "rgba(180,40,40,0.12)", border: `1px solid ${isOpen ? "rgba(74,222,128,0.35)" : "rgba(180,40,40,0.35)"}`, marginBottom: 12 }} className={isOpen ? "status-open" : ""}>
+      {/* ── Secondary Information Banner (Working Hours, Beer Glass, Slogan, Contact Details, Socials) ── */}
+      <div style={{
+        background: cardBg,
+        border: `1px solid ${cardBorder}`,
+        borderRadius: 20,
+        padding: "24px 22px",
+        marginBottom: 20,
+        boxShadow: isDark ? "0 8px 32px rgba(0,0,0,0.4)" : "0 4px 20px rgba(180,120,40,0.1)",
+        display: "flex",
+        flexDirection: "column",
+        gap: 16,
+      }}>
+        {/* Upper section: Working Hours & Animated Beer Mug on the right */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <div style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "6px 16px",
+              borderRadius: 30,
+              background: isOpen ? "rgba(74,222,128,0.12)" : "rgba(180,40,40,0.12)",
+              border: `1px solid ${isOpen ? "rgba(74,222,128,0.35)" : "rgba(180,40,40,0.35)"}`,
+              marginBottom: 10
+            }} className={isOpen ? "status-open" : ""}>
               <span style={{ width: 9, height: 9, borderRadius: "50%", background: isOpen ? "#4ade80" : "#c04040", display: "inline-block", boxShadow: isOpen ? "0 0 7px rgba(74,222,128,0.7)" : "none" }} />
-              <span style={{ fontSize: 14, fontWeight: 700, fontFamily: "'Georgia',serif", color: isOpen ? "#4ade80" : "#e06060", letterSpacing: "0.3px" }}>{ABOUT_TEXT[isOpen ? "open" : "closed"][lang]}</span>
+              <span style={{ fontSize: 14, fontWeight: 700, fontFamily: "'Georgia',serif", color: isOpen ? "#4ade80" : "#e06060", letterSpacing: "0.3px" }}>
+                {ABOUT_TEXT[isOpen ? "open" : "closed"][lang]}
+              </span>
             </div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
               <span style={{ color: labelColor, fontSize: 11, fontWeight: 600, letterSpacing: "0.5px" }}>{ABOUT_TEXT.hours[lang]}</span>
-              <span style={{ color: valueColor, fontSize: 15, fontWeight: 700, fontFamily: "'Georgia',serif" }}>10:00 – 23:00</span>
+              <span style={{ color: valueColor, fontSize: 16, fontWeight: 700, fontFamily: "'Georgia',serif" }}>10:00 – 23:00</span>
             </div>
-            <p style={{ color: isDark ? "#64748b" : "#9a7040", fontSize: 11, lineHeight: 1.55, margin: "8px 0 0" }}>{scheduleSubtext}</p>
+            <p style={{ color: isDark ? "#94a3b8" : "#8a6040", fontSize: 12, lineHeight: 1.55, margin: "8px 0 0" }}>
+              {scheduleSubtext}
+            </p>
           </div>
-          <AboutBeerMug isOpen={isOpen} />
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", flexShrink: 0 }}>
+            <AboutBeerMug isOpen={isOpen} />
+          </div>
+        </div>
+
+        {/* Subtle Decorative Golden Divider */}
+        <div style={{
+          height: 1,
+          background: isDark
+            ? "linear-gradient(90deg, transparent, rgba(245,158,11,0.35), transparent)"
+            : "linear-gradient(90deg, transparent, rgba(180,120,40,0.3), transparent)",
+          margin: "2px 0"
+        }} />
+
+        {/* Central Slogan */}
+        <div style={{ textAlign: "center", padding: "2px 6px" }}>
+          <h2 style={{
+            margin: 0,
+            color: "#f59e0b",
+            fontFamily: "'Georgia', serif",
+            fontSize: "clamp(19px, 4.8vw, 23px)",
+            fontWeight: 800,
+            letterSpacing: "0.5px",
+            lineHeight: 1.3,
+            textShadow: isDark ? "0 2px 12px rgba(0,0,0,0.8), 0 0 16px rgba(245,158,11,0.25)" : "0 1px 4px rgba(180,120,40,0.2)",
+          }}>
+            {sloganText}
+          </h2>
+        </div>
+
+        {/* Contact and Location Details */}
+        <div style={{
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 12,
+        }}>
+          {/* Phone Number Link */}
+          <a
+            href="tel:+995595931119"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              background: isDark ? "rgba(245,158,11,0.12)" : "rgba(180,120,40,0.12)",
+              border: `1px solid ${isDark ? "rgba(245,158,11,0.35)" : "rgba(180,120,40,0.35)"}`,
+              borderRadius: 20,
+              padding: "8px 16px",
+              color: isDark ? "#fbbf24" : "#b86010",
+              fontSize: 13,
+              fontWeight: 700,
+              textDecoration: "none",
+              fontFamily: "'Georgia', serif",
+              letterSpacing: "0.3px",
+              transition: "all 0.25s ease",
+              boxShadow: isDark ? "0 2px 8px rgba(0,0,0,0.4)" : "0 2px 6px rgba(180,120,40,0.1)",
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = isDark ? "rgba(245,158,11,0.24)" : "rgba(180,120,40,0.22)";
+              e.currentTarget.style.transform = "translateY(-1px)";
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = isDark ? "rgba(245,158,11,0.12)" : "rgba(180,120,40,0.12)";
+              e.currentTarget.style.transform = "";
+            }}
+          >
+            <IconPhone size={15} />
+            <span>+995 595 93 11 19</span>
+          </a>
+
+          {/* Address */}
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              background: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)",
+              border: `1px solid ${isDark ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.12)"}`,
+              borderRadius: 20,
+              padding: "8px 16px",
+              color: isDark ? "#cbd5e1" : "#57534e",
+              fontSize: 13,
+              fontWeight: 600,
+              fontFamily: "'Georgia', serif",
+              letterSpacing: "0.2px",
+            }}
+          >
+            <IconMapPin size={15} />
+            <span>{addressText}</span>
+          </div>
+        </div>
+
+        {/* Social Media Icons and Links */}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 14,
+          paddingTop: 2,
+        }}>
+          {/* Facebook Link */}
+          <a
+            href="https://www.facebook.com/StaroPub1"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="StaroPub Facebook"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)",
+              border: `1px solid ${isDark ? "rgba(255,255,255,0.18)" : "rgba(0,0,0,0.15)"}`,
+              color: "#3b82f6",
+              transition: "all 0.25s ease",
+              boxShadow: isDark ? "0 2px 8px rgba(0,0,0,0.3)" : "0 2px 6px rgba(0,0,0,0.06)",
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = "rgba(59,130,246,0.18)";
+              e.currentTarget.style.borderColor = "#3b82f6";
+              e.currentTarget.style.transform = "translateY(-2px) scale(1.08)";
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)";
+              e.currentTarget.style.borderColor = isDark ? "rgba(255,255,255,0.18)" : "rgba(0,0,0,0.15)";
+              e.currentTarget.style.transform = "";
+            }}
+          >
+            <IconFacebook size={20} />
+          </a>
+
+          {/* Instagram Link */}
+          <a
+            href="https://www.instagram.com/staropub/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="StaroPub Instagram"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)",
+              border: `1px solid ${isDark ? "rgba(255,255,255,0.18)" : "rgba(0,0,0,0.15)"}`,
+              color: "#ec4899",
+              transition: "all 0.25s ease",
+              boxShadow: isDark ? "0 2px 8px rgba(0,0,0,0.3)" : "0 2px 6px rgba(0,0,0,0.06)",
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = "rgba(236,72,153,0.18)";
+              e.currentTarget.style.borderColor = "#ec4899";
+              e.currentTarget.style.transform = "translateY(-2px) scale(1.08)";
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)";
+              e.currentTarget.style.borderColor = isDark ? "rgba(255,255,255,0.18)" : "rgba(0,0,0,0.15)";
+              e.currentTarget.style.transform = "";
+            }}
+          >
+            <IconInstagram size={20} />
+          </a>
         </div>
       </div>
 
