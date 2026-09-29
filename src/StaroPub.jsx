@@ -27,6 +27,28 @@ const getTimestampedUrl = (url) => {
   return `${cleanUrl}?t=${Date.now()}`;
 };
 
+export const fetchWithTimeout = async (url, options = {}, timeoutMs = 3500) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timer);
+    return res;
+  } catch (err) {
+    clearTimeout(timer);
+    throw err;
+  }
+};
+
+export const getCachedJSON = (key, fallback) => {
+  try {
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
 export const resolveImageSrc = (img) => {
   if (!img || typeof img !== "string") return "";
   const trimmed = img.trim();
@@ -3855,7 +3877,7 @@ function AdminDashboard({
 // ══════════════════════════════════════════════════════════════════════════════
 export default function StaroPub() {
   const [lang, setLang]                 = useState("ka");
-  const [allItems, setAllItems]         = useState([]);
+  const [allItems, setAllItems]         = useState(() => getCachedJSON("staropub_dishes_cache", []));
   const [activeTab, setActiveTab]       = useState(null);
   const [error, setError]               = useState(null);
   const [selectedDish, setSelectedDish] = useState(null);
@@ -3865,10 +3887,50 @@ export default function StaroPub() {
   const [isDark, setIsDark]             = useState(false);
   const [currentView, setCurrentView]   = useState("menu");
 
-  const [categoryLabels, setCategoryLabels] = useState(INITIAL_CATEGORY_LABELS);
-  const [categoryIcons, setCategoryIcons] = useState(INITIAL_CATEGORY_ICONS);
-  const [hotCategories, setHotCategories] = useState(INITIAL_HOT_CATEGORIES);
-  const [dbCategories, setDbCategories] = useState([]);
+  const [categoryLabels, setCategoryLabels] = useState(() => {
+    const cachedCats = getCachedJSON("staropub_categories_cache", null);
+    if (Array.isArray(cachedCats) && cachedCats.length > 0) {
+      const labels = {};
+      cachedCats.forEach(cat => {
+        const key = cat.id || cat._id;
+        labels[key] = {
+          ka: cat.name_ka || key,
+          en: cat.name_en || key,
+          ru: cat.name_ru || key,
+        };
+      });
+      return { ...INITIAL_CATEGORY_LABELS, ...labels };
+    }
+    return INITIAL_CATEGORY_LABELS;
+  });
+
+  const [categoryIcons, setCategoryIcons] = useState(() => {
+    const cachedCats = getCachedJSON("staropub_categories_cache", null);
+    if (Array.isArray(cachedCats) && cachedCats.length > 0) {
+      const icons = {};
+      cachedCats.forEach(cat => {
+        const key = cat.id || cat._id;
+        icons[key] = cat.icon || "🍽️";
+      });
+      return { ...INITIAL_CATEGORY_ICONS, ...icons };
+    }
+    return INITIAL_CATEGORY_ICONS;
+  });
+
+  const [hotCategories, setHotCategories] = useState(() => {
+    const cachedCats = getCachedJSON("staropub_categories_cache", null);
+    if (Array.isArray(cachedCats) && cachedCats.length > 0) {
+      const hot = new Set();
+      cachedCats.forEach(cat => {
+        const key = cat.id || cat._id;
+        if (cat.isHot) hot.add(key);
+      });
+      return hot;
+    }
+    return INITIAL_HOT_CATEGORIES;
+  });
+
+  const [dbCategories, setDbCategories] = useState(() => getCachedJSON("staropub_categories_cache", []));
 
   // Admin and availability states
   const [isAdmin, setIsAdmin] = useState(false);
@@ -3987,8 +4049,20 @@ export default function StaroPub() {
   }, []);
 
   const [unavailableDishIds, setUnavailableDishIds] = useState([]);
-  const [categoryOrder, setCategoryOrder]             = useState(() => Object.keys(INITIAL_CATEGORY_LABELS));
-  const [dishOrder, setDishOrder]                     = useState([]);
+  const [categoryOrder, setCategoryOrder] = useState(() => {
+    const cachedCats = getCachedJSON("staropub_categories_cache", null);
+    if (Array.isArray(cachedCats) && cachedCats.length > 0) {
+      return cachedCats.map(cat => cat.id || cat._id);
+    }
+    return Object.keys(INITIAL_CATEGORY_LABELS);
+  });
+  const [dishOrder, setDishOrder] = useState(() => {
+    const cachedDishes = getCachedJSON("staropub_dishes_cache", null);
+    if (Array.isArray(cachedDishes) && cachedDishes.length > 0) {
+      return cachedDishes.map(d => d.id || d._id);
+    }
+    return [];
+  });
 
   // Cart and checkout states
   const [cartItems, setCartItems]                     = useState([]);
@@ -4094,12 +4168,13 @@ export default function StaroPub() {
 
   // ─── Custom selection and sharing ────────────────────────────────────────
   const [selectedDishIds, setSelectedDishIds] = useState([]);
-  const [customMenuEnabled, setCustomMenuEnabled] = useState(true);
-  const [callWaiterEnabled, setCallWaiterEnabled] = useState(true);
-  const [requestBillEnabled, setRequestBillEnabled] = useState(true);
-  const [isCartEnabled, setIsCartEnabled] = useState(true);
-  const [bgImage, setBgImage] = useState("");
-  const [aboutImage, setAboutImage] = useState("");
+  const cachedSettings = React.useMemo(() => getCachedJSON("staropub_settings_cache", {}), []);
+  const [customMenuEnabled, setCustomMenuEnabled] = useState(() => typeof cachedSettings.customMenuEnabled === "boolean" ? cachedSettings.customMenuEnabled : true);
+  const [callWaiterEnabled, setCallWaiterEnabled] = useState(() => typeof cachedSettings.callWaiterEnabled === "boolean" ? cachedSettings.callWaiterEnabled : true);
+  const [requestBillEnabled, setRequestBillEnabled] = useState(() => typeof cachedSettings.requestBillEnabled === "boolean" ? cachedSettings.requestBillEnabled : true);
+  const [isCartEnabled, setIsCartEnabled] = useState(() => typeof cachedSettings.isCartEnabled === "boolean" ? cachedSettings.isCartEnabled : true);
+  const [bgImage, setBgImage] = useState(() => cachedSettings.bgImage ? getTimestampedUrl(cachedSettings.bgImage) : "");
+  const [aboutImage, setAboutImage] = useState(() => cachedSettings.aboutImage ? getTimestampedUrl(cachedSettings.aboutImage) : "");
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -4189,9 +4264,14 @@ export default function StaroPub() {
 
   const refreshMenuData = useCallback(async () => {
     try {
-      const catRes = await fetch(`${API_URL}/api/categories`, { credentials: "include" });
-      if (catRes.ok) {
-        const categoriesData = await catRes.json();
+      const [catRes, settingsRes, dishRes] = await Promise.allSettled([
+        fetchWithTimeout(`${API_URL}/api/categories`, { credentials: "include" }, 3500),
+        fetchWithTimeout(`${API_URL}/api/settings`, { credentials: "include" }, 3500),
+        fetchWithTimeout(`${API_URL}/api/dishes`, { credentials: "include" }, 4000)
+      ]);
+
+      if (catRes.status === "fulfilled" && catRes.value.ok) {
+        const categoriesData = await catRes.value.json();
         const labels = {};
         const icons = {};
         const hot = new Set();
@@ -4211,11 +4291,13 @@ export default function StaroPub() {
         setHotCategories(hot);
         setDbCategories(categoriesData);
         setCategoryOrder(categoriesData.map(cat => cat.id || cat._id));
+        try {
+          localStorage.setItem("staropub_categories_cache", JSON.stringify(categoriesData));
+        } catch {}
       }
 
-      const settingsRes = await fetch(`${API_URL}/api/settings`, { credentials: "include" });
-      if (settingsRes.ok) {
-        const settingsMap = await settingsRes.json();
+      if (settingsRes.status === "fulfilled" && settingsRes.value.ok) {
+        const settingsMap = await settingsRes.value.json();
         if (settingsMap.bgImage) setBgImage(getTimestampedUrl(settingsMap.bgImage));
         if (settingsMap.aboutImage) setAboutImage(getTimestampedUrl(settingsMap.aboutImage));
         if (typeof settingsMap.callWaiterEnabled === 'boolean') setCallWaiterEnabled(settingsMap.callWaiterEnabled);
@@ -4228,17 +4310,22 @@ export default function StaroPub() {
         }
         if (settingsMap.bannerSettings) setBannerSettings(settingsMap.bannerSettings);
         if (typeof settingsMap.customMenuEnabled === 'boolean') setCustomMenuEnabled(settingsMap.customMenuEnabled);
+        try {
+          localStorage.setItem("staropub_settings_cache", JSON.stringify(settingsMap));
+        } catch {}
       }
 
-      const dishRes = await fetch(`${API_URL}/api/dishes`, { credentials: "include" });
-      if (dishRes.ok) {
-        const dishesData = await dishRes.json();
+      if (dishRes.status === "fulfilled" && dishRes.value.ok) {
+        const dishesData = await dishRes.value.json();
         const formattedDishes = dishesData.map(dish => ({
           ...dish,
           id: dish.id || dish._id,
         }));
         setAllItems(formattedDishes);
         setDishOrder(formattedDishes.map(d => d.id));
+        try {
+          localStorage.setItem("staropub_dishes_cache", JSON.stringify(formattedDishes));
+        } catch {}
       }
       setError(null);
     } catch (err) {
@@ -4248,40 +4335,66 @@ export default function StaroPub() {
 
   useEffect(() => {
     const startTime = Date.now();
+    let isMounted = true;
+
+    // Non-blocking background session check for admin
+    const checkAuthSession = async () => {
+      try {
+        const meRes = await fetchWithTimeout(`${API_URL}/api/auth/me`, { credentials: "include" }, 2500);
+        if (!isMounted) return;
+        if (meRes.ok) {
+          setIsAdmin(true);
+          setIsAuthenticated(true);
+        } else {
+          setIsAdmin(false);
+          setIsAuthenticated(false);
+          setCurrentView(prev => prev === "admin" ? "menu" : prev);
+        }
+      } catch (meErr) {
+        console.warn("Session validation failed:", meErr);
+      }
+    };
+    checkAuthSession();
+
+    let dismissed = false;
+    const dismissPreloader = () => {
+      if (dismissed || !isMounted) return;
+      dismissed = true;
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, POUR_DURATION_MS - elapsed);
+      setTimeout(() => {
+        if (!isMounted) return;
+        setPreloaderExiting(true);
+        setTimeout(() => {
+          if (!isMounted) return;
+          setPhase("menu");
+        }, 200);
+      }, remaining);
+    };
+
+    // Stale-While-Revalidate: if cached data already exists, dismiss preloader as soon as the pour animation finishes
+    const cachedDishes = getCachedJSON("staropub_dishes_cache", null);
+    if (Array.isArray(cachedDishes) && cachedDishes.length > 0) {
+      setTimeout(dismissPreloader, POUR_DURATION_MS);
+    }
 
     const fetchData = async () => {
       try {
-        try {
-          const meRes = await fetch(`${API_URL}/api/auth/me`, { credentials: "include" });
-          if (meRes.ok) {
-            setIsAdmin(true);
-            setIsAuthenticated(true);
-          } else {
-            setIsAdmin(false);
-            setIsAuthenticated(false);
-            setCurrentView(prev => prev === "admin" ? "menu" : prev);
-          }
-        } catch (meErr) {
-          console.warn("Session validation failed:", meErr);
-        }
-
         await refreshMenuData();
       } catch (err) {
-        setError(`შეცდომა მონაცემების ჩატვირთვისას: ${err.message}`);
+        if (isMounted) {
+          setError(`შეცდომა მონაცემების ჩატვირთვისას: ${err.message}`);
+        }
       } finally {
-        // Ensure the Beer Glass preloader plays for at least POUR_DURATION_MS, and until data finishes loading
-        const elapsed = Date.now() - startTime;
-        const remaining = Math.max(0, POUR_DURATION_MS - elapsed);
-        setTimeout(() => {
-          setPreloaderExiting(true);
-          setTimeout(() => {
-            setPhase("menu");
-          }, 300);
-        }, remaining);
+        dismissPreloader();
       }
     };
 
     fetchData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [refreshMenuData]);
 
   useEffect(() => {
