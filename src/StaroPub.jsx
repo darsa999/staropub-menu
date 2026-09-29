@@ -44,7 +44,7 @@ export const resolveImageSrc = (img) => {
 };
 
 // ─── Timing constants ─────────────────────────────────────────────────────────
-const POUR_DURATION_MS  = 2000;
+const POUR_DURATION_MS  = 350;
 
 // ─── Loading text ─────────────────────────────────────────────────────────────
 const LOADING_TEXT = {
@@ -242,7 +242,7 @@ function HotSteamOverlay() {
 // ══════════════════════════════════════════════════════════════════════════════
 // PHASE 1 — BEER POUR SCREEN
 // ══════════════════════════════════════════════════════════════════════════════
-function MasterPourScreen({ lang = "ka", isDark = false }) {
+function MasterPourScreen({ lang = "ka", isDark = false, isFading = false }) {
   const pourBg = isDark
     ? "radial-gradient(ellipse at 50% 30%, #0f172a 0%, #020617 55%, #000 100%)"
     : "radial-gradient(ellipse at 50% 30%, #fdf9f2 0%, #f5eed8 55%, #ede0be 100%)";
@@ -257,7 +257,9 @@ function MasterPourScreen({ lang = "ka", isDark = false }) {
       background: pourBg,
       display: "flex", flexDirection: "column",
       alignItems: "center", justifyContent: "center",
-      transition: "background 0.3s",
+      opacity: isFading ? 0 : 1,
+      pointerEvents: isFading ? "none" : "auto",
+      transition: "opacity 300ms cubic-bezier(0.4, 0, 0.2, 1), background 0.3s",
     }}>
       <style>{`
         @keyframes masterFill {
@@ -327,10 +329,10 @@ function MasterPourScreen({ lang = "ka", isDark = false }) {
         .liquid-sheen { animation: liquidSheen 1.9s ease-in-out infinite; }
 
         @keyframes titleReveal {
-          from { opacity: 0; letter-spacing: 6px; transform: translateY(6px); }
+          from { opacity: 0; letter-spacing: 5px; transform: translateY(4px); }
           to   { opacity: 1; letter-spacing: 3px; transform: translateY(0); }
         }
-        .pour-title { animation: titleReveal 1.0s 0.25s ease-out both; }
+        .pour-title { animation: titleReveal 0.3s 0.05s ease-out both; }
 
         @keyframes loadGlow {
           0%,100% { opacity: 0.55; }
@@ -356,7 +358,7 @@ function MasterPourScreen({ lang = "ka", isDark = false }) {
       <div className="pour-title" style={{ color: titleColor, fontSize: 28, fontWeight: 700, fontFamily: "'Georgia', serif", letterSpacing: "3px", marginBottom: 5, textShadow: isDark ? "0 2px 28px rgba(245,158,11,0.55)" : "none" }}>
         StaroPub
       </div>
-      <div className="pour-title" style={{ color: subtitleColor, fontSize: 11, letterSpacing: "4px", marginBottom: 36, fontFamily: "'Georgia', serif", animationDelay: "0.5s" }}>
+      <div className="pour-title" style={{ color: subtitleColor, fontSize: 11, letterSpacing: "4px", marginBottom: 36, fontFamily: "'Georgia', serif", animationDelay: "0.15s" }}>
         სტაროპაბი
       </div>
 
@@ -528,7 +530,8 @@ function ItemCard({
   customMenuEnabled = false, selected = false, onToggleSelect = null,
   cartItems = [], onAddToCart, onUpdateQuantity,
   categoryIcons, hotCategories,
-  isCartEnabled = true
+  isCartEnabled = true,
+  priority = false
 }) {
   const t = th || THEME.light;
   if (!item) return null;
@@ -563,9 +566,14 @@ function ItemCard({
       onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 12px 32px rgba(0,0,0,0.25)"; }}
       onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}
     >
-      <div style={{ width: "100%", height: 160, background: t.imgFallbackBg, position: "relative", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ width: "100%", height: 160, aspectRatio: "16 / 10", background: t.imgFallbackBg, position: "relative", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
         {imgSrc && (
-          <img src={imgSrc} alt={name} loading="lazy"
+          <img
+            src={imgSrc}
+            alt={name}
+            loading={priority ? "eager" : "lazy"}
+            decoding="async"
+            fetchPriority={priority ? "high" : "auto"}
             onError={e => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex"; }}
             style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }}
           />
@@ -752,9 +760,14 @@ function DishModal({ item, lang, onClose, th, onAddToCart, categoryIcons, catego
         <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:860, background: t.modalBg, border:`1px solid ${t.modalBorder}`, borderRadius:20, overflow:"hidden", boxShadow:"0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(200,160,60,0.05)", position:"relative", animation:"modalCardIn 0.28s cubic-bezier(0.34,1.15,0.64,1)", transition:"background 0.3s" }}>
           <div className="modal-grid modal-scroll" style={{ display:"grid", gridTemplateColumns:"1fr" }}>
             {/* Image */}
-            <div className="modal-img" style={{ minHeight:220, background:t.imgFallbackBg, position:"relative", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <div className="modal-img" style={{ minHeight:220, aspectRatio: "16 / 10", background:t.imgFallbackBg, position:"relative", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center" }}>
               {imgSrc && (
-                <img src={imgSrc} alt={name} loading="lazy"
+                <img
+                  src={imgSrc}
+                  alt={name}
+                  loading="eager"
+                  decoding="async"
+                  fetchPriority="high"
                   onError={e => { e.target.style.display="none"; e.target.nextSibling.style.display="flex"; }}
                   style={{ width:"100%", height:"100%", objectFit:"cover", position:"absolute", inset:0 }}
                 />
@@ -956,7 +969,14 @@ function AboutView({ lang, th, aboutImage }) {
   return (
     <div style={{ maxWidth:600, margin:"0 auto", padding:"0 16px 120px" }}>
       <div style={{ width:"100%", height:220, borderRadius:"0 0 20px 20px", overflow:"hidden", background:isDark?"linear-gradient(135deg,#0f172a,#1e293b,#020617)":"linear-gradient(135deg,#e8dcc8,#d8ccb0,#efe5cf)", position:"relative", marginBottom:24 }}>
-        <img src={resolveImageSrc(aboutImage) || "Images/staropub.webp"} alt="StaroPub" style={{ width:"100%", height:"100%", objectFit:"cover" }} onError={e => { e.target.style.display="none"; }} />
+        <img
+          src={resolveImageSrc(aboutImage) || "Images/staropub.webp"}
+          alt="StaroPub"
+          loading="lazy"
+          decoding="async"
+          style={{ width:"100%", height:"100%", objectFit:"cover" }}
+          onError={e => { e.target.style.display="none"; }}
+        />
         <div style={{ position:"absolute", inset:0, background:"linear-gradient(180deg,transparent 40%,rgba(0,0,0,0.72) 100%)" }} />
         <div style={{ position:"absolute", bottom:20, left:20 }}>
           <div style={{ color:"#f59e0b", fontSize:26, fontWeight:700, fontFamily:"'Georgia',serif", letterSpacing:"0.5px", textShadow:"0 2px 16px rgba(0,0,0,0.7)" }}>StaroPub</div>
@@ -3871,6 +3891,7 @@ export default function StaroPub() {
 
   // ─── Phase machine: "pour" (Beer Glass animation) → "menu" ───────────────
   const [phase, setPhase] = useState("pour");
+  const [preloaderExiting, setPreloaderExiting] = useState(false);
   const tabsRef     = useRef(null);
 
   const refreshMenuData = useCallback(async () => {
@@ -3959,7 +3980,10 @@ export default function StaroPub() {
         const elapsed = Date.now() - startTime;
         const remaining = Math.max(0, POUR_DURATION_MS - elapsed);
         setTimeout(() => {
-          setPhase("menu");
+          setPreloaderExiting(true);
+          setTimeout(() => {
+            setPhase("menu");
+          }, 300);
         }, remaining);
       }
     };
@@ -4028,7 +4052,8 @@ export default function StaroPub() {
   }, []);
 
   const isPour = phase === "pour";
-  const isMenu = phase === "menu";
+  const showMainContent = !isPour || preloaderExiting;
+  const isMenu = phase === "menu" || preloaderExiting;
 
   return (
     <div className={currentView === "admin" ? "dark bg-neutral-900 text-white" : ""} style={{
@@ -4155,10 +4180,10 @@ export default function StaroPub() {
         }
       `}</style>
 
-      {isPour && <MasterPourScreen lang={lang} isDark={isDark} />}
+      {isPour && <MasterPourScreen lang={lang} isDark={isDark} isFading={preloaderExiting} />}
 
       {/* Header */}
-      {!isPour && currentView !== "admin" && (
+      {showMainContent && currentView !== "admin" && (
         <header style={{ position:"sticky", top:0, zIndex:100, background:t.headerBg, borderBottom:t.headerBorder, backdropFilter:"blur(12px)", padding:"0 16px", transition:"background 0.3s, border-color 0.3s" }}>
           <div style={{ maxWidth:1200, margin:"0 auto", display:"flex", alignItems:"center", height:64, gap:12 }}>
             <div
@@ -4170,7 +4195,7 @@ export default function StaroPub() {
               onContextMenu={e => e.preventDefault()}
               style={{ display: "flex", alignItems: "center", cursor: "pointer", flexShrink: 0, userSelect: "none", WebkitUserSelect: "none", WebkitTouchCallout: "none" }}
             >
-              <img src="Images/logo.jpg" alt="StaroPub Logo" loading="lazy"
+              <img src="Images/logo.jpg" alt="StaroPub Logo" loading="eager" decoding="async" fetchPriority="high" width={40} height={40}
                 style={{ width:40, height:40, borderRadius:"50%", objectFit:"cover", boxShadow:"0 2px 12px rgba(200,120,32,0.4)", border:"1px solid rgba(200,160,60,0.3)", flexShrink:0 }}
                 onError={e => { e.target.style.display="none"; e.target.nextSibling.style.display="flex"; }}
               />
@@ -4274,7 +4299,7 @@ export default function StaroPub() {
       )}
 
       {/* Main Viewport */}
-      {!isPour && currentView === "menu" && (
+      {showMainContent && currentView === "menu" && (
         <main style={{ maxWidth:1200, margin:"0 auto", padding:"16px 16px 112px", position:"relative", zIndex:1 }}>
 
           {isMenu && error && (
@@ -4298,6 +4323,7 @@ export default function StaroPub() {
                     .promo-banner-card {
                       width: 100%;
                       height: 240px;
+                      aspect-ratio: 16 / 9;
                       border-radius: 20px;
                       overflow: hidden;
                       position: relative;
@@ -4397,6 +4423,9 @@ export default function StaroPub() {
                           <img
                             src={bannerImgSrc}
                             alt=""
+                            loading="eager"
+                            decoding="async"
+                            fetchPriority="high"
                             style={{
                               width: "100%", height: "100%", objectFit: "cover",
                               filter: "blur(24px)", opacity: 0.5, transform: "scale(1.2)",
@@ -4408,6 +4437,9 @@ export default function StaroPub() {
                           <img
                             src={bannerImgSrc}
                             alt="Promotional Banner"
+                            loading="eager"
+                            decoding="async"
+                            fetchPriority="high"
                             style={{
                               width: "100%", height: "100%", objectFit: "contain",
                               position: "absolute", inset: 0, zIndex: 1
@@ -4460,6 +4492,7 @@ export default function StaroPub() {
                         .category-card-img-wrap {
                           width: 100%;
                           height: 140px;
+                          aspect-ratio: 16 / 10;
                           overflow: hidden;
                           position: relative;
                         }
@@ -4473,10 +4506,11 @@ export default function StaroPub() {
                         }
                       `}</style>
                       <div className="categories-landing-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16, width: "100%", gridColumn: "span 2" }}>
-                        {categories.map(cat => {
+                        {categories.map((cat, catIdx) => {
                           const labelObj = categoryLabels[cat] || { ka: cat, en: cat, ru: cat };
                           const icon = categoryIcons[cat] || "🍽️";
                           const count = allItems.filter(item => item.category === cat && !unavailableDishIds.includes(item.id)).length;
+                          const isAboveTheFold = catIdx < 3;
                           
                           const catObj = dbCategories.find(c => (c.id || c._id) === cat);
                           const catImage = catObj?.image;
@@ -4498,6 +4532,9 @@ export default function StaroPub() {
                                     <img
                                       src={imgSrc}
                                       alt={labelObj[lang]}
+                                      loading={isAboveTheFold ? "eager" : "lazy"}
+                                      decoding="async"
+                                      fetchPriority={isAboveTheFold ? "high" : "auto"}
                                       style={{
                                         width: "100%",
                                         height: "100%",
@@ -4642,7 +4679,7 @@ export default function StaroPub() {
                     </div>
                   ) : (
                     <div key={`${activeTab}-${searchQuery}`} className="menu-grid" style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:12, animation:"fadeIn 0.4s ease-out" }}>
-                      {items.map((item) => (
+                      {items.map((item, idx) => (
                         <ItemCard
                           key={item.id || `${item.category}-${item.name_ka}`}
                           item={item}
@@ -4658,6 +4695,7 @@ export default function StaroPub() {
                           categoryIcons={categoryIcons}
                           hotCategories={hotCategories}
                           isCartEnabled={isCartEnabled}
+                          priority={idx < 4}
                         />
                       ))}
                     </div>
@@ -4670,14 +4708,14 @@ export default function StaroPub() {
       )}
 
       {/* About View */}
-      {!isPour && currentView === "about" && (
+      {showMainContent && currentView === "about" && (
         <main style={{ maxWidth:1200, margin:"0 auto", padding:"16px 0 112px", animation:"fadeIn 0.3s ease-out", position:"relative", zIndex:1 }}>
           <AboutView lang={lang} th={t} aboutImage={aboutImage} />
         </main>
       )}
 
       {/* Admin Panel View */}
-      {!isPour && currentView === "admin" && isAuthenticated && (
+      {showMainContent && currentView === "admin" && isAuthenticated && (
         <main className="dark bg-neutral-900 text-white" style={{ width: "100%", minHeight: "100vh", animation:"fadeIn 0.3s ease-out", position:"relative", zIndex:1, background: "#0a0f1d", color: "#f0c060" }}>
           <AdminDashboard
             lang={lang}
@@ -4744,7 +4782,7 @@ export default function StaroPub() {
         </main>
       )}
 
-      {!isPour && currentView !== "admin" && <SiteFooter lang={lang} visible={isFooterVisible} th={t} currentView={currentView} setCurrentView={setCurrentView} isAdmin={isAdmin} />}
+      {showMainContent && currentView !== "admin" && <SiteFooter lang={lang} visible={isFooterVisible} th={t} currentView={currentView} setCurrentView={setCurrentView} isAdmin={isAdmin} />}
 
       {/* Dish Detail Modal */}
       {selectedDish && (
@@ -4762,7 +4800,7 @@ export default function StaroPub() {
       )}
 
       {/* ── SERVICE REQUESTS FLOATING WIDGET ── */}
-      {!isPour && currentView !== "admin" && (callWaiterEnabled || requestBillEnabled || reviewFormEnabled) && (
+      {showMainContent && currentView !== "admin" && (callWaiterEnabled || requestBillEnabled || reviewFormEnabled) && (
         <div style={{ position: "fixed", bottom: 90, right: 20, zIndex: 1000, display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-end" }}>
           {floatingMenuOpen && (
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 6, animation: "fadeIn 0.2s ease-out" }}>
@@ -5164,7 +5202,7 @@ export default function StaroPub() {
                     {/* Item Image thumbnail */}
                     <div style={{ width: 56, height: 56, borderRadius: 8, overflow: "hidden", background: t.imgFallbackBg, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
                       {imgPath ? (
-                        <img src={imgPath} alt={title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        <img src={imgPath} alt={title} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                       ) : (
                         <span style={{ fontSize: 22 }}>{fallbackIcon}</span>
                       )}
