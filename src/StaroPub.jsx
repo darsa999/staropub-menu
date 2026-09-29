@@ -906,6 +906,8 @@ const ABOUT_TEXT = {
   phone:      { ka: "ტელეფონი",        en: "Phone",           ru: "Телефон" },
   email:      { ka: "მაილი",           en: "Email",           ru: "E-mail" },
   wolt:       { ka: "გვიპოვეთ ვოლტზე", en: "Find us on Wolt", ru: "Найдите нас на Wolt" },
+  slogan:     { ka: "სტარო პაბში შეკრების დროა", en: "It's time to gather at StaroPub", ru: "Время собираться в СтароПаб" },
+  address:    { ka: "ილია ვეკუას 20", en: "20 Ilia Vekua St", ru: "ул. Ильи Векуа 20" },
 };
 
 function IconFacebook({ size = 18 }) {
@@ -913,6 +915,21 @@ function IconFacebook({ size = 18 }) {
 }
 function IconInstagram({ size = 18 }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>;
+}
+function IconPhone({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+    </svg>
+  );
+}
+function IconMapPin({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+      <circle cx="12" cy="10" r="3"/>
+    </svg>
+  );
 }
 
 function AboutBeerMug({ isOpen }) {
@@ -966,37 +983,350 @@ function AboutView({ lang, th, aboutImage }) {
   const labelColor = isDark ? "#94a3b8" : "#9a7040";
   const valueColor = isDark ? "#f59e0b" : "#1c1510";
 
+  const sloganText = lang === "ka" ? "სტარო პაბში შეკრების დროა" : (ABOUT_TEXT.slogan[lang] || ABOUT_TEXT.slogan.ka);
+  const scheduleSubtext = lang === "ka" ? "მატჩის დღეებში პაბი მუშაობს მატჩის ბოლომდე" : (ABOUT_TEXT.matchDay[lang] || ABOUT_TEXT.matchDay.ka);
+  const addressText = lang === "ka" ? "ილია ვეკუას 20" : (ABOUT_TEXT.address[lang] || ABOUT_TEXT.address.ka);
+
   return (
-    <div style={{ maxWidth:600, margin:"0 auto", padding:"0 16px 120px" }}>
-      <div style={{ width:"100%", height:220, borderRadius:"0 0 20px 20px", overflow:"hidden", background:isDark?"linear-gradient(135deg,#0f172a,#1e293b,#020617)":"linear-gradient(135deg,#e8dcc8,#d8ccb0,#efe5cf)", position:"relative", marginBottom:24 }}>
+    <div style={{ maxWidth: 680, margin: "0 auto", padding: "0 16px 120px" }}>
+      {/* ── Top Hero / Info Banner ── */}
+      <div style={{
+        width: "100%",
+        minHeight: 340,
+        borderRadius: 24,
+        overflow: "hidden",
+        position: "relative",
+        marginBottom: 20,
+        border: `1px solid ${isDark ? "rgba(245,158,11,0.3)" : "rgba(180,120,40,0.3)"}`,
+        boxShadow: isDark ? "0 16px 44px rgba(0,0,0,0.65), 0 0 24px rgba(245,158,11,0.08)" : "0 12px 36px rgba(180,120,40,0.16)",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+      }}>
+        {/* Background Image */}
         <img
           src={resolveImageSrc(aboutImage) || "Images/staropub.webp"}
           alt="StaroPub"
           loading="lazy"
           decoding="async"
-          style={{ width:"100%", height:"100%", objectFit:"cover" }}
-          onError={e => { e.target.style.display="none"; }}
+          style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }}
+          onError={e => { e.target.style.display = "none"; }}
         />
-        <div style={{ position:"absolute", inset:0, background:"linear-gradient(180deg,transparent 40%,rgba(0,0,0,0.72) 100%)" }} />
-        <div style={{ position:"absolute", bottom:20, left:20 }}>
-          <div style={{ color:"#f59e0b", fontSize:26, fontWeight:700, fontFamily:"'Georgia',serif", letterSpacing:"0.5px", textShadow:"0 2px 16px rgba(0,0,0,0.7)" }}>StaroPub</div>
-          <div style={{ color:"rgba(245,158,11,0.65)", fontSize:11, letterSpacing:"2px" }}>სტაროპაბი</div>
+
+        {/* High-Contrast Multi-Layer Overlay for Solid Legibility */}
+        <div style={{
+          position: "absolute",
+          inset: 0,
+          background: "linear-gradient(180deg, rgba(8,12,22,0.80) 0%, rgba(12,10,9,0.88) 50%, rgba(2,6,23,0.95) 100%)",
+          backdropFilter: "blur(3px)",
+          WebkitBackdropFilter: "blur(3px)",
+        }} />
+
+        {/* Central Content Section */}
+        <div style={{
+          position: "relative",
+          zIndex: 2,
+          padding: "32px 20px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          textAlign: "center",
+          gap: 14,
+          width: "100%",
+          maxWidth: 540,
+        }}>
+          {/* Brand Name Tag */}
+          <div style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "4px 14px",
+            borderRadius: 20,
+            background: "rgba(245,158,11,0.12)",
+            border: "1px solid rgba(245,158,11,0.3)",
+          }}>
+            <span style={{ fontSize: 13, color: "#f59e0b", fontWeight: 700, letterSpacing: "1px", fontFamily: "'Georgia', serif" }}>
+              StaroPub · სტაროპაბი
+            </span>
+          </div>
+
+          {/* Central Slogan */}
+          <h1 style={{
+            margin: 0,
+            color: "#f59e0b",
+            fontSize: "clamp(22px, 5.5vw, 30px)",
+            fontWeight: 800,
+            fontFamily: "'Georgia', serif",
+            letterSpacing: "0.5px",
+            lineHeight: 1.25,
+            textShadow: "0 2px 14px rgba(0,0,0,0.9), 0 0 20px rgba(245,158,11,0.3)",
+          }}>
+            {sloganText}
+          </h1>
+
+          {/* Operating Schedule Subtext */}
+          <div style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+            background: "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.15)",
+            borderRadius: 16,
+            padding: "6px 16px",
+            color: "#e2e8f0",
+            fontSize: "clamp(12px, 3.2vw, 13.5px)",
+            fontWeight: 500,
+            lineHeight: 1.4,
+            textShadow: "0 1px 4px rgba(0,0,0,0.8)",
+          }}>
+            <span>⚽</span>
+            <span>{scheduleSubtext}</span>
+          </div>
+
+          {/* Contact and Location Details */}
+          <div style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 12,
+            marginTop: 4,
+          }}>
+            {/* Phone Number Link */}
+            <a
+              href="tel:+995595931119"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                background: "rgba(245,158,11,0.14)",
+                border: "1px solid rgba(245,158,11,0.35)",
+                borderRadius: 20,
+                padding: "8px 16px",
+                color: "#fbbf24",
+                fontSize: 13,
+                fontWeight: 700,
+                textDecoration: "none",
+                fontFamily: "'Georgia', serif",
+                letterSpacing: "0.3px",
+                transition: "all 0.25s ease",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = "rgba(245,158,11,0.28)";
+                e.currentTarget.style.transform = "translateY(-1px)";
+                e.currentTarget.style.boxShadow = "0 4px 14px rgba(245,158,11,0.3)";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = "rgba(245,158,11,0.14)";
+                e.currentTarget.style.transform = "";
+                e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.4)";
+              }}
+            >
+              <IconPhone size={15} />
+              <span>+995 595 93 11 19</span>
+            </a>
+
+            {/* Address */}
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(255,255,255,0.18)",
+                borderRadius: 20,
+                padding: "8px 16px",
+                color: "#cbd5e1",
+                fontSize: 13,
+                fontWeight: 600,
+                fontFamily: "'Georgia', serif",
+                letterSpacing: "0.2px",
+              }}
+            >
+              <IconMapPin size={15} />
+              <span>{addressText}</span>
+            </div>
+          </div>
+
+          {/* Social Media Icons and Links */}
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 14,
+            marginTop: 4,
+          }}>
+            {/* Facebook Link */}
+            <a
+              href="https://www.facebook.com/StaroPub1"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="StaroPub Facebook"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 42,
+                height: 42,
+                borderRadius: "50%",
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.2)",
+                color: "#60a5fa",
+                transition: "all 0.25s ease",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = "rgba(59,130,246,0.22)";
+                e.currentTarget.style.borderColor = "#60a5fa";
+                e.currentTarget.style.color = "#93c5fd";
+                e.currentTarget.style.transform = "translateY(-2px) scale(1.08)";
+                e.currentTarget.style.boxShadow = "0 4px 14px rgba(59,130,246,0.35)";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.08)";
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)";
+                e.currentTarget.style.color = "#60a5fa";
+                e.currentTarget.style.transform = "";
+                e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.4)";
+              }}
+            >
+              <IconFacebook size={20} />
+            </a>
+
+            {/* Instagram Link */}
+            <a
+              href="https://www.instagram.com/staropub/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="StaroPub Instagram"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 42,
+                height: 42,
+                borderRadius: "50%",
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.2)",
+                color: "#f472b6",
+                transition: "all 0.25s ease",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = "rgba(236,72,153,0.22)";
+                e.currentTarget.style.borderColor = "#f472b6";
+                e.currentTarget.style.color = "#fbcfe8";
+                e.currentTarget.style.transform = "translateY(-2px) scale(1.08)";
+                e.currentTarget.style.boxShadow = "0 4px 14px rgba(236,72,153,0.35)";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.08)";
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)";
+                e.currentTarget.style.color = "#f472b6";
+                e.currentTarget.style.transform = "";
+                e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.4)";
+              }}
+            >
+              <IconInstagram size={20} />
+            </a>
+          </div>
         </div>
       </div>
-      <div style={{ background:cardBg, border:`1px solid ${cardBorder}`, borderRadius:16, padding:"20px 22px", marginBottom:16 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:16, flexWrap:"wrap" }}>
-          <div style={{ flex:1 }}>
-            <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"6px 16px", borderRadius:30, background:isOpen?"rgba(74,222,128,0.12)":"rgba(180,40,40,0.12)", border:`1px solid ${isOpen?"rgba(74,222,128,0.35)":"rgba(180,40,40,0.35)"}`, marginBottom:12 }} className={isOpen?"status-open":""}>
-              <span style={{ width:9, height:9, borderRadius:"50%", background:isOpen?"#4ade80":"#c04040", display:"inline-block", boxShadow:isOpen?"0 0 7px rgba(74,222,128,0.7)":"none" }} />
-              <span style={{ fontSize:14, fontWeight:700, fontFamily:"'Georgia',serif", color:isOpen?"#4ade80":"#e06060", letterSpacing:"0.3px" }}>{ABOUT_TEXT[isOpen?"open":"closed"][lang]}</span>
+
+      {/* ── Working Hours Card ── */}
+      <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 20, padding: "20px 22px", marginBottom: 20, boxShadow: isDark ? "0 8px 32px rgba(0,0,0,0.4)" : "0 4px 20px rgba(180,120,40,0.1)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", borderRadius: 30, background: isOpen ? "rgba(74,222,128,0.12)" : "rgba(180,40,40,0.12)", border: `1px solid ${isOpen ? "rgba(74,222,128,0.35)" : "rgba(180,40,40,0.35)"}`, marginBottom: 12 }} className={isOpen ? "status-open" : ""}>
+              <span style={{ width: 9, height: 9, borderRadius: "50%", background: isOpen ? "#4ade80" : "#c04040", display: "inline-block", boxShadow: isOpen ? "0 0 7px rgba(74,222,128,0.7)" : "none" }} />
+              <span style={{ fontSize: 14, fontWeight: 700, fontFamily: "'Georgia',serif", color: isOpen ? "#4ade80" : "#e06060", letterSpacing: "0.3px" }}>{ABOUT_TEXT[isOpen ? "open" : "closed"][lang]}</span>
             </div>
-            <div style={{ display:"flex", alignItems:"baseline", gap:6 }}>
-              <span style={{ color:labelColor, fontSize:11, fontWeight:600, letterSpacing:"0.5px" }}>{ABOUT_TEXT.hours[lang]}</span>
-              <span style={{ color:valueColor, fontSize:15, fontWeight:700, fontFamily:"'Georgia',serif" }}>10:00 – 23:00</span>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+              <span style={{ color: labelColor, fontSize: 11, fontWeight: 600, letterSpacing: "0.5px" }}>{ABOUT_TEXT.hours[lang]}</span>
+              <span style={{ color: valueColor, fontSize: 15, fontWeight: 700, fontFamily: "'Georgia',serif" }}>10:00 – 23:00</span>
             </div>
-            <p style={{ color:isDark?"#64748b":"#9a7040", fontSize:11, lineHeight:1.55, margin:"8px 0 0" }}>{ABOUT_TEXT.matchDay[lang]}</p>
+            <p style={{ color: isDark ? "#64748b" : "#9a7040", fontSize: 11, lineHeight: 1.55, margin: "8px 0 0" }}>{scheduleSubtext}</p>
           </div>
           <AboutBeerMug isOpen={isOpen} />
+        </div>
+      </div>
+
+      {/* ── Location / Google Maps Section ── */}
+      <div style={{
+        background: cardBg,
+        border: `1px solid ${cardBorder}`,
+        borderRadius: 20,
+        padding: "20px 22px",
+        marginBottom: 20,
+        boxShadow: isDark ? "0 8px 32px rgba(0,0,0,0.4)" : "0 4px 20px rgba(180,120,40,0.1)",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 20 }}>📍</span>
+            <div>
+              <h2 style={{
+                margin: 0,
+                color: t.cardName || t.brandName,
+                fontSize: 16,
+                fontWeight: 700,
+                fontFamily: "'Georgia', serif",
+                lineHeight: 1.2,
+              }}>
+                {ABOUT_TEXT.location[lang] || "ადგილმდებარეობა"}
+              </h2>
+              <span style={{ fontSize: 12, color: labelColor }}>
+                {addressText}
+              </span>
+            </div>
+          </div>
+          <a
+            href="https://maps.google.com/?q=20+Ilia+Vekua+St,+Tbilisi"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              fontSize: 11,
+              fontWeight: 700,
+              color: t.brandName,
+              background: isDark ? "rgba(245,158,11,0.12)" : "rgba(180,120,40,0.12)",
+              border: `1px solid ${isDark ? "rgba(245,158,11,0.28)" : "rgba(180,120,40,0.28)"}`,
+              borderRadius: 14,
+              padding: "4px 10px",
+              textDecoration: "none",
+              fontFamily: "'Georgia', serif",
+              transition: "all 0.2s",
+            }}
+          >
+            Google Maps ↗
+          </a>
+        </div>
+
+        {/* Embedded Responsive Map */}
+        <div style={{
+          width: "100%",
+          height: 360,
+          borderRadius: 16,
+          overflow: "hidden",
+          border: `1px solid ${isDark ? "rgba(245,158,11,0.2)" : "rgba(180,120,40,0.2)"}`,
+          boxShadow: "inset 0 0 10px rgba(0,0,0,0.2)",
+          position: "relative",
+          background: isDark ? "#0b0f19" : "#f0ebe0",
+        }}>
+          <iframe
+            title="StaroPub Location - 20 Ilia Vekua St, Tbilisi"
+            src="https://maps.google.com/maps?q=20+Ilia+Vekua+St,+Tbilisi&t=&z=16&ie=UTF8&iwloc=&output=embed"
+            width="100%"
+            height="100%"
+            style={{ border: 0, display: "block" }}
+            allowFullScreen
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
         </div>
       </div>
     </div>
