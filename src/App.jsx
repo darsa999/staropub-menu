@@ -11,6 +11,7 @@ import AdminPage from "./pages/admin/AdminPage";
 import { ThemeProvider } from "./context/ThemeContext";
 import { LanguageProvider } from "./context/LanguageContext";
 import { CartProvider } from "./context/CartContext";
+import { ViewModeProvider } from "./context/ViewModeContext";
 import { useScrollSpy } from "./hooks/useScrollSpy";
 import { getMenuData } from "./services/api";
 
@@ -283,7 +284,9 @@ export default function App() {
     <ThemeProvider>
       <LanguageProvider>
         <CartProvider>
-          <MainApp />
+          <ViewModeProvider>
+            <MainApp />
+          </ViewModeProvider>
         </CartProvider>
       </LanguageProvider>
     </ThemeProvider>

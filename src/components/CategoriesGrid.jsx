@@ -1,10 +1,19 @@
 import React from "react";
 import CategoryCard from "./CategoryCard";
+import { useViewMode } from "../context/ViewModeContext";
 
 export default function CategoriesGrid({ categories, onSelectCategory, isLoading }) {
+  const { viewMode } = useViewMode();
+
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 w-full">
+      <div
+        className={
+          viewMode === "list"
+            ? "flex flex-col gap-3 divide-y divide-gray-100 dark:divide-zinc-800 lg:divide-y-0 lg:grid lg:grid-cols-4 lg:gap-6 xl:gap-8 w-full"
+            : "grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-6 xl:gap-8 w-full"
+        }
+      >
         {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
           <div
             key={i}
@@ -21,7 +30,13 @@ export default function CategoriesGrid({ categories, onSelectCategory, isLoading
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 w-full">
+    <div
+      className={
+        viewMode === "list"
+          ? "flex flex-col gap-3 divide-y divide-gray-100 dark:divide-zinc-800 lg:divide-y-0 lg:grid lg:grid-cols-4 lg:gap-6 xl:gap-8 w-full"
+          : "grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-6 xl:gap-8 w-full"
+      }
+    >
       {categories.map((category) => (
         <CategoryCard
           key={category.id}
