@@ -1,15 +1,128 @@
-import React from "react";
-import { Sun, Moon, ShoppingBag, Globe, UtensilsCrossed } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { ShoppingCart, Menu, X, Sun, Moon, Info, ChevronRight } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useCart } from "../context/CartContext";
 
-export default function Header({ onOpenLanguageDrawer, onLogoClick }) {
-  const { isDark, toggleTheme } = useTheme();
-  const { language, languages, t } = useLanguage();
-  const { totalCount, openCart } = useCart();
+/**
+ * Clean SVG flag icons for language selector
+ */
+export function FlagIcon({ code, className = "w-7 h-[18px]" }) {
+  if (code === "en") {
+    return (
+      <svg className={className} viewBox="0 0 30 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="30" height="20" fill="#B22234" />
+        <rect y="1.54" width="30" height="1.54" fill="#FFFFFF" />
+        <rect y="4.62" width="30" height="1.54" fill="#FFFFFF" />
+        <rect y="7.69" width="30" height="1.54" fill="#FFFFFF" />
+        <rect y="10.77" width="30" height="1.54" fill="#FFFFFF" />
+        <rect y="13.85" width="30" height="1.54" fill="#FFFFFF" />
+        <rect y="16.92" width="30" height="1.54" fill="#FFFFFF" />
+        <rect width="12" height="10.77" fill="#3C3B6E" />
+        <circle cx="2.5" cy="2.2" r="0.6" fill="#FFFFFF" />
+        <circle cx="6" cy="2.2" r="0.6" fill="#FFFFFF" />
+        <circle cx="9.5" cy="2.2" r="0.6" fill="#FFFFFF" />
+        <circle cx="4.25" cy="4.2" r="0.6" fill="#FFFFFF" />
+        <circle cx="7.75" cy="4.2" r="0.6" fill="#FFFFFF" />
+        <circle cx="2.5" cy="6.2" r="0.6" fill="#FFFFFF" />
+        <circle cx="6" cy="6.2" r="0.6" fill="#FFFFFF" />
+        <circle cx="9.5" cy="6.2" r="0.6" fill="#FFFFFF" />
+        <circle cx="4.25" cy="8.2" r="0.6" fill="#FFFFFF" />
+        <circle cx="7.75" cy="8.2" r="0.6" fill="#FFFFFF" />
+      </svg>
+    );
+  }
+  if (code === "ru") {
+    return (
+      <svg className={className} viewBox="0 0 30 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="30" height="6.67" fill="#FFFFFF" />
+        <rect y="6.67" width="30" height="6.67" fill="#0039A6" />
+        <rect y="13.34" width="30" height="6.66" fill="#D52B1E" />
+      </svg>
+    );
+  }
+  // Default: Georgian Flag (KA)
+  return (
+    <svg className={className} viewBox="0 0 30 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="30" height="20" fill="#FFFFFF" />
+      <rect x="13" width="4" height="20" fill="#FF0000" />
+      <rect y="8" width="30" height="4" fill="#FF0000" />
+      <path d="M5 4h3M6.5 2.5v3" stroke="#FF0000" strokeWidth="1.2" strokeLinecap="square" />
+      <path d="M22 4h3M23.5 2.5v3" stroke="#FF0000" strokeWidth="1.2" strokeLinecap="square" />
+      <path d="M5 16h3M6.5 14.5v3" stroke="#FF0000" strokeWidth="1.2" strokeLinecap="square" />
+      <path d="M22 16h3M23.5 14.5v3" stroke="#FF0000" strokeWidth="1.2" strokeLinecap="square" />
+    </svg>
+  );
+}
 
-  const currentLang = languages.find((l) => l.code === language) || languages[0];
+/**
+ * Compact pill-shaped theme toggle matching exact reference styling
+ */
+function ThemeTogglePill({ isDark, toggleTheme, className = "" }) {
+  return (
+    <button
+      onClick={toggleTheme}
+      type="button"
+      aria-label="Toggle theme"
+      className={`rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1 flex items-center gap-2 cursor-pointer shadow-sm hover:border-gray-300 transition select-none ${className}`}
+    >
+      <span className="w-5 h-5 rounded-full bg-black dark:bg-white shrink-0 transition-colors" />
+      <span className="text-[10px] leading-tight font-medium text-slate-500 dark:text-gray-300 select-none text-left">
+        {isDark ? "Dark" : "Light"}
+        <br />
+        Mode
+      </span>
+    </button>
+  );
+}
+
+/**
+ * Minimalist shopping cart outline with dynamic count badge
+ */
+function CartButton({ totalCount, openCart }) {
+  return (
+    <button
+      onClick={openCart}
+      type="button"
+      className="relative p-1 text-gray-700 dark:text-gray-200 hover:text-black dark:hover:text-white transition cursor-pointer focus:outline-none"
+      aria-label="Shopping Cart"
+    >
+      <ShoppingCart className="w-6 h-6 text-gray-700 dark:text-gray-200" strokeWidth={1.8} />
+      <span className="absolute -top-2 -right-2 bg-black dark:bg-white text-white dark:text-black text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-sm select-none">
+        {totalCount}
+      </span>
+    </button>
+  );
+}
+
+export default function Header({ onOpenLanguageDrawer, onLogoClick, onNavigateToAbout }) {
+  const { isDark, toggleTheme } = useTheme();
+  const { language, languages, setLanguage, t } = useLanguage();
+  const { totalCount, openCart } = useCart();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Close mobile drawer on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && isMobileMenuOpen) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isMobileMenuOpen]);
+
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMobileMenuOpen]);
 
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/90 dark:bg-zinc-900/90 border-b border-gray-200/80 dark:border-zinc-800 transition-colors duration-200">
@@ -47,54 +160,179 @@ export default function Header({ onOpenLanguageDrawer, onLogoClick }) {
             </div>
           </div>
 
-          {/* Right: Actions (Theme Toggle, Language Switcher, Cart Button) */}
-          {/* NOTE: Absolutely no user login / profile icon per core rules */}
-          <div className="flex items-center space-x-2 sm:space-x-3">
+          {/* Right Desktop Controls (hidden md:flex items-center gap-4) */}
+          <div className="hidden md:flex items-center gap-4">
             
-            {/* Theme Toggle */}
-            <button
-              onClick={toggleTheme}
-              type="button"
-              aria-label="Toggle theme"
-              className="p-2.5 rounded-full text-gray-600 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all"
-              title={isDark ? "Light Mode" : "Dark Mode"}
-            >
-              {isDark ? (
-                <Sun className="w-5 h-5 text-amber-400 hover:rotate-45 transition-transform duration-300" />
-              ) : (
-                <Moon className="w-5 h-5 text-gray-700 hover:-rotate-12 transition-transform duration-300" />
-              )}
-            </button>
+            {/* Pill-shaped Theme Toggle */}
+            <ThemeTogglePill isDark={isDark} toggleTheme={toggleTheme} />
 
-            {/* Language Switcher Trigger */}
+            {/* Rectangular Flat Flag Trigger */}
             <button
               onClick={onOpenLanguageDrawer}
               type="button"
-              className="flex items-center space-x-1.5 px-3 py-2 rounded-full border border-gray-200 dark:border-zinc-700 bg-gray-50/80 dark:bg-zinc-800/80 hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-800 dark:text-zinc-200 text-sm font-medium transition-all shadow-sm"
+              className="rounded-sm border border-gray-200 dark:border-gray-700 hover:opacity-90 transition cursor-pointer overflow-hidden shadow-xs flex items-center justify-center"
               title={t("selectLanguage")}
+              aria-label="Select language"
             >
-              <span className="text-base leading-none select-none">{currentLang.flag}</span>
-              <span className="font-semibold text-xs tracking-wider">{currentLang.subLabel}</span>
+              <FlagIcon code={language} className="w-7 h-[18px] block object-cover" />
             </button>
 
-            {/* Cart Button with Dynamic Badge */}
-            <button
-              onClick={openCart}
-              type="button"
-              className="relative flex items-center justify-center p-2.5 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-100 shadow-md transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-amber-500"
-              aria-label="Shopping Cart"
-            >
-              <ShoppingBag className="w-5 h-5" />
-              {totalCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 rounded-full bg-amber-600 text-white text-xs font-bold flex items-center justify-center ring-2 ring-white dark:ring-zinc-900 shadow-sm animate-pulse">
-                  {totalCount}
-                </span>
-              )}
-            </button>
+            {/* Minimalist Shopping Cart Outline Icon with Badge */}
+            <CartButton totalCount={totalCount} openCart={openCart} />
 
           </div>
+
+          {/* Right Mobile Controls (md:hidden flex items-center gap-3) */}
+          <div className="md:hidden flex items-center gap-3">
+            {/* Quick-access Cart Icon visible with its quantity badge */}
+            <CartButton totalCount={totalCount} openCart={openCart} />
+
+            {/* Hamburger Menu Button */}
+            <button
+              onClick={() => setIsMobileMenuOpen(true)}
+              type="button"
+              className="p-2 rounded-xl text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+              aria-label="Open menu"
+            >
+              <Menu className="w-6 h-6 stroke-[2]" />
+            </button>
+          </div>
+
         </div>
       </div>
+
+      {/* Mobile Drawer Slide-over */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-50 overflow-hidden md:hidden">
+          {/* Backdrop Overlay */}
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity animate-fadeIn"
+            onClick={() => setIsMobileMenuOpen(false)}
+            aria-hidden="true"
+          />
+
+          {/* Drawer Container */}
+          <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
+            <div className="w-screen max-w-xs sm:max-w-sm bg-white dark:bg-zinc-900 shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out border-l border-gray-200 dark:border-zinc-800">
+              
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-zinc-800">
+                <div className="flex items-center space-x-3">
+                  <div className="w-9 h-9 rounded-xl overflow-hidden border border-amber-600/30 shrink-0 bg-[#0a2318]">
+                    <img src="/logo.jpg" alt="StaroPub Logo" className="w-full h-full object-cover" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold text-gray-900 dark:text-white leading-tight">
+                      StaroPub-სტარო პაბი
+                    </h2>
+                    <span className="text-[10px] uppercase font-semibold text-amber-600 dark:text-amber-400">
+                      Menu &amp; Navigation
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-2 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                  aria-label="Close menu"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Drawer Content */}
+              <div className="p-5 space-y-4 flex-1 overflow-y-auto">
+                
+                {/* 1. "ჩვენს შესახებ" (About Us) Navigation Link */}
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    onNavigateToAbout && onNavigateToAbout();
+                  }}
+                  type="button"
+                  className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-amber-500/10 dark:bg-amber-950/30 text-amber-900 dark:text-amber-300 font-bold hover:bg-amber-500/20 transition-all border border-amber-600/20 text-left"
+                >
+                  <span className="flex items-center gap-3">
+                    <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                    <span className="text-sm font-bold">{t("navAbout")}</span>
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-amber-600/70 dark:text-amber-400/70" />
+                </button>
+
+                {/* 2. Theme switch row: clear label with pill toggle (Light / Dark) */}
+                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-gray-50 dark:bg-zinc-800/50 border border-gray-100 dark:border-zinc-800">
+                  <div className="flex items-center gap-2.5">
+                    {isDark ? (
+                      <Moon className="w-4 h-4 text-amber-400" />
+                    ) : (
+                      <Sun className="w-4 h-4 text-amber-600" />
+                    )}
+                    <span className="text-xs font-semibold text-gray-700 dark:text-zinc-200">
+                      {isDark ? "Dark Mode" : "Light Mode"}
+                    </span>
+                  </div>
+                  <ThemeTogglePill isDark={isDark} toggleTheme={toggleTheme} />
+                </div>
+
+                {/* 3. Language selector: full options with flags (ქართული, English, Русский) */}
+                <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-zinc-800/50 border border-gray-100 dark:border-zinc-800 space-y-2">
+                  <div className="text-[11px] font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
+                    {t("selectLanguage")}
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {languages.map((item) => {
+                      const isSelected = language === item.code;
+                      return (
+                        <button
+                          key={item.code}
+                          type="button"
+                          onClick={() => {
+                            setLanguage(item.code);
+                          }}
+                          className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${
+                            isSelected
+                              ? "border-amber-600 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold shadow-xs"
+                              : "border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 font-medium hover:border-gray-300"
+                          }`}
+                        >
+                          <div className="rounded-xs overflow-hidden border border-gray-200/60 shadow-xs mb-1.5">
+                            <FlagIcon code={item.code} className="w-6 h-4 block object-cover" />
+                          </div>
+                          <span className="text-[11px]">{item.subLabel}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 4. View Cart button with item counter */}
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    openCart();
+                  }}
+                  type="button"
+                  className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 font-bold shadow-md hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-all active:scale-[0.99] text-left"
+                >
+                  <span className="flex items-center gap-2.5">
+                    <ShoppingCart className="w-5 h-5" strokeWidth={2} />
+                    <span className="text-sm">{t("cartTitle")}</span>
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-amber-500 text-white text-xs font-bold shadow-xs">
+                    {totalCount}
+                  </span>
+                </button>
+
+              </div>
+
+              {/* Drawer Footer */}
+              <div className="p-4 border-t border-gray-100 dark:border-zinc-800 text-[11px] text-gray-400 dark:text-zinc-500 text-center">
+                StaroPub • OFOODO 2026©
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

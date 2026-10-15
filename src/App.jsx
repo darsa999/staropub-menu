@@ -215,6 +215,7 @@ function MainApp() {
       <Header
         onOpenLanguageDrawer={() => setIsLangDrawerOpen(true)}
         onLogoClick={handleLogoClick}
+        onNavigateToAbout={handleNavAbout}
       />
 
       {/* Sticky Category Navigation Bar: Persistently visible under header on Catalog View */}
