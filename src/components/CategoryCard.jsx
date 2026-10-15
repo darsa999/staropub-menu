@@ -8,7 +8,7 @@ export default function CategoryCard({ category, onClick }) {
   return (
     <div
       onClick={() => onClick(category)}
-      className="group relative flex flex-col rounded-3xl overflow-hidden cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 bg-white dark:bg-zinc-900 border border-gray-200/80 dark:border-zinc-800"
+      className="group relative w-full flex flex-col rounded-3xl overflow-hidden cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 bg-white dark:bg-zinc-900 border border-gray-200/80 dark:border-zinc-800"
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {

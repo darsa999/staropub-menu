@@ -48,7 +48,7 @@ export default function StickyCategoryNav({
 
   return (
     <div className="sticky top-20 z-30 w-full bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-b border-gray-200/80 dark:border-zinc-800 transition-colors shadow-xs">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative flex items-center">
+      <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 relative flex items-center">
         
         {/* Left Arrow Button */}
         <button

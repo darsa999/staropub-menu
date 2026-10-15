@@ -20,7 +20,7 @@ export default function ProductCard({ product }) {
   const localizedTitle = getLocalizedField(product.name);
 
   return (
-    <div className="group flex flex-col justify-between bg-white dark:bg-zinc-900 rounded-3xl p-3.5 border border-gray-200/80 dark:border-zinc-800 shadow-sm hover:shadow-md transition-all duration-300">
+    <div className="group w-full flex flex-col justify-between bg-white dark:bg-zinc-900 rounded-3xl p-3.5 border border-gray-200/80 dark:border-zinc-800 shadow-sm hover:shadow-md transition-all duration-300">
       <div>
         {/* Image Container: Rounded corners, aspect ratio matching food photography, subtle hover zoom */}
         <div className="relative w-full aspect-[4/3] overflow-hidden rounded-2xl bg-gray-100 dark:bg-zinc-800 mb-3.5">

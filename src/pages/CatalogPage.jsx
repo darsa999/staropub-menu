@@ -54,7 +54,7 @@ export default function CatalogPage({
           {[1, 2, 3].map((s) => (
             <div key={s} className="animate-pulse">
               <div className="h-7 w-48 bg-gray-200 dark:bg-zinc-800 rounded-lg mb-6" />
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
                 {[1, 2, 3, 4].map((i) => (
                   <div
                     key={i}

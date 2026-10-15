@@ -4,7 +4,7 @@ import CategoryCard from "./CategoryCard";
 export default function CategoriesGrid({ categories, onSelectCategory, isLoading }) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
         {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
           <div
             key={i}
@@ -21,7 +21,7 @@ export default function CategoriesGrid({ categories, onSelectCategory, isLoading
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
       {categories.map((category) => (
         <CategoryCard
           key={category.id}

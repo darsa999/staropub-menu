@@ -210,7 +210,7 @@ function MainApp() {
       )}
 
       {/* Main View Router */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+      <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 pb-20">
         {currentView === "home" && (
           <div className="pt-6">
             {/* VIEW 1: HOME PAGE - ONLY Categories Grid */}
