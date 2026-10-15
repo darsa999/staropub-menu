@@ -3,10 +3,17 @@
 @tailwind utilities;
 
 @layer base {
+  html,
+  body,
+  #root {
+    width: 100%;
+    max-width: none;
+  }
   html {
     scroll-behavior: smooth;
   }
   body {
+    margin: 0;
     font-family: 'Noto Sans Georgian', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   }
 }
