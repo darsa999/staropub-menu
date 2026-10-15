@@ -1,33 +1,24 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Phone, MapPin, ExternalLink, ArrowLeft, Compass } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
-import { API_BASE_URL } from "../services/api";
+
+// Static pub settings - eliminates network roundtrip and /settings 404
+const PUB_SETTINGS = {
+  isOpen: true,
+  workingHours: "10:00 – 23:00",
+  workingDays: "ყოველდღე",
+  matchDayNote: "მატჩის დღეებში პაბი მუშაობს მატჩის ბოლომდე",
+  contactPhone: "+995 595 93 11 19",
+};
 
 export default function AboutPage({ onBackToHome }) {
   const { t } = useLanguage();
-  const [liveSettings, setLiveSettings] = useState(null);
 
-  useEffect(() => {
-    let isMounted = true;
-    fetch(`${API_BASE_URL}/settings`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (isMounted && data) {
-          setLiveSettings(data);
-        }
-      })
-      .catch(() => {});
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  const isOpen = liveSettings?.isOpen ?? true;
-  const workingHours = liveSettings?.workingHours || "10:00 – 23:00";
-  const workingDays = liveSettings?.workingDays || "ყოველდღე";
-  const matchDayNote = liveSettings?.matchDayNote || "მატჩის დღეებში პაბი მუშაობს მატჩის ბოლომდე";
-  const contactPhone = liveSettings?.contactPhone || "+995 595 93 11 19";
+  const isOpen = PUB_SETTINGS.isOpen;
+  const workingHours = PUB_SETTINGS.workingHours;
+  const workingDays = PUB_SETTINGS.workingDays;
+  const matchDayNote = PUB_SETTINGS.matchDayNote;
+  const contactPhone = PUB_SETTINGS.contactPhone;
 
   return (
     <div className="w-full pt-6">

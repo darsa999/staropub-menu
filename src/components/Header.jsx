@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { ShoppingCart, Menu, X, Sun, Moon, Info, ChevronRight } from "lucide-react";
+import { createPortal } from "react-dom";
+import { ShoppingCart, Menu, Sun, Moon, Info, ChevronRight } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useCart } from "../context/CartContext";
@@ -97,7 +98,7 @@ function CartButton({ totalCount, openCart }) {
 
 export default function Header({ onOpenLanguageDrawer, onLogoClick, onNavigateToAbout }) {
   const { isDark, toggleTheme } = useTheme();
-  const { language, languages, setLanguage, t } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const { totalCount, openCart } = useCart();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -137,7 +138,7 @@ export default function Header({ onOpenLanguageDrawer, onLogoClick, onNavigateTo
             tabIndex={0}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
-                onLogoClick && onLogoClick();
+                if (onLogoClick) onLogoClick();
               }
             }}
           >
@@ -201,137 +202,142 @@ export default function Header({ onOpenLanguageDrawer, onLogoClick, onNavigateTo
         </div>
       </div>
 
-      {/* Mobile Drawer Slide-over */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-50 overflow-hidden md:hidden">
-          {/* Backdrop Overlay */}
+      {/* Mobile Slide-over Drawer mounted via React Portal */}
+      {isMobileMenuOpen && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-50 md:hidden">
+          {/* Dark semi-transparent backdrop overlay */}
           <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity animate-fadeIn"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity"
             onClick={() => setIsMobileMenuOpen(false)}
             aria-hidden="true"
           />
 
-          {/* Drawer Container */}
-          <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-            <div className="w-screen max-w-xs sm:max-w-sm bg-white dark:bg-zinc-900 shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out border-l border-gray-200 dark:border-zinc-800">
-              
-              {/* Drawer Header */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-zinc-800">
-                <div className="flex items-center space-x-3">
-                  <div className="w-9 h-9 rounded-xl overflow-hidden border border-amber-600/30 shrink-0 bg-[#0a2318]">
-                    <img src="/logo.jpg" alt="StaroPub Logo" className="w-full h-full object-cover" />
-                  </div>
-                  <div>
-                    <h2 className="text-sm font-bold text-gray-900 dark:text-white leading-tight">
-                      StaroPub-სტარო პაბი
-                    </h2>
-                    <span className="text-[10px] uppercase font-semibold text-amber-600 dark:text-amber-400">
-                      Menu &amp; Navigation
-                    </span>
-                  </div>
+          {/* Drawer container: fixed top-0 right-0 h-full w-[85%] max-w-sm bg-white dark:bg-gray-900 shadow-2xl z-50 flex flex-col p-6 overflow-y-auto */}
+          <div
+            className="fixed top-0 right-0 h-full w-[85%] max-w-sm bg-white dark:bg-gray-900 shadow-2xl z-50 flex flex-col p-6 overflow-y-auto border-l border-gray-200 dark:border-gray-800 animate-in slide-in-from-right duration-300"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Navigation Menu"
+          >
+            {/* Drawer Header: Pub Title & Logo + Close Button ("✕") with clear padding and click handler to set isMobileMenuOpen = false */}
+            <div className="flex items-center justify-between pb-5 border-b border-gray-100 dark:border-gray-800 shrink-0">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-xl overflow-hidden border border-amber-600/30 shrink-0 bg-[#0a2318] shadow-sm">
+                  <img src="/logo.jpg" alt="StaroPub Logo" className="w-full h-full object-cover" />
                 </div>
-                <button
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="p-2 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
-                  aria-label="Close menu"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                <div>
+                  <h2 className="text-sm font-bold text-gray-900 dark:text-white leading-tight">
+                    StaroPub-სტარო პაბი
+                  </h2>
+                  <span className="text-[10px] uppercase font-semibold text-amber-600 dark:text-amber-400">
+                    PUB &amp; RESTAURANT
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                type="button"
+                className="p-2 -mr-1.5 rounded-xl text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer text-xl font-bold leading-none flex items-center justify-center w-10 h-10 select-none"
+                aria-label="Close menu"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Drawer Body (Clear list with spacious touch targets) */}
+            <div className="py-6 flex-1 space-y-5">
+              {/* 1. "ჩვენს შესახებ" (About Us) button/link */}
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  if (onNavigateToAbout) onNavigateToAbout();
+                }}
+                type="button"
+                className="w-full flex items-center justify-between p-4 rounded-2xl bg-amber-500/10 dark:bg-amber-950/30 text-amber-900 dark:text-amber-300 font-bold hover:bg-amber-500/20 active:scale-[0.99] transition-all border border-amber-600/20 text-left cursor-pointer"
+              >
+                <span className="flex items-center gap-3">
+                  <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <span className="text-base font-bold">ჩვენს შესახებ</span>
+                </span>
+                <ChevronRight className="w-5 h-5 text-amber-600/80 dark:text-amber-400/80" />
+              </button>
+
+              {/* 2. Theme Mode Switcher: Dedicated row with label "თემა" (Theme) and the pill-shaped Light/Dark toggle */}
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-800">
+                <div className="flex items-center gap-3">
+                  {isDark ? (
+                    <Moon className="w-5 h-5 text-amber-400 shrink-0" />
+                  ) : (
+                    <Sun className="w-5 h-5 text-amber-600 shrink-0" />
+                  )}
+                  <span className="text-base font-bold text-gray-800 dark:text-gray-100">
+                    თემა
+                  </span>
+                </div>
+                <ThemeTogglePill isDark={isDark} toggleTheme={toggleTheme} />
               </div>
 
-              {/* Drawer Content */}
-              <div className="p-5 space-y-4 flex-1 overflow-y-auto">
-                
-                {/* 1. "ჩვენს შესახებ" (About Us) Navigation Link */}
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    onNavigateToAbout && onNavigateToAbout();
-                  }}
-                  type="button"
-                  className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-amber-500/10 dark:bg-amber-950/30 text-amber-900 dark:text-amber-300 font-bold hover:bg-amber-500/20 transition-all border border-amber-600/20 text-left"
-                >
-                  <span className="flex items-center gap-3">
-                    <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
-                    <span className="text-sm font-bold">{t("navAbout")}</span>
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-amber-600/70 dark:text-amber-400/70" />
-                </button>
-
-                {/* 2. Theme switch row: clear label with pill toggle (Light / Dark) */}
-                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-gray-50 dark:bg-zinc-800/50 border border-gray-100 dark:border-zinc-800">
-                  <div className="flex items-center gap-2.5">
-                    {isDark ? (
-                      <Moon className="w-4 h-4 text-amber-400" />
-                    ) : (
-                      <Sun className="w-4 h-4 text-amber-600" />
-                    )}
-                    <span className="text-xs font-semibold text-gray-700 dark:text-zinc-200">
-                      {isDark ? "Dark Mode" : "Light Mode"}
-                    </span>
-                  </div>
-                  <ThemeTogglePill isDark={isDark} toggleTheme={toggleTheme} />
+              {/* 3. Language Switcher: Row/List showing all languages with flags (ქართული, English, Русский) */}
+              <div className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-800 space-y-3">
+                <div className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  {t("selectLanguage")}
                 </div>
-
-                {/* 3. Language selector: full options with flags (ქართული, English, Русский) */}
-                <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-zinc-800/50 border border-gray-100 dark:border-zinc-800 space-y-2">
-                  <div className="text-[11px] font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                    {t("selectLanguage")}
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {languages.map((item) => {
-                      const isSelected = language === item.code;
-                      return (
-                        <button
-                          key={item.code}
-                          type="button"
-                          onClick={() => {
-                            setLanguage(item.code);
-                          }}
-                          className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${
-                            isSelected
-                              ? "border-amber-600 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold shadow-xs"
-                              : "border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 font-medium hover:border-gray-300"
-                          }`}
-                        >
-                          <div className="rounded-xs overflow-hidden border border-gray-200/60 shadow-xs mb-1.5">
-                            <FlagIcon code={item.code} className="w-6 h-4 block object-cover" />
-                          </div>
-                          <span className="text-[11px]">{item.subLabel}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { code: "ka", name: "ქართული" },
+                    { code: "en", name: "English" },
+                    { code: "ru", name: "Русский" },
+                  ].map((item) => {
+                    const isSelected = language === item.code;
+                    return (
+                      <button
+                        key={item.code}
+                        type="button"
+                        onClick={() => {
+                          setLanguage(item.code);
+                        }}
+                        className={`flex flex-col items-center justify-center p-2.5 rounded-xl border transition-all cursor-pointer ${
+                          isSelected
+                            ? "border-amber-600 bg-amber-500/15 text-amber-700 dark:text-amber-300 font-bold shadow-sm ring-1 ring-amber-600/30"
+                            : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium hover:border-gray-300"
+                        }`}
+                      >
+                        <div className="rounded-xs overflow-hidden border border-gray-200/60 shadow-xs mb-1.5">
+                          <FlagIcon code={item.code} className="w-7 h-[18px] block object-cover" />
+                        </div>
+                        <span className="text-xs font-medium">{item.name}</span>
+                      </button>
+                    );
+                  })}
                 </div>
-
-                {/* 4. View Cart button with item counter */}
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    openCart();
-                  }}
-                  type="button"
-                  className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 font-bold shadow-md hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-all active:scale-[0.99] text-left"
-                >
-                  <span className="flex items-center gap-2.5">
-                    <ShoppingCart className="w-5 h-5" strokeWidth={2} />
-                    <span className="text-sm">{t("cartTitle")}</span>
-                  </span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-amber-500 text-white text-xs font-bold shadow-xs">
-                    {totalCount}
-                  </span>
-                </button>
-
               </div>
 
-              {/* Drawer Footer */}
-              <div className="p-4 border-t border-gray-100 dark:border-zinc-800 text-[11px] text-gray-400 dark:text-zinc-500 text-center">
-                StaroPub • OFOODO 2026©
-              </div>
+              {/* 4. Cart Action: Clear button with Cart icon and item counter badge */}
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  openCart();
+                }}
+                type="button"
+                className="w-full flex items-center justify-between p-4 rounded-2xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold shadow-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-all active:scale-[0.99] text-left cursor-pointer"
+              >
+                <span className="flex items-center gap-3">
+                  <ShoppingCart className="w-5 h-5" strokeWidth={2} />
+                  <span className="text-base font-bold">{t("cartTitle")}</span>
+                </span>
+                <span className="px-3 py-1 rounded-full bg-amber-500 text-white text-xs font-bold shadow-xs">
+                  {totalCount}
+                </span>
+              </button>
+            </div>
 
+            {/* Drawer Footer */}
+            <div className="pt-4 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-400 dark:text-gray-500 text-center shrink-0">
+              StaroPub • OFOODO 2026©
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </header>
   );
