@@ -20,8 +20,23 @@ function MainApp() {
 
   // Current view: 'home' (Categories Grid ONLY) | 'catalog' (Grouped Products Catalog) | 'about'
   const [currentView, setCurrentView] = useState("home");
-  const [menuData, setMenuData] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Preloaded data from server-side render / build
+  const [menuData, setMenuData] = useState(() => {
+    if (typeof window !== "undefined") {
+      if (Array.isArray(window.__PRELOADED_MENU__) && window.__PRELOADED_MENU__.length > 0) {
+        return window.__PRELOADED_MENU__;
+      }
+      try {
+        const cached = localStorage.getItem("staropub_prod_menu_cache_v4");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch {}
+    }
+    return [];
+  });
+  const [isLoading, setIsLoading] = useState(() => menuData.length === 0);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLangDrawerOpen, setIsLangDrawerOpen] = useState(false);
   const pendingScrollCategoryRef = useRef(null);
@@ -56,16 +71,18 @@ function MainApp() {
     setCurrentView("home");
   };
 
-  // Load menu data grouped by category on mount
+  // Sync menu data from serverless route /api/menu in background
   useEffect(() => {
     let isCancelled = false;
     async function loadData() {
       try {
-        setIsLoading(true);
+        if (menuData.length === 0) {
+          setIsLoading(true);
+        }
         const data = await getMenuData();
-        if (!isCancelled) {
-          console.log("Fetched live categories:", data);
-          setMenuData(Array.isArray(data) ? data : []);
+        if (!isCancelled && Array.isArray(data) && data.length > 0) {
+          console.log("Synced server categories:", data.length);
+          setMenuData(data);
         }
       } catch (err) {
         console.error("Failed to fetch menu data:", err);

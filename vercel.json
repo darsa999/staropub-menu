@@ -1,6 +1,14 @@
 {
   "rewrites": [
     {
+      "source": "/api/menu",
+      "destination": "/api/menu"
+    },
+    {
+      "source": "/api/catalog",
+      "destination": "/api/catalog"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://staropub-menu.onrender.com/api/:path*"
     },

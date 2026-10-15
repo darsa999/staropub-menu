@@ -1,28 +1,17 @@
 import { mockCategories, mockProducts } from "../data/mockData.js";
 
-// Resolve API Base URL and Origin safely in both browser (Vite) and Node
+// Resolve API Base URL safely in browser (Vite) and Node
 const env = typeof import.meta !== "undefined" && import.meta?.env ? import.meta.env : {};
 
-// Primary API URL:
-// In browser/Vercel/Vite, defaults to relative '/api'.
-// In production: vercel.json rewrites /api/:path* to https://staropub-menu.onrender.com/api/:path* (Bypasses CORS completely)
-// In local dev: vite.config.js proxies /api to https://staropub-menu.onrender.com/api
-// In Node/SSR (without window): falls back to direct URL
+// Internal same-origin API Base URL:
+// In browser/Vercel/Vite, points to relative '/api'
 const isBrowser = typeof window !== "undefined";
 export const API_BASE_URL = (
   env.VITE_API_URL || (isBrowser ? "/api" : "https://staropub-menu.onrender.com/api")
 ).replace(/\/+$/, "");
 
-// Direct fallback backend host
-export const DIRECT_BACKEND_URL = "https://staropub-menu.onrender.com/api";
-
-// Backward-compatible alias
-export const BASE_URL = API_BASE_URL;
-
 // Base origin for resolving media assets (Cloudinary URLs remain untouched)
-export const API_ORIGIN = API_BASE_URL.startsWith("http")
-  ? API_BASE_URL.replace(/\/api\/?$/, "")
-  : "https://staropub-menu.onrender.com";
+export const API_ORIGIN = "https://staropub-menu.onrender.com";
 
 export const USE_REAL_BACKEND = env.VITE_USE_REAL_BACKEND !== "false";
 
@@ -30,52 +19,30 @@ const SIMULATE_LATENCY_MS = 120;
 const CACHE_KEY = "staropub_prod_menu_cache_v4";
 
 /**
- * Robust endpoint fetcher:
- * 1. Queries the same-origin proxied /api route (zero CORS restrictions)
- * 2. Falls back to direct onrender backend if needed
+ * Same-origin endpoint fetcher:
+ * Queries the same-origin proxied /api route with zero CORS restrictions.
+ * Never makes direct client-side calls to third-party backends.
  */
 export async function fetchEndpoint(endpointPath, options = {}) {
   const cleanPath = endpointPath.startsWith("/") ? endpointPath : `/${endpointPath}`;
-
-  // 1. Primary: relative /api (proxied via Vercel / Vite)
   const primaryUrl = `${API_BASE_URL}${cleanPath}`;
   try {
     const res = await fetch(primaryUrl, options);
     if (res.ok) {
       return { ok: true, response: res, url: primaryUrl };
     }
-    console.warn(`[StaroPub API] Proxied route ${primaryUrl} returned HTTP ${res.status}. Attempting direct backend...`);
   } catch (err) {
-    console.warn(`[StaroPub API] Proxied route ${primaryUrl} network failure (${err.message}). Attempting direct backend...`);
+    console.warn(`[StaroPub API] Route ${primaryUrl} network failure: ${err.message}`);
   }
-
-  // 2. Secondary: direct onrender backend
-  const fallbackUrl = `${DIRECT_BACKEND_URL}${cleanPath}`;
-  try {
-    const res2 = await fetch(fallbackUrl, options);
-    if (res2.ok) {
-      return { ok: true, response: res2, url: fallbackUrl };
-    }
-    console.error(`[StaroPub API Error] Direct backend ${fallbackUrl} returned HTTP ${res2.status}.`);
-    return { ok: false, status: res2.status };
-  } catch (err2) {
-    console.error(`[StaroPub API Error] Direct backend ${fallbackUrl} network failure: ${err2.message}`);
-    return { ok: false, error: err2 };
-  }
+  return { ok: false, status: 500 };
 }
 
 /**
  * Extracts a clean numeric price from a dish object.
- * Handles:
- * - multi-tier prices array: [{ size: "0.4 ლ", price: 9.2 }, ...] -> 9.2
- * - currency formatted strings: "3.5 ₾", "11.9 ₾", "89 ₾" -> 3.5, 11.9, 89
- * - range / portion strings: "0.4ლ - 9.2₾ | 1.0ლ - 18.9₾" -> 9.2
- * - numeric floats / ints: 14.5 -> 14.5
  */
 export function extractNumericPrice(dish) {
   if (!dish) return 0;
 
-  // 1. Check prices array (multi-size options)
   if (Array.isArray(dish.prices) && dish.prices.length > 0) {
     for (const p of dish.prices) {
       const val = typeof p?.price === "number" ? p.price : parseFloat(String(p?.price || ""));
@@ -83,28 +50,23 @@ export function extractNumericPrice(dish) {
     }
   }
 
-  // 2. Check if price is directly a valid number
   if (typeof dish.price === "number" && !isNaN(dish.price)) {
     return dish.price;
   }
 
-  // 3. If price is a string
   if (typeof dish.price === "string") {
-    // Look for Georgian lari currency symbol (e.g., "3.5 ₾", "11.9 ₾", "89₾")
     const gelMatch = dish.price.match(/(\d+(?:\.\d+)?)\s*₾/);
     if (gelMatch) {
       const parsed = parseFloat(gelMatch[1]);
       if (!isNaN(parsed)) return parsed;
     }
 
-    // Look for delimiter format like "0.4ლ - 9.2"
     const dashMatch = dish.price.match(/[-:]\s*(\d+(?:\.\d+)?)/);
     if (dashMatch) {
       const parsed = parseFloat(dashMatch[1]);
       if (!isNaN(parsed)) return parsed;
     }
 
-    // Direct parseFloat
     const parsed = parseFloat(dish.price);
     if (!isNaN(parsed)) return parsed;
   }
@@ -114,14 +76,12 @@ export function extractNumericPrice(dish) {
 
 /**
  * Normalizes and resolves an image URL to a full accessible URL.
- * Supports Cloudinary URLs, absolute URLs, and relative paths.
  */
 export function resolveMediaUrl(imagePath, apiOrigin = API_ORIGIN) {
   if (!imagePath || typeof imagePath !== "string") return "";
   const trimmed = imagePath.trim();
   if (!trimmed) return "";
 
-  // Permanent absolute remote URLs (Cloudinary, AWS, Vercel Blob) or inline data/blob URLs
   if (
     trimmed.startsWith("http://") ||
     trimmed.startsWith("https://") ||
@@ -132,13 +92,9 @@ export function resolveMediaUrl(imagePath, apiOrigin = API_ORIGIN) {
   }
 
   const origin = (apiOrigin || "").replace(/\/+$/, "");
-
-  // Starts with leading slash (e.g. /Images/... or /uploads/...)
   if (trimmed.startsWith("/")) {
     return `${origin}${trimmed}`;
   }
-
-  // Starts with Images/ or uploads/
   if (
     trimmed.startsWith("Images/") ||
     trimmed.startsWith("images/") ||
@@ -147,7 +103,6 @@ export function resolveMediaUrl(imagePath, apiOrigin = API_ORIGIN) {
     return `${origin}/${trimmed}`;
   }
 
-  // Standalone filename
   return `${origin}/Images/${trimmed}`;
 }
 
@@ -230,11 +185,11 @@ export function transformMenuData(rawCategories, rawDishes, apiOrigin = API_ORIG
       ru: cat.name_ru || cat.name || cat.title?.ru || id,
     };
 
-    // Category image: prioritize category's own Cloudinary/remote image,
-    // fallback to first dish image with valid photo, fallback to branded asset
     let image = cat.image ? resolveMediaUrl(cat.image, apiOrigin) : "";
     if (!image) {
-      const firstWithImage = catProducts.find((p) => p.image && !p.image.includes("staropub_main.jpg"));
+      const firstWithImage = catProducts.find(
+        (p) => p.image && !p.image.includes("staropub_main.jpg")
+      );
       if (firstWithImage) {
         image = firstWithImage.image;
       }
@@ -274,63 +229,76 @@ function getMockMenuData() {
 
 /**
  * Fetch full grouped menu data (categories with nested products).
- * Concurrently fetches /api/categories, /api/dishes, and /api/settings,
- * then groups and transforms them directly in memory.
+ * All catalog fetching is moved server-side:
+ * 1. Checks window.__PRELOADED_MENU__ (server-side preloaded data)
+ * 2. Fetches internal Vercel Serverless Function /api/menu
+ * 3. Falls back to localStorage cache if network is offline
+ * 4. Falls back to static mock data if uninitialized
+ *
+ * NOTE: The client browser NEVER makes direct third-party calls to staropub-menu.onrender.com.
  */
 export async function getMenuData() {
+  // 1. Initial check: If window already has preloaded data from server-side render / build
+  if (
+    typeof window !== "undefined" &&
+    Array.isArray(window.__PRELOADED_MENU__) &&
+    window.__PRELOADED_MENU__.length > 0
+  ) {
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(window.__PRELOADED_MENU__));
+    } catch {}
+  }
+
   if (USE_REAL_BACKEND) {
     try {
-      // Concurrently query categories and dishes
-      const [catResult, dishesResult, settingsResult] = await Promise.all([
-        fetchEndpoint("/categories"),
-        fetchEndpoint("/dishes"),
-        fetchEndpoint("/settings"),
-      ]);
+      // Internal single serverless call to /api/menu (zero external browser network calls)
+      const res = await fetch("/api/menu", {
+        headers: { Accept: "application/json" },
+      });
 
-      if (catResult.ok && dishesResult.ok) {
-        const rawCategories = await catResult.response.json();
-        const rawDishes = await dishesResult.response.json();
-        const settingsData = settingsResult.ok
-          ? await settingsResult.response.json().catch(() => ({}))
-          : {};
+      if (res.ok) {
+        const payload = await res.json();
+        const data = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.categories)
+            ? payload.categories
+            : Array.isArray(payload?.menu)
+              ? payload.menu
+              : [];
 
-        const unavailableSet = new Set(
-          Array.isArray(settingsData?.unavailableDishIds) ? settingsData.unavailableDishIds : []
-        );
-
-        const transformed = transformMenuData(
-          rawCategories,
-          rawDishes,
-          API_ORIGIN,
-          unavailableSet
-        );
-
-        if (Array.isArray(transformed) && transformed.length > 0) {
+        if (Array.isArray(data) && data.length > 0) {
           try {
             if (typeof localStorage !== "undefined") {
-              localStorage.setItem(CACHE_KEY, JSON.stringify(transformed));
+              localStorage.setItem(CACHE_KEY, JSON.stringify(data));
             }
           } catch {}
 
-          console.log("Fetched live categories:", transformed);
           console.info(
-            `[StaroPub API] Loaded ${transformed.length} categories and ${rawDishes.length} dishes via ${catResult.url}.`
+            `[StaroPub API] Loaded ${data.length} categories from internal server route /api/menu.`
           );
-          return transformed;
+          return data;
         }
       }
     } catch (err) {
-      console.error("[StaroPub API Error] Failed to fetch live menu data:", err);
+      console.warn("[StaroPub API] Internal /api/menu fetch notice:", err.message);
     }
 
-    // Fallback to cached production menu in localStorage
+    // Fallback 1: Preloaded server data if available
+    if (
+      typeof window !== "undefined" &&
+      Array.isArray(window.__PRELOADED_MENU__) &&
+      window.__PRELOADED_MENU__.length > 0
+    ) {
+      return window.__PRELOADED_MENU__;
+    }
+
+    // Fallback 2: Cached production menu in localStorage
     try {
       if (typeof localStorage !== "undefined") {
         const cached = localStorage.getItem(CACHE_KEY);
         if (cached) {
           const parsed = JSON.parse(cached);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            console.warn("[StaroPub API] Using previously cached live production menu from localStorage.");
             return parsed;
           }
         }
@@ -338,11 +306,7 @@ export async function getMenuData() {
     } catch {}
   }
 
-  // Log visible error before falling back to local static mock data
-  console.error(
-    "[StaroPub API Error] Live production API is unreachable and no cache exists. Falling back to static mockData.js."
-  );
-
+  // Fallback 3: Static mock data
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve(getMockMenuData());
@@ -351,33 +315,10 @@ export async function getMenuData() {
 }
 
 /**
- * Fetch restaurant categories
- * Returns array of category objects: [ { id, slug, title, image, products } ]
+ * Fetch restaurant categories (delegates to getMenuData)
  */
 export async function getCategories() {
-  if (USE_REAL_BACKEND) {
-    try {
-      const [catResult, dishResult] = await Promise.all([
-        fetchEndpoint("/categories"),
-        fetchEndpoint("/dishes"),
-      ]);
-
-      if (catResult.ok) {
-        const rawCategories = await catResult.response.json();
-        const rawDishes = dishResult.ok ? await dishResult.response.json() : [];
-        return transformMenuData(rawCategories, rawDishes, API_ORIGIN);
-      }
-    } catch (err) {
-      console.error("[StaroPub API Error] Categories fetch failed:", err);
-    }
-  }
-
-  console.error("[StaroPub API Error] Returning static mock categories as fallback.");
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve([...mockCategories]);
-    }, SIMULATE_LATENCY_MS);
-  });
+  return getMenuData();
 }
 
 /**
@@ -395,73 +336,31 @@ export async function getProducts(categoryIdOrOptions = null, searchQueryParam =
     search = searchQueryParam || "";
   }
 
-  if (USE_REAL_BACKEND) {
-    try {
-      const params = new URLSearchParams();
-      if (categoryId && categoryId !== "all") params.append("categoryId", categoryId);
-      if (search.trim()) params.append("search", search.trim());
-
-      const query = params.toString() ? `?${params.toString()}` : "";
-      let resResult = await fetchEndpoint(`/products${query}`);
-      if (!resResult.ok) {
-        resResult = await fetchEndpoint("/dishes");
-      }
-
-      if (resResult.ok) {
-        const rawDishes = await resResult.response.json();
-        let products = rawDishes.map((d) => adaptDishToProduct(d, API_ORIGIN));
-
-        if (categoryId && categoryId !== "all") {
-          products = products.filter(
-            (p) =>
-              p.categoryId === categoryId ||
-              p.categoryId.toLowerCase() === categoryId.toLowerCase()
-          );
-        }
-
-        if (search && search.trim()) {
-          const q = search.trim().toLowerCase();
-          products = products.filter((p) => {
-            const nameKa = (p.name?.ka || p.title?.ka || "").toLowerCase();
-            const nameEn = (p.name?.en || p.title?.en || "").toLowerCase();
-            const nameRu = (p.name?.ru || p.title?.ru || "").toLowerCase();
-            return nameKa.includes(q) || nameEn.includes(q) || nameRu.includes(q);
-          });
-        }
-
-        return products;
-      }
-    } catch (err) {
-      console.error("[StaroPub API Error] Products fetch failed:", err);
+  const menu = await getMenuData();
+  let allProducts = [];
+  for (const cat of menu) {
+    if (Array.isArray(cat.products)) {
+      allProducts.push(...cat.products);
     }
   }
 
-  console.error("[StaroPub API Error] Returning static mock products as fallback.");
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      let results = [...mockProducts];
+  if (categoryId && categoryId !== "all") {
+    allProducts = allProducts.filter(
+      (p) =>
+        p.categoryId === categoryId ||
+        p.categoryId.toLowerCase() === categoryId.toLowerCase()
+    );
+  }
 
-      if (categoryId && categoryId !== "all") {
-        results = results.filter(
-          (p) => p.categoryId === categoryId || p.categoryId === categoryId.replace("-", "_")
-        );
-      }
+  if (search && search.trim()) {
+    const q = search.trim().toLowerCase();
+    allProducts = allProducts.filter((p) => {
+      const nameKa = (p.name?.ka || p.title?.ka || "").toLowerCase();
+      const nameEn = (p.name?.en || p.title?.en || "").toLowerCase();
+      const nameRu = (p.name?.ru || p.title?.ru || "").toLowerCase();
+      return nameKa.includes(q) || nameEn.includes(q) || nameRu.includes(q);
+    });
+  }
 
-      if (search && search.trim()) {
-        const query = search.trim().toLowerCase();
-        results = results.filter((p) => {
-          const nameKa = (p.name?.ka || p.title?.ka || "").toLowerCase();
-          const nameEn = (p.name?.en || p.title?.en || "").toLowerCase();
-          const nameRu = (p.name?.ru || p.title?.ru || "").toLowerCase();
-          return (
-            nameKa.includes(query) ||
-            nameEn.includes(query) ||
-            nameRu.includes(query)
-          );
-        });
-      }
-
-      resolve(results);
-    }, SIMULATE_LATENCY_MS);
-  });
+  return allProducts;
 }
