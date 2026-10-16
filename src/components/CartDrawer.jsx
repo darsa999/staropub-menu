@@ -127,6 +127,8 @@ export default function CartDrawer() {
                     <img
                       src={product.image}
                       alt={localizedTitle}
+                      loading="lazy"
+                      decoding="async"
                       className="w-16 h-16 rounded-xl object-cover shrink-0"
                     />
 

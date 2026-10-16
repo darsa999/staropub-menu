@@ -33,6 +33,7 @@ export default function ProductCard({ product }) {
               src={product.image}
               alt={localizedTitle}
               loading="lazy"
+              decoding="async"
               className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
             />
             {!product.available && (
@@ -105,6 +106,7 @@ export default function ProductCard({ product }) {
               src={product.image}
               alt={localizedTitle}
               loading="lazy"
+              decoding="async"
               className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
             />
             {!product.available && (

@@ -146,6 +146,7 @@ export default function Header({ onOpenLanguageDrawer, onLogoClick, onNavigateTo
               <img
                 src="/logo.jpg"
                 alt="StaroPub Logo"
+                decoding="async"
                 className="w-full h-full object-cover"
               />
             </div>
@@ -223,7 +224,7 @@ export default function Header({ onOpenLanguageDrawer, onLogoClick, onNavigateTo
             <div className="flex items-center justify-between pb-5 border-b border-gray-100 dark:border-gray-800 shrink-0">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 rounded-xl overflow-hidden border border-amber-600/30 shrink-0 bg-[#0a2318] shadow-sm">
-                  <img src="/logo.jpg" alt="StaroPub Logo" className="w-full h-full object-cover" />
+                  <img src="/logo.jpg" alt="StaroPub Logo" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                 </div>
                 <div>
                   <h2 className="text-sm font-bold text-gray-900 dark:text-white leading-tight">

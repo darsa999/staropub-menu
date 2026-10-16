@@ -22,6 +22,8 @@ export default function Footer({ onNavHome, onNavAbout }) {
                 <img
                   src="/logo.jpg"
                   alt="StaroPub Logo"
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover"
                 />
               </div>

@@ -37,11 +37,12 @@ export default function CategoriesGrid({ categories, onSelectCategory, isLoading
           : "grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-6 xl:gap-8 w-full"
       }
     >
-      {categories.map((category) => (
+      {categories.map((category, index) => (
         <CategoryCard
           key={category.id}
           category={category}
           onClick={onSelectCategory}
+          priority={index < 4}
         />
       ))}
     </div>

@@ -3,7 +3,7 @@ import { ChevronRight } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 import { useViewMode } from "../context/ViewModeContext";
 
-export default function CategoryCard({ category, onClick }) {
+export default function CategoryCard({ category, onClick, priority = false }) {
   const { getLocalizedField } = useLanguage();
   const { viewMode } = useViewMode();
   const title = getLocalizedField(category.title || category.name);
@@ -31,7 +31,9 @@ export default function CategoryCard({ category, onClick }) {
             <img
               src={category.image}
               alt={title}
-              loading="lazy"
+              loading={priority ? "eager" : "lazy"}
+              fetchPriority={priority ? "high" : "auto"}
+              decoding="async"
               className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
             />
           </div>
@@ -74,7 +76,9 @@ export default function CategoryCard({ category, onClick }) {
           <img
             src={category.image}
             alt={title}
-            loading="lazy"
+            loading={priority ? "eager" : "lazy"}
+            fetchPriority={priority ? "high" : "auto"}
+            decoding="async"
             className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
           />
           {/* Subtle hover gradient sheen */}

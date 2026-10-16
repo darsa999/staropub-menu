@@ -44,6 +44,8 @@ export default function AboutPage({ onBackToHome }) {
           <img
             src="/Images/staropub_main.jpg"
             alt="StaroPub Interior"
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover object-center scale-105 group-hover:scale-110 transition-transform duration-1000 ease-out opacity-40 filter blur-[1px]"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/75 to-black/60" />
