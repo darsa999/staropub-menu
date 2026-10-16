@@ -96,10 +96,10 @@ export default function CartDrawer() {
                   <CheckCircle2 className="w-10 h-10" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                  შეკვეთა მიღებულია!
+                  {t("orderReceived")}
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-zinc-400 max-w-xs">
-                  თქვენი შეკვეთა წარმატებით გადაეგზავნა სამზარეულოს.
+                  {t("orderSentSuccess")}
                 </p>
               </div>
             ) : items.length === 0 ? (
@@ -111,7 +111,7 @@ export default function CartDrawer() {
                   {t("emptyCart")}
                 </h3>
                 <p className="text-xs text-gray-500 dark:text-zinc-400 max-w-xs">
-                  დაამატეთ თქვენთვის სასურველი კერძები მენიუდან.
+                  {t("emptyCartSubtext")}
                 </p>
               </div>
             ) : (

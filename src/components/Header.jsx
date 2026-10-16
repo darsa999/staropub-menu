@@ -257,7 +257,7 @@ export default function Header({ onOpenLanguageDrawer, onLogoClick, onNavigateTo
               >
                 <span className="flex items-center gap-3">
                   <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
-                  <span className="text-base font-bold">ჩვენს შესახებ</span>
+                  <span className="text-base font-bold">{t("aboutUs")}</span>
                 </span>
                 <ChevronRight className="w-5 h-5 text-amber-600/80 dark:text-amber-400/80" />
               </button>
@@ -271,7 +271,7 @@ export default function Header({ onOpenLanguageDrawer, onLogoClick, onNavigateTo
                     <Sun className="w-5 h-5 text-amber-600 shrink-0" />
                   )}
                   <span className="text-base font-bold text-gray-800 dark:text-gray-100">
-                    თემა
+                    {t("theme")}
                   </span>
                 </div>
                 <ThemeTogglePill isDark={isDark} toggleTheme={toggleTheme} />

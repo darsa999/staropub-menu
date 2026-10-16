@@ -30,14 +30,14 @@ export default function Footer({ onNavHome, onNavAbout }) {
               </span>
             </div>
             <p className="text-sm text-zinc-400 leading-relaxed max-w-sm">
-              საუკეთესო ჩეხური და ევროპული ლუდი, საფირმო ნეკნები და მყუდრო გარემო გლდანში.
+              {t("footerSlogan")}
             </p>
           </div>
 
           {/* Contact Details */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-white uppercase tracking-wider">
-              კონტაქტი
+              {t("contact")}
             </h3>
             <ul className="space-y-3 text-sm">
               <li className="flex items-center space-x-3">
@@ -74,7 +74,7 @@ export default function Footer({ onNavHome, onNavAbout }) {
           {/* Navigation Links */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-white uppercase tracking-wider">
-              ნავიგაცია
+              {t("navigation")}
             </h3>
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-sm">
               <li>
