@@ -11,31 +11,9 @@ const getTimestampedUrl = (url) => {
   return `${cleanUrl}?t=${Date.now()}`;
 };
 
-const INITIAL_CATEGORY_LABELS = {
-  grill:      { ka: "🔥 გრილი",               en: "🔥 Grill",        ru: "🔥 Гриль" },
-  khinkali:   { ka: "🥟 ხინკალი",             en: "🥟 Khinkali",     ru: "🥟 Хинкали" },
-  hot_dishes: { ka: "🍲 ცხელი კერძები",       en: "🍲 Hot Dishes",   ru: "🍲 Горячие блюда" },
-  cold_dishes:{ ka: "🥗 ცივი კერძები",        en: "🥗 Cold Dishes",  ru: "🥗 Холодные закуски" },
-  soup:       { ka: "🍜 წვნიანი კერძები",     en: "🍜 Soups",        ru: "🍜 Супы" },
-  salad:      { ka: "🥗 სალათები",            en: "🥗 Salads",       ru: "🥗 Salaty" },
-  cheese:     { ka: "🧀 ყველი",               en: "🧀 Cheese",       ru: "🧀 Сыр" },
-  bakery:     { ka: "🫓 ცომეული",             en: "🫓 Bakery",       ru: "🫓 Выпечка" },
-  fish:       { ka: "🐟 თევზეული",            en: "🐟 Fish",         ru: "🐟 Рыба" },
-  side:       { ka: "🍚 გარნირი",             en: "🍚 Side Dishes",  ru: "🍚 Гарниры" },
-  beer:       { ka: "🍺 ლუდი",               en: "🍺 Beer",         ru: "🍺 Пиво" },
-  hot_drink:  { ka: "☕ ცხელი სასმელები",     en: "☕ Hot Drinks",   ru: "☕ Горячие напитки" },
-  Alcohol:    { ka: "🥃 სპირტიანი სასმელები", en: "🥃 Spirits",      ru: "🥃 Крепкие напитки" },
-  sauces:     { ka: "🫙 სოუსები",             en: "🫙 Sauces",       ru: "🫙 Соусы" },
-  snacks:     { ka: "🍟 წასახემსებელი",       en: "🍟 Snacks",       ru: "🍟 Закуски" },
-};
-
-const INITIAL_CATEGORY_ICONS = {
-  grill: "🔥", khinkali: "🥟", hot_dish: "🍲", soup: "🍜", salad: "🥗",
-  cheese: "🧀", bakery: "🫓", fish: "🐟", side: "🍚", beer: "🍺",
-  hot_drink: "☕", alcohol: "🥃", spirits: "🥃", sauces: "🫙", snacks: "🍟",
-};
-
-const INITIAL_HOT_CATEGORIES = new Set(["grill", "hot_dishes", "hot_dish", "soup", "khinkali"]);
+const INITIAL_CATEGORY_LABELS = {};
+const INITIAL_CATEGORY_ICONS = {};
+const INITIAL_HOT_CATEGORIES = new Set();
 
 export default function AdminPage({ onBackToSite }) {
   const [lang] = useState("ka");
@@ -51,7 +29,7 @@ export default function AdminPage({ onBackToSite }) {
   const [authRememberMe, setAuthRememberMe] = useState(true);
   const [authError, setAuthError] = useState("");
 
-  // Data states from StaroPub.jsx
+  // Data states from server
   const [allItems, setAllItems] = useState([]);
   const [dbCategories, setDbCategories] = useState([]);
   const [categoryOrder, setCategoryOrder] = useState([]);
@@ -62,20 +40,14 @@ export default function AdminPage({ onBackToSite }) {
   const [unavailableDishIds, setUnavailableDishIds] = useState([]);
 
   // Waiter & Settings states
-  const [waiterCalls, setWaiterCalls] = useState([
-    { id: 1, table: "3", type: "მიმტანი 💁‍♂️", time: "15:20:00" },
-    { id: 2, table: "2", type: "ანგარიში 🧾", time: "15:22:15" },
-  ]);
+  const [waiterCalls, setWaiterCalls] = useState([]);
   const [bannerSettings, setBannerSettings] = useState({
-    enabled: true,
-    text: "საფირმო ჩეხური ნეკნები - 15% ფასდაკლება!",
-    image: "sapirmo chexuri neknebi.jpg",
-    badge: "დღის შეთავაზება",
+    enabled: false,
+    text: "",
+    image: "",
+    badge: "",
   });
-  const [reviews, setReviews] = useState([
-    { id: 1, name: "გიორგი", rating: 5, comment: "საუკეთესო ნეკნები და ლუდია ქალაქში!", date: "2026-07-01", table: "3" },
-    { id: 2, name: "Elena", rating: 4, comment: "Great atmosphere and quick service.", date: "2026-07-02", table: "5" }
-  ]);
+  const [reviews, setReviews] = useState([]);
   const [customMenuEnabled, setCustomMenuEnabled] = useState(true);
   const [callWaiterEnabled, setCallWaiterEnabled] = useState(true);
   const [requestBillEnabled, setRequestBillEnabled] = useState(true);

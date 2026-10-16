@@ -12,32 +12,20 @@ function serverMenuPlugin() {
           try {
             const data = await fetchServerMenu();
             res.setHeader('Content-Type', 'application/json; charset=utf-8');
-            res.setHeader('Cache-Control', 'no-cache');
+            res.setHeader('Cache-Control', 'no-store');
             res.statusCode = 200;
-            res.end(JSON.stringify(data));
+            res.end(JSON.stringify(Array.isArray(data) ? data : []));
             return;
           } catch (err) {
             console.error('[Dev /api/menu Error]:', err);
-            res.statusCode = 500;
-            res.setHeader('Content-Type', 'application/json');
-            res.end(JSON.stringify({ error: err.message }));
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.end(JSON.stringify([]));
             return;
           }
         }
         next();
       });
-    },
-    async transformIndexHtml(html) {
-      try {
-        const preloadedData = await fetchServerMenu();
-        if (Array.isArray(preloadedData) && preloadedData.length > 0) {
-          const scriptTag = `<script id="server-preloaded-menu">window.__PRELOADED_MENU__ = ${JSON.stringify(preloadedData)};</script>`;
-          return html.replace('</head>', `  ${scriptTag}\n  </head>`);
-        }
-      } catch (err) {
-        console.warn('[Build Preload Warning] Live fetch during build skipped, falling back to runtime serverless route:', err.message);
-      }
-      return html;
     },
   };
 }

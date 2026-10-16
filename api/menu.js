@@ -1,9 +1,8 @@
 import https from "node:https";
-import { mockCategories, mockProducts } from "../src/data/mockData.js";
 
 const BACKEND_BASE = "https://staropub-menu.onrender.com/api";
-const CACHE_TTL_MS = 60 * 1000; // 60 seconds server-side in-memory cache
-const UPSTREAM_TIMEOUT_MS = 8500; // 8.5s timeout to stay safely within Vercel 10s limit
+const CACHE_TTL_MS = 15 * 1000; // 15 seconds server-side in-memory cache for burst protection
+const UPSTREAM_TIMEOUT_MS = 9000; // 9s timeout to handle Render cold-starts safely
 
 let memoryCache = {
   data: null,
@@ -18,22 +17,6 @@ const httpsAgent = new https.Agent({
   rejectUnauthorized: false,
   keepAlive: true,
 });
-
-/**
- * Builds static fallback menu data so /api/menu always has valid categories & products
- * even during a cold-start timeout when memoryCache is not yet warm.
- */
-function getFallbackMenuData() {
-  return (mockCategories || []).map((cat) => {
-    const catProducts = (mockProducts || []).filter(
-      (p) => p.categoryId === cat.id || p.categoryId === cat.id.replace("-", "_")
-    );
-    return {
-      ...cat,
-      products: catProducts,
-    };
-  });
-}
 
 /**
  * Low-level HTTPS JSON fetcher with AbortController & socket timeout support.
@@ -53,7 +36,7 @@ function fetchNodeJson(url, timeoutMs = UPSTREAM_TIMEOUT_MS, signal = null) {
       },
       (res) => {
         if (res.statusCode && (res.statusCode < 200 || res.statusCode >= 300)) {
-          res.resume(); // Drain socket to prevent memory leaks
+          res.resume();
           return reject(new Error(`HTTP ${res.statusCode} from ${url}`));
         }
         let raw = "";
@@ -100,7 +83,7 @@ function fetchNodeJson(url, timeoutMs = UPSTREAM_TIMEOUT_MS, signal = null) {
 
 /**
  * Safe wrapper for individual upstream endpoint calls.
- * Uses AbortController (8-10s limit) and never throws, returning fallbackValue on failure.
+ * Uses AbortController and never throws, returning fallbackValue on failure.
  */
 async function safeFetchEndpoint(url, fallbackValue = null, timeoutMs = UPSTREAM_TIMEOUT_MS) {
   const controller = new AbortController();
@@ -237,6 +220,7 @@ export function adaptDishToProduct(dish, apiOrigin = "https://staropub-menu.onre
     prices: Array.isArray(dish.prices) ? dish.prices : [],
     image,
     available,
+    order: typeof dish.order === "number" ? dish.order : 0,
   };
 }
 
@@ -244,11 +228,18 @@ export function adaptDishToProduct(dish, apiOrigin = "https://staropub-menu.onre
  * Transforms raw categories and dishes into grouped categories with nested products.
  */
 export function transformMenuData(rawCategories, rawDishes, apiOrigin = "https://staropub-menu.onrender.com", unavailableSet = null) {
-  const adaptedProducts = (rawDishes || []).map((dish) =>
+  const sortedRawDishes = [...(rawDishes || [])].sort(
+    (a, b) => (typeof a.order === "number" ? a.order : 0) - (typeof b.order === "number" ? b.order : 0)
+  );
+  const sortedRawCategories = [...(rawCategories || [])].sort(
+    (a, b) => (typeof a.order === "number" ? a.order : 0) - (typeof b.order === "number" ? b.order : 0)
+  );
+
+  const adaptedProducts = sortedRawDishes.map((dish) =>
     adaptDishToProduct(dish, apiOrigin, unavailableSet)
   );
 
-  return (rawCategories || []).map((cat) => {
+  return sortedRawCategories.map((cat) => {
     const id = String(cat.id || cat._id || "");
     const catProducts = adaptedProducts.filter(
       (p) =>
@@ -295,9 +286,8 @@ export function transformMenuData(rawCategories, rawDishes, apiOrigin = "https:/
 }
 
 /**
- * Server-side orchestrator that fetches categories, dishes, and settings
- * from Render backend securely with /api strictly prepended.
- * Resilient against partial failures and cold-start timeouts.
+ * Server-side orchestrator that fetches live categories, dishes, and settings
+ * directly from Render backend with /api strictly prepended.
  */
 export async function fetchServerMenu() {
   const now = Date.now();
@@ -334,29 +324,20 @@ export async function fetchServerMenu() {
     memoryCache.settings = rawSettings;
   }
 
-  // If at least one of categories or dishes is available, transform with safe fallbacks
-  if (
-    (Array.isArray(categories) && categories.length > 0) ||
-    (Array.isArray(dishes) && dishes.length > 0)
-  ) {
+  if (Array.isArray(categories) && categories.length > 0) {
     const unavailableSet = new Set(
       Array.isArray(settings?.unavailableDishIds) ? settings.unavailableDishIds : []
     );
 
-    const effectiveCategories =
-      Array.isArray(categories) && categories.length > 0 ? categories : mockCategories;
-    const effectiveDishes = Array.isArray(dishes) ? dishes : [];
-
     const transformed = transformMenuData(
-      effectiveCategories,
-      effectiveDishes,
+      categories,
+      Array.isArray(dishes) ? dishes : [],
       "https://staropub-menu.onrender.com",
       unavailableSet
     );
 
     if (Array.isArray(transformed) && transformed.length > 0) {
-      // Only cache for full TTL if both categories and dishes were available
-      if (Array.isArray(categories) && categories.length > 0 && Array.isArray(dishes)) {
+      if (Array.isArray(rawCategories) && rawCategories.length > 0 && Array.isArray(rawDishes)) {
         memoryCache.data = transformed;
         memoryCache.timestamp = now;
       } else if (!memoryCache.data) {
@@ -366,35 +347,32 @@ export async function fetchServerMenu() {
     }
   }
 
-  // Fallback 1: Return last known good in-memory cache even if expired
   if (Array.isArray(memoryCache.data) && memoryCache.data.length > 0) {
     return memoryCache.data;
   }
 
-  // Fallback 2: Return static fallback menu data so /api/menu never fails with 500
-  return getFallbackMenuData();
+  return [];
 }
 
 /**
  * Vercel Serverless Function Handler (/api/menu)
- * Always returns HTTP 200 with valid JSON menu data.
+ * Always returns HTTP 200 with live server menu data.
  */
 export default async function handler(req, res) {
   let data = [];
   try {
     data = await fetchServerMenu();
-    if (!Array.isArray(data) || data.length === 0) {
-      data = memoryCache.data || getFallbackMenuData();
+    if (!Array.isArray(data)) {
+      data = memoryCache.data || [];
     }
   } catch (err) {
-    console.error("[Serverless /api/menu Fallback Notice]:", err);
-    data = memoryCache.data || getFallbackMenuData();
+    console.error("[Serverless /api/menu Notice]:", err);
+    data = memoryCache.data || [];
   }
 
-  // Support Node.js runtime res object
   if (res && typeof res.setHeader === "function") {
     res.setHeader("Content-Type", "application/json; charset=utf-8");
-    res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate=300");
+    res.setHeader("Cache-Control", "no-store, max-age=0");
     res.setHeader("Access-Control-Allow-Origin", "*");
 
     if (typeof res.status === "function") {
@@ -404,14 +382,14 @@ export default async function handler(req, res) {
     return res.end(JSON.stringify(data));
   }
 
-  // Support Web Standard Response (Vercel Edge or unit tests)
   return new Response(JSON.stringify(data), {
     status: 200,
     headers: {
       "Content-Type": "application/json; charset=utf-8",
-      "Cache-Control": "s-maxage=60, stale-while-revalidate=300",
+      "Cache-Control": "no-store, max-age=0",
       "Access-Control-Allow-Origin": "*",
     },
   });
 }
+
 

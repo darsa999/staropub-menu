@@ -1,5 +1,3 @@
-import { mockCategories, mockProducts } from "../data/mockData.js";
-
 // Resolve API Base URL safely in browser (Vite) and Node
 const env = typeof import.meta !== "undefined" && import.meta?.env ? import.meta.env : {};
 
@@ -13,15 +11,11 @@ export const API_BASE_URL = (
 // Base origin for resolving media assets (Cloudinary URLs remain untouched)
 export const API_ORIGIN = "https://staropub-menu.onrender.com";
 
-export const USE_REAL_BACKEND = env.VITE_USE_REAL_BACKEND !== "false";
-
-const SIMULATE_LATENCY_MS = 120;
-const CACHE_KEY = "staropub_prod_menu_cache_v4";
+export const USE_REAL_BACKEND = true;
 
 /**
  * Same-origin endpoint fetcher:
  * Queries the same-origin proxied /api route with zero CORS restrictions.
- * Never makes direct client-side calls to third-party backends.
  */
 export async function fetchEndpoint(endpointPath, options = {}) {
   const cleanPath = endpointPath.startsWith("/") ? endpointPath : `/${endpointPath}`;
@@ -215,103 +209,56 @@ export function transformMenuData(rawCategories, rawDishes, apiOrigin = API_ORIG
   });
 }
 
-function getMockMenuData() {
-  return mockCategories.map((cat) => {
-    const catProducts = mockProducts.filter(
-      (p) => p.categoryId === cat.id || p.categoryId === cat.id.replace("-", "_")
-    );
-    return {
-      ...cat,
-      products: catProducts,
-    };
-  });
-}
-
 /**
- * Fetch full grouped menu data (categories with nested products).
- * All catalog fetching is moved server-side:
- * 1. Checks window.__PRELOADED_MENU__ (server-side preloaded data)
- * 2. Fetches internal Vercel Serverless Function /api/menu
- * 3. Falls back to localStorage cache if network is offline
- * 4. Falls back to static mock data if uninitialized
- *
- * NOTE: The client browser NEVER makes direct third-party calls to staropub-menu.onrender.com.
+ * Fetch full grouped menu data (categories with nested products) strictly from the server.
+ * Zero localStorage caching and zero mock fallbacks.
  */
 export async function getMenuData() {
-  // 1. Initial check: If window already has preloaded data from server-side render / build
-  if (
-    typeof window !== "undefined" &&
-    Array.isArray(window.__PRELOADED_MENU__) &&
-    window.__PRELOADED_MENU__.length > 0
-  ) {
-    try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify(window.__PRELOADED_MENU__));
-    } catch {}
+  try {
+    const res = await fetch("/api/menu", {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    });
+
+    if (res.ok) {
+      const payload = await res.json();
+      const data = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.categories)
+          ? payload.categories
+          : Array.isArray(payload?.menu)
+            ? payload.menu
+            : [];
+
+      if (Array.isArray(data) && data.length > 0) {
+        return data;
+      }
+    }
+  } catch (err) {
+    console.warn("[StaroPub API] /api/menu fetch error:", err.message);
   }
 
-  if (USE_REAL_BACKEND) {
-    try {
-      // Internal single serverless call to /api/menu (zero external browser network calls)
-      const res = await fetch("/api/menu", {
-        headers: { Accept: "application/json" },
-      });
+  // Direct same-origin proxy fallback (/api/categories + /api/dishes)
+  try {
+    const [catRes, dishRes, settingsRes] = await Promise.all([
+      fetch(`${API_BASE_URL}/categories`, { cache: "no-store", headers: { Accept: "application/json" } }),
+      fetch(`${API_BASE_URL}/dishes`, { cache: "no-store", headers: { Accept: "application/json" } }),
+      fetch(`${API_BASE_URL}/settings`, { cache: "no-store", headers: { Accept: "application/json" } }).catch(() => null),
+    ]);
 
-      if (res.ok) {
-        const payload = await res.json();
-        const data = Array.isArray(payload)
-          ? payload
-          : Array.isArray(payload?.categories)
-            ? payload.categories
-            : Array.isArray(payload?.menu)
-              ? payload.menu
-              : [];
-
-        if (Array.isArray(data) && data.length > 0) {
-          try {
-            if (typeof localStorage !== "undefined") {
-              localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-            }
-          } catch {}
-
-          console.info(
-            `[StaroPub API] Loaded ${data.length} categories from internal server route /api/menu.`
-          );
-          return data;
-        }
-      }
-    } catch (err) {
-      console.warn("[StaroPub API] Internal /api/menu fetch notice:", err.message);
+    if (catRes.ok && dishRes.ok) {
+      const [categories, dishes] = await Promise.all([catRes.json(), dishRes.json()]);
+      const settings = settingsRes && settingsRes.ok ? await settingsRes.json().catch(() => ({})) : {};
+      const unavailableSet = new Set(
+        Array.isArray(settings?.unavailableDishIds) ? settings.unavailableDishIds : []
+      );
+      return transformMenuData(categories, dishes, API_ORIGIN, unavailableSet);
     }
-
-    // Fallback 1: Preloaded server data if available
-    if (
-      typeof window !== "undefined" &&
-      Array.isArray(window.__PRELOADED_MENU__) &&
-      window.__PRELOADED_MENU__.length > 0
-    ) {
-      return window.__PRELOADED_MENU__;
-    }
-
-    // Fallback 2: Cached production menu in localStorage
-    try {
-      if (typeof localStorage !== "undefined") {
-        const cached = localStorage.getItem(CACHE_KEY);
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed;
-          }
-        }
-      }
-    } catch {}
+  } catch (err) {
+    console.warn("[StaroPub API] Direct proxy fetch error:", err.message);
   }
 
-  // Fallback 3: Static mock data
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(getMockMenuData());
-    }, SIMULATE_LATENCY_MS);
-  });
+  return [];
 }
 
 /**

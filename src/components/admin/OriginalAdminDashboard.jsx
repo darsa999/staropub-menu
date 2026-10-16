@@ -30,23 +30,7 @@ export const resolveImageSrc = (img) => {
   return `${API_URL}/Images/${trimmed}`;
 };
 
-const INITIAL_CATEGORY_LABELS = {
-  grill:      { ka: "🔥 გრილი",               en: "🔥 Grill",        ru: "🔥 Гриль" },
-  khinkali:   { ka: "🥟 ხინკალი",             en: "🥟 Khinkali",     ru: "🥟 Хინкали" },
-  hot_dishes: { ka: "🍲 ცხელი კერძები",       en: "🍲 Hot Dishes",   ru: "🍲 Горячие блюда" },
-  cold_dishes:{ ka: "🥗 ცივი კერძები",        en: "🥗 Cold Dishes",  ru: "🥗 Холодные закуски" },
-  soup:       { ka: "🍜 წვნიანი კერძები",     en: "🍜 Soups",        ru: "🍜 Супы" },
-  salad:      { ka: "🥗 სალათები",            en: "🥗 Salads",       ru: "🥗 Salaty" },
-  cheese:     { ka: "🧀 ყველი",               en: "🧀 Cheese",       ru: "🧀 Сыр" },
-  bakery:     { ka: "🫓 ცომეული",             en: "🫓 Bakery",       ru: "🫓 Выпечка" },
-  fish:       { ka: "🐟 თევზეული",            en: "🐟 Fish",         ru: "🐟 Рыба" },
-  side:       { ka: "🍚 გარნირი",             en: "🍚 Side Dishes",  ru: "🍚 Гарниры" },
-  beer:       { ka: "🍺 ლუდი",               en: "🍺 Beer",         ru: "🍺 Пиво" },
-  hot_drink:  { ka: "☕ ცხელი სასმელები",     en: "☕ Hot Drinks",   ru: "☕ Горячие напитки" },
-  Alcohol:    { ka: "🥃 სპირტიანი სასმელები", en: "🥃 Spirits",      ru: "🥃 Крепкие напитки" },
-  sauces:     { ka: "🫙 სოუსები",             en: "🫙 Sauces",       ru: "🫙 Соусы" },
-  snacks:     { ka: "🍟 წასახემსებელი",       en: "🍟 Snacks",       ru: "🍟 Закуски" },
-};
+const INITIAL_CATEGORY_LABELS = {};
 
 export function parseMultiPrice(rawOrItem) {
   if (!rawOrItem) return null;

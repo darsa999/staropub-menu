@@ -3,32 +3,14 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from "
 export const CartContext = createContext();
 
 export function CartProvider({ children }) {
-  // Safe initial state matching server/HTML default
   const [items, setItems] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     try {
-      const saved = localStorage.getItem("app_cart");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          setItems(parsed);
-        }
-      }
+      localStorage.removeItem("app_cart");
     } catch {}
   }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
-    try {
-      localStorage.setItem("app_cart", JSON.stringify(items));
-    } catch (e) {
-      console.error("Failed to persist cart", e);
-    }
-  }, [items, mounted]);
 
   const addItem = (product, quantity = 1) => {
     setItems((prev) => {
