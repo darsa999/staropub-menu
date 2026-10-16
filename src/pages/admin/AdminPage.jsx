@@ -1,15 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
-import OriginalAdminDashboard, { resolveImageSrc } from "../../components/admin/OriginalAdminDashboard";
+import OriginalAdminDashboard from "../../components/admin/OriginalAdminDashboard";
 import { auth, googleProvider, signInWithPopup } from "../../admin/firebase";
 
 const RAW_API_URL = import.meta.env.VITE_API_URL || "";
 const API_URL = RAW_API_URL ? RAW_API_URL.replace(/\/api\/?$/, "").replace(/\/+$/, "") : "";
-
-const getTimestampedUrl = (url) => {
-  if (!url) return "";
-  const cleanUrl = url.split("?t=")[0];
-  return `${cleanUrl}?t=${Date.now()}`;
-};
 
 const INITIAL_CATEGORY_LABELS = {};
 const INITIAL_CATEGORY_ICONS = {};
@@ -53,8 +47,6 @@ export default function AdminPage({ onBackToSite }) {
   const [requestBillEnabled, setRequestBillEnabled] = useState(true);
   const [isCartEnabled, setIsCartEnabled] = useState(true);
   const [reviewFormEnabled, setReviewFormEnabled] = useState(true);
-  const [bgImage, setBgImage] = useState("");
-  const [aboutImage, setAboutImage] = useState("");
 
   const refreshMenuData = useCallback(async () => {
     try {
@@ -92,8 +84,6 @@ export default function AdminPage({ onBackToSite }) {
 
       if (settingsRes.status === "fulfilled" && settingsRes.value.ok) {
         const settingsMap = await settingsRes.value.json();
-        if (settingsMap.bgImage) setBgImage(getTimestampedUrl(settingsMap.bgImage));
-        if (settingsMap.aboutImage) setAboutImage(getTimestampedUrl(settingsMap.aboutImage));
         if (typeof settingsMap.callWaiterEnabled === "boolean") setCallWaiterEnabled(settingsMap.callWaiterEnabled);
         if (typeof settingsMap.requestBillEnabled === "boolean") setRequestBillEnabled(settingsMap.requestBillEnabled);
         if (typeof settingsMap.isCartEnabled === "boolean") setIsCartEnabled(settingsMap.isCartEnabled);
@@ -476,10 +466,6 @@ export default function AdminPage({ onBackToSite }) {
           setReviewFormEnabled={setReviewFormEnabled}
           reviews={reviews}
           setReviews={setReviews}
-          bgImage={bgImage}
-          setBgImage={setBgImage}
-          aboutImage={aboutImage}
-          setAboutImage={setAboutImage}
           unavailableDishIds={unavailableDishIds}
           setUnavailableDishIds={setUnavailableDishIds}
           allItems={allItems}

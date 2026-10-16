@@ -3,12 +3,6 @@ import React, { useState, useEffect } from "react";
 const RAW_API_URL = import.meta.env.VITE_API_URL || "";
 const API_URL = RAW_API_URL ? RAW_API_URL.replace(/\/api\/?$/, "").replace(/\/+$/, "") : "";
 
-const getTimestampedUrl = (url) => {
-  if (!url) return "";
-  const cleanUrl = url.split("?t=")[0];
-  return `${cleanUrl}?t=${Date.now()}`;
-};
-
 export const resolveImageSrc = (img) => {
   if (!img || typeof img !== "string") return "";
   const trimmed = img.trim();
@@ -117,8 +111,6 @@ export default function AdminDashboard({
   isCartEnabled, setIsCartEnabled,
   reviewFormEnabled, setReviewFormEnabled,
   reviews, setReviews,
-  bgImage, setBgImage,
-  aboutImage, setAboutImage,
   unavailableDishIds = [], setUnavailableDishIds,
   allItems = [], setAllItems,
   categoryOrder = [], setCategoryOrder,
@@ -183,84 +175,6 @@ export default function AdminDashboard({
       setTimeout(() => setToastMessage(""), 4000);
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  // Visual appearance settings states
-  const [bgImageFile, setBgImageFile] = useState(null);
-  const [aboutImageFile, setAboutImageFile] = useState(null);
-
-  const handleUpdateBgImage = async (e) => {
-    e.preventDefault();
-    if (!bgImageFile) {
-      alert(lang === "ka" ? "გთხოვთ აირჩიოთ ფაილი" : "Please select an image file");
-      return;
-    }
-    try {
-      const formData = new FormData();
-      formData.append("image", bgImageFile);
-      const res = await authFetch(`${API_URL}/api/settings/upload-bg`, {
-        method: "POST",
-        body: formData,
-        credentials: "include"
-      });
-
-      let data = {};
-      const contentType = res.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        data = await res.json();
-      } else {
-        const text = await res.text();
-        throw new Error(`Server returned HTTP ${res.status}: ${text.substring(0, 80)}`);
-      }
-
-      if (!res.ok) throw new Error(data.error || `Upload failed with status ${res.status}`);
-
-      // Cache busting parameter
-      const cacheBustUrl = getTimestampedUrl(data.bgImage);
-      setBgImage(cacheBustUrl);
-      setBgImageFile(null);
-      if (onSaveSuccess) await onSaveSuccess();
-      alert(lang === "ka" ? "ბექგრაუნდის სურათი წარმატებით განახლდა!" : "Background image updated successfully!");
-    } catch (err) {
-      alert("Error: " + err.message);
-    }
-  };
-
-  const handleUpdateAboutImage = async (e) => {
-    e.preventDefault();
-    if (!aboutImageFile) {
-      alert(lang === "ka" ? "გთხოვთ აირჩიოთ ფაილი" : "Please select an image file");
-      return;
-    }
-    try {
-      const formData = new FormData();
-      formData.append("image", aboutImageFile);
-      const res = await authFetch(`${API_URL}/api/settings/upload-about`, {
-        method: "POST",
-        body: formData,
-        credentials: "include"
-      });
-
-      let data = {};
-      const contentType = res.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        data = await res.json();
-      } else {
-        const text = await res.text();
-        throw new Error(`Server returned HTTP ${res.status}: ${text.substring(0, 80)}`);
-      }
-
-      if (!res.ok) throw new Error(data.error || `Upload failed with status ${res.status}`);
-
-      // Cache busting parameter
-      const cacheBustUrl = getTimestampedUrl(data.aboutImage);
-      setAboutImage(cacheBustUrl);
-      setAboutImageFile(null);
-      if (onSaveSuccess) await onSaveSuccess();
-      alert(lang === "ka" ? "ჩვენს შესახებ სურათი წარმატებით განახლდა!" : "About Us image updated successfully!");
-    } catch (err) {
-      alert("Error: " + err.message);
     }
   };
 
@@ -1096,7 +1010,6 @@ export default function AdminDashboard({
             { key: "calls", label: `🔔 გამოძახებები (${waiterCalls.length})` },
             { key: "banner", label: "📢 ბანერის პარამეტრები" },
             { key: "global", label: "⚙️ გლობალური პარამეტრები" },
-            { key: "look", label: "🎨 საიტის იერსახის მართვა" },
             { key: "reviews", label: `💬 შეფასებები (${reviews.length})` },
             { key: "availability", label: `🚫 ხელმისაწვდომობა (${allItems.length})` },
             { key: "sorting", label: "↕️ სორტირება და რიგითობა" },
@@ -1223,7 +1136,6 @@ export default function AdminDashboard({
               {activeAdminSection === "calls" && (lang === "ka" ? "🔔 გამოძახებები" : "🔔 Calls")}
               {activeAdminSection === "banner" && (lang === "ka" ? "📢 ბანერის პარამეტრები" : "📢 Banner Settings")}
               {activeAdminSection === "global" && (lang === "ka" ? "⚙️ გლობალური პარამეტრები" : "⚙️ Global Settings")}
-              {activeAdminSection === "look" && (lang === "ka" ? "🎨 საიტის იერსახის მართვა" : "🎨 Appearance")}
               {activeAdminSection === "reviews" && (lang === "ka" ? "💬 შეფასებები" : "💬 Reviews")}
               {activeAdminSection === "availability" && (lang === "ka" ? "🚫 ხელმისაწვდომობა" : "🚫 Availability")}
               {activeAdminSection === "sorting" && (lang === "ka" ? "↕️ სორტირება და რიგითობა" : "↕️ Sorting & Order")}
@@ -1403,53 +1315,6 @@ export default function AdminDashboard({
               >
                 {isCartEnabled ? "ჩართულია ✓" : "გათიშულია ✕"}
               </button>
-            </div>
-          </div>
-        )}
-
-        {activeAdminSection === "look" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 32, maxWidth: 600 }}>
-            <div>
-              <h3 style={{ margin: "0 0 8px", fontFamily: "'Georgia', serif", fontSize: 22, color: "#f0c060" }}>საიტის იერსახის მართვა</h3>
-              <p style={{ margin: 0, fontSize: 13, color: "#8a6040" }}>საიტის ვიზუალური ნაწილის რედაქტირება</p>
-            </div>
-
-            {/* Block A */}
-            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(245,158,11,0.15)", borderRadius: 16, padding: 24 }}>
-              <h4 style={{ margin: "0 0 16px", fontSize: 16, color: "#e8a030" }}>ბექგრაუნდის სურათის ატვირთვა</h4>
-              <form onSubmit={handleUpdateBgImage} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setBgImageFile(e.target.files[0])}
-                  style={{ color: "#cbd5e1", fontSize: 13 }}
-                />
-                <button
-                  type="submit"
-                  style={{ alignSelf: "flex-start", background: "linear-gradient(135deg, #b86520, #7a3a08)", border: "1px solid #e8a030", borderRadius: 10, color: "#fff", padding: "10px 20px", cursor: "pointer", fontSize: 13, fontWeight: "bold" }}
-                >
-                  სურათის განახლება
-                </button>
-              </form>
-            </div>
-
-            {/* Block B */}
-            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(245,158,11,0.15)", borderRadius: 16, padding: 24 }}>
-              <h4 style={{ margin: "0 0 16px", fontSize: 16, color: "#e8a030" }}>ჩვენს შესახებ გვერდის ფოტო</h4>
-              <form onSubmit={handleUpdateAboutImage} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setAboutImageFile(e.target.files[0])}
-                  style={{ color: "#cbd5e1", fontSize: 13 }}
-                />
-                <button
-                  type="submit"
-                  style={{ alignSelf: "flex-start", background: "linear-gradient(135deg, #b86520, #7a3a08)", border: "1px solid #e8a030", borderRadius: 10, color: "#fff", padding: "10px 20px", cursor: "pointer", fontSize: 13, fontWeight: "bold" }}
-                >
-                  სურათის განახლება
-                </button>
-              </form>
             </div>
           </div>
         )}
