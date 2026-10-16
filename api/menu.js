@@ -195,18 +195,14 @@ export function adaptDishToProduct(dish, apiOrigin = "https://staropub-menu.onre
   }
 
   const isUnavailable =
-    unavailableSet &&
-    (unavailableSet.has(id) ||
-      (dish.id && unavailableSet.has(String(dish.id))) ||
-      (dish._id && unavailableSet.has(String(dish._id))));
+    (unavailableSet &&
+      (unavailableSet.has(id) ||
+        (dish.id && unavailableSet.has(String(dish.id))) ||
+        (dish._id && unavailableSet.has(String(dish._id))))) ||
+    dish.available === false ||
+    dish.isAvailable === false;
 
-  const available = isUnavailable
-    ? false
-    : dish.available !== undefined
-      ? Boolean(dish.available)
-      : dish.isAvailable !== undefined
-        ? Boolean(dish.isAvailable)
-        : true;
+  const available = !isUnavailable;
 
   return {
     id,
@@ -289,9 +285,9 @@ export function transformMenuData(rawCategories, rawDishes, apiOrigin = "https:/
  * Server-side orchestrator that fetches live categories, dishes, and settings
  * directly from Render backend with /api strictly prepended.
  */
-export async function fetchServerMenu() {
+export async function fetchServerMenu(bypassCache = false) {
   const now = Date.now();
-  if (Array.isArray(memoryCache.data) && memoryCache.data.length > 0 && now - memoryCache.timestamp < CACHE_TTL_MS) {
+  if (!bypassCache && Array.isArray(memoryCache.data) && memoryCache.data.length > 0 && now - memoryCache.timestamp < CACHE_TTL_MS) {
     return memoryCache.data;
   }
 
@@ -361,7 +357,8 @@ export async function fetchServerMenu() {
 export default async function handler(req, res) {
   let data = [];
   try {
-    data = await fetchServerMenu();
+    const isRefresh = req?.query?.refresh === "true" || req?.query?.t !== undefined || req?.headers?.["cache-control"]?.includes("no-cache");
+    data = await fetchServerMenu(isRefresh);
     if (!Array.isArray(data)) {
       data = memoryCache.data || [];
     }

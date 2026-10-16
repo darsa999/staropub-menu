@@ -158,7 +158,8 @@ export default function AdminDashboard({
           reviewFormEnabled,
           isFeedbackEnabled: reviewFormEnabled,
           bannerSettings,
-          customMenuEnabled
+          customMenuEnabled,
+          unavailableDishIds
         }),
         credentials: "include"
       });
@@ -175,6 +176,96 @@ export default function AdminDashboard({
       setTimeout(() => setToastMessage(""), 4000);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const [togglingDishId, setTogglingDishId] = useState(null);
+
+  const handleToggleAvailability = async (dish) => {
+    const dishId = dish.id || dish._id;
+    if (!dishId || togglingDishId) return;
+
+    const isCurrentlyUnavailable =
+      unavailableDishIds.includes(dishId) ||
+      dish.available === false ||
+      dish.isAvailable === false;
+    const nextAvailable = isCurrentlyUnavailable;
+
+    const prevUnavailableIds = [...unavailableDishIds];
+    const nextUnavailableIds = nextAvailable
+      ? prevUnavailableIds.filter(id => id !== dishId && id !== dish._id)
+      : Array.from(new Set([...prevUnavailableIds, dishId]));
+
+    // 1. Optimistic UI update in React states
+    setUnavailableDishIds(nextUnavailableIds);
+    setAllItems(prev =>
+      prev.map(item =>
+        item.id === dishId || item._id === dishId
+          ? { ...item, available: nextAvailable, isAvailable: nextAvailable }
+          : item
+      )
+    );
+    setTogglingDishId(dishId);
+
+    try {
+      // 2. Dispatch PATCH /api/dishes/:id (contract: { isAvailable, available, inStock })
+      const dishUpdatePromise = authFetch(`${API_URL}/api/dishes/${dishId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          isAvailable: nextAvailable,
+          available: nextAvailable,
+          inStock: nextAvailable
+        }),
+        credentials: "include"
+      }).catch(err => {
+        console.warn("[Availability] Direct dish PATCH warning:", err);
+        return null;
+      });
+
+      // 3. Dispatch PUT /api/settings { unavailableDishIds }
+      const settingsUpdatePromise = authFetch(`${API_URL}/api/settings`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          unavailableDishIds: nextUnavailableIds
+        }),
+        credentials: "include"
+      });
+
+      const [dishRes, settingsRes] = await Promise.allSettled([dishUpdatePromise, settingsUpdatePromise]);
+
+      const dishOk = dishRes.status === "fulfilled" && dishRes.value && dishRes.value.ok;
+      const settingsOk = settingsRes.status === "fulfilled" && settingsRes.value && settingsRes.value.ok;
+
+      if (!dishOk && !settingsOk) {
+        throw new Error(lang === "ka" ? "სტატუსის შენახვა ვერ მოხერხდა" : "Failed to persist availability status");
+      }
+
+      const statusText = nextAvailable
+        ? (lang === "ka" ? "ხელმისაწვდომია" : "Available")
+        : (lang === "ka" ? "გათიშულია" : "Unavailable");
+      const dishName = dish.name_ka || dish.name_en || "";
+      setToastMessage(`✓ ${dishName} — ${statusText}`);
+      setTimeout(() => setToastMessage(""), 2500);
+
+      if (onSaveSuccess) {
+        await onSaveSuccess();
+      }
+    } catch (err) {
+      console.error("[Availability] Error:", err);
+      // Rollback optimistic update
+      setUnavailableDishIds(prevUnavailableIds);
+      setAllItems(prev =>
+        prev.map(item =>
+          item.id === dishId || item._id === dishId
+            ? { ...item, available: !nextAvailable, isAvailable: !nextAvailable }
+            : item
+        )
+      );
+      alert(lang === "ka" ? `შეცდომა: ${err.message}` : `Error: ${err.message}`);
+    } finally {
+      setTogglingDishId(null);
     }
   };
 
@@ -1460,19 +1551,45 @@ export default function AdminDashboard({
           <div>
             <h3 style={{ margin: "0 0 16px", fontFamily: "'Georgia', serif" }}>კერძების ხელმისაწვდომობის მენეჯერი</h3>
             <p style={{ fontSize: 12, color: "#8a6040", marginBottom: 16 }}>
-              გამორთეთ კერძები, რათა დროებით დამალოთ ისინი მენიუს ძირითადი ბადიდან და ყოველდღიური შემოთავაზებებიდან.
+              გამორთეთ კერძები, რათა დროებით დამალოთ ისინი მენიუს ძირითადი ბადიდან და ყოველდღიური შემოთავაზებებიდან. ცვლილებები ინახება მყისიერად.
             </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, maxHeight: 400, overflowY: "auto", paddingRight: 6 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, maxHeight: 450, overflowY: "auto", paddingRight: 6 }}>
               {allItems.map(dish => {
                 const dishName = dish.name_ka || dish.name_en || "";
-                const isAvailable = !unavailableDishIds.includes(dish.id);
+                const dishId = dish.id || dish._id;
+                const isUnavailable =
+                  unavailableDishIds.includes(dishId) ||
+                  dish.available === false ||
+                  dish.isAvailable === false;
+                const isAvailable = !isUnavailable;
+                const isToggling = togglingDishId === dishId;
+
                 return (
-                  <div key={dish.id || dish.name_ka} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(180,120,40,0.12)", borderRadius: 10, padding: "10px 14px" }}>
+                  <div
+                    key={dishId || dishName}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      background: isAvailable ? "rgba(0,0,0,0.2)" : "rgba(220,38,38,0.06)",
+                      border: `1px solid ${isAvailable ? "rgba(180,120,40,0.12)" : "rgba(220,38,38,0.3)"}`,
+                      borderRadius: 10,
+                      padding: "10px 14px",
+                      transition: "all 0.2s ease"
+                    }}
+                  >
                     <div>
-                      <span style={{ fontSize: 14, fontWeight: "bold", color: isAvailable ? "#f0c060" : "#64748b" }}>{dishName}</span>
-                      <span style={{ fontSize: 10, color: "#8a6040", marginLeft: 10, textTransform: "uppercase" }}>
+                      <span style={{ fontSize: 14, fontWeight: "bold", color: isAvailable ? "#f0c060" : "#94a3b8" }}>
+                        {dishName}
+                      </span>
+                      <span style={{ fontSize: 10, color: isAvailable ? "#8a6040" : "#64748b", marginLeft: 10, textTransform: "uppercase" }}>
                         {categoryLabels[dish.category]?.ka || dish.category}
                       </span>
+                      {!isAvailable && (
+                        <span style={{ marginLeft: 8, fontSize: 10, color: "#f87171", background: "rgba(220,38,38,0.15)", padding: "2px 6px", borderRadius: 4, fontWeight: 600 }}>
+                          გათიშულია / მიუწვდომელია
+                        </span>
+                      )}
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <button
@@ -1485,18 +1602,37 @@ export default function AdminDashboard({
                         ✏️ რედაქტირება
                       </button>
                       <button
-                        onClick={() => {
-                          setUnavailableDishIds(prev =>
-                            prev.includes(dish.id) ? prev.filter(id => id !== dish.id) : [...prev, dish.id]
-                          );
-                        }}
+                        onClick={() => handleToggleAvailability(dish)}
+                        disabled={isToggling}
                         style={{
-                          background: isAvailable ? "#4ade80" : "#4a3018",
-                          color: isAvailable ? "#000" : "#fff",
-                          border: "none", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 11, fontWeight: "bold", transition: "all 0.2s"
+                          background: isAvailable ? "#16a34a" : "#dc2626",
+                          color: "#fff",
+                          border: isAvailable ? "1px solid #4ade80" : "1px solid #f87171",
+                          borderRadius: 8,
+                          padding: "6px 14px",
+                          cursor: isToggling ? "wait" : "pointer",
+                          fontSize: 11,
+                          fontWeight: "bold",
+                          transition: "all 0.2s",
+                          opacity: isToggling ? 0.7 : 1,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6
                         }}
                       >
-                        {isAvailable ? "აქტიური" : "გათიშული"}
+                        {isToggling ? (
+                          <span>შენახვა...</span>
+                        ) : isAvailable ? (
+                          <>
+                            <span>✓</span>
+                            <span>აქტიური</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>✕</span>
+                            <span>გათიშულია</span>
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>

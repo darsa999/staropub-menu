@@ -127,18 +127,14 @@ export function adaptDishToProduct(dish, apiOrigin = API_ORIGIN, unavailableSet 
   }
 
   const isUnavailable =
-    unavailableSet &&
-    (unavailableSet.has(id) ||
-      (dish.id && unavailableSet.has(String(dish.id))) ||
-      (dish._id && unavailableSet.has(String(dish._id))));
+    (unavailableSet &&
+      (unavailableSet.has(id) ||
+        (dish.id && unavailableSet.has(String(dish.id))) ||
+        (dish._id && unavailableSet.has(String(dish._id))))) ||
+    dish.available === false ||
+    dish.isAvailable === false;
 
-  const available = isUnavailable
-    ? false
-    : dish.available !== undefined
-      ? Boolean(dish.available)
-      : dish.isAvailable !== undefined
-        ? Boolean(dish.isAvailable)
-        : true;
+  const available = !isUnavailable;
 
   return {
     id,
@@ -215,7 +211,7 @@ export function transformMenuData(rawCategories, rawDishes, apiOrigin = API_ORIG
  */
 export async function getMenuData() {
   try {
-    const res = await fetch("/api/menu", {
+    const res = await fetch(`/api/menu?t=${Date.now()}`, {
       cache: "no-store",
       headers: { Accept: "application/json" },
     });
