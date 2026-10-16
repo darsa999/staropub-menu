@@ -8,16 +8,20 @@ import HomePage from "./pages/HomePage";
 import CatalogPage from "./pages/CatalogPage";
 import AboutPage from "./pages/AboutPage";
 import AdminPage from "./pages/admin/AdminPage";
+import ServiceFab from "./components/ServiceFab";
+import ReviewModal from "./components/ReviewModal";
 import { ThemeProvider } from "./context/ThemeContext";
 import { LanguageProvider } from "./context/LanguageContext";
 import { CartProvider } from "./context/CartContext";
 import { ViewModeProvider } from "./context/ViewModeContext";
+import { SettingsProvider, useSettings } from "./context/SettingsContext";
 import { useScrollSpy } from "./hooks/useScrollSpy";
 import { getMenuData } from "./services/api";
 
 function MainApp() {
   const [mounted, setMounted] = useState(false);
   const [isAdminRoute, setIsAdminRoute] = useState(false);
+  const { refreshSettings } = useSettings();
 
   // Current view: 'home' (Categories Grid ONLY) | 'catalog' (Grouped Products Catalog) | 'about'
   const [currentView, setCurrentView] = useState("home");
@@ -61,9 +65,12 @@ function MainApp() {
     setIsAdminRoute(false);
     setCurrentView("home");
     try {
-      const freshData = await getMenuData();
-      if (Array.isArray(freshData)) {
-        setMenuData(freshData);
+      const [freshData] = await Promise.allSettled([
+        getMenuData(),
+        refreshSettings(),
+      ]);
+      if (freshData.status === "fulfilled" && Array.isArray(freshData.value)) {
+        setMenuData(freshData.value);
       }
     } catch {}
   };
@@ -259,12 +266,14 @@ function MainApp() {
         )}
       </main>
 
-      {/* Slide-over Drawers */}
+      {/* Slide-over Drawers & Overlays */}
       <LanguageDrawer
         isOpen={isLangDrawerOpen}
         onClose={() => setIsLangDrawerOpen(false)}
       />
       <CartDrawer />
+      <ServiceFab />
+      <ReviewModal />
 
       {/* Dark Footer with contacts and legal links */}
       <Footer onNavHome={handleLogoClick} onNavAbout={handleNavAbout} />
@@ -276,11 +285,13 @@ export default function App() {
   return (
     <ThemeProvider>
       <LanguageProvider>
-        <CartProvider>
-          <ViewModeProvider>
-            <MainApp />
-          </ViewModeProvider>
-        </CartProvider>
+        <SettingsProvider>
+          <CartProvider>
+            <ViewModeProvider>
+              <MainApp />
+            </ViewModeProvider>
+          </CartProvider>
+        </SettingsProvider>
       </LanguageProvider>
     </ThemeProvider>
   );

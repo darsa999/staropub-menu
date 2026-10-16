@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight, CheckCircle2 } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useLanguage } from "../context/LanguageContext";
+import { useSettings } from "../context/SettingsContext";
 
 export default function CartDrawer() {
   const {
@@ -15,6 +16,7 @@ export default function CartDrawer() {
     clearCart,
   } = useCart();
   const { t, getLocalizedField } = useLanguage();
+  const { settings } = useSettings();
   const [isOrdered, setIsOrdered] = useState(false);
 
   // Close on escape
@@ -41,7 +43,7 @@ export default function CartDrawer() {
     };
   }, [isCartOpen]);
 
-  if (!isCartOpen) return null;
+  if (!isCartOpen || !settings.isCartEnabled) return null;
 
   const handleCheckout = () => {
     setIsOrdered(true);

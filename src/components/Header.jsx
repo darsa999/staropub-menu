@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { ShoppingCart, Menu, Sun, Moon, Info, ChevronRight } from "lucide-react";
+import { ShoppingCart, Menu, Sun, Moon, Info, ChevronRight, Share2, Bell, Receipt, MessageSquareHeart } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useCart } from "../context/CartContext";
+import { useSettings } from "../context/SettingsContext";
 
 /**
  * Clean SVG flag icons for language selector
@@ -100,7 +101,34 @@ export default function Header({ onOpenLanguageDrawer, onLogoClick, onNavigateTo
   const { isDark, toggleTheme } = useTheme();
   const { language, setLanguage, t } = useLanguage();
   const { totalCount, openCart } = useCart();
+  const { settings } = useSettings();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+
+  const handleShareMenu = async () => {
+    const shareData = {
+      title: "StaroPub - სტარო პაბი",
+      text: "StaroPub-ის ციფრული მენიუ",
+      url: window.location.href,
+    };
+    try {
+      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+      }
+    } catch (err) {
+      if (err.name !== "AbortError") {
+        try {
+          await navigator.clipboard.writeText(window.location.href);
+          setShareCopied(true);
+          setTimeout(() => setShareCopied(false), 2000);
+        } catch {}
+      }
+    }
+  };
 
   // Close mobile drawer on Escape key
   useEffect(() => {
@@ -162,11 +190,31 @@ export default function Header({ onOpenLanguageDrawer, onLogoClick, onNavigateTo
             </div>
           </div>
 
-          {/* Right Desktop Controls (hidden md:flex items-center gap-4) */}
-          <div className="hidden md:flex items-center gap-4">
+          {/* Right Desktop Controls (hidden md:flex items-center gap-3) */}
+          <div className="hidden md:flex items-center gap-3">
             
             {/* Pill-shaped Theme Toggle */}
             <ThemeTogglePill isDark={isDark} toggleTheme={toggleTheme} />
+
+            {/* Share Menu Trigger */}
+            {settings.customMenuEnabled && (
+              <div className="relative">
+                <button
+                  onClick={handleShareMenu}
+                  type="button"
+                  className="p-2 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:text-amber-600 dark:hover:text-amber-400 hover:border-amber-500/40 transition cursor-pointer shadow-xs flex items-center justify-center"
+                  title={t("shareMenu")}
+                  aria-label="Share menu"
+                >
+                  <Share2 className="w-4 h-4" />
+                </button>
+                {shareCopied && (
+                  <span className="absolute -bottom-7 left-1/2 -translate-x-1/2 bg-zinc-900 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow whitespace-nowrap z-50">
+                    {t("shareSuccess")}
+                  </span>
+                )}
+              </div>
+            )}
 
             {/* Rectangular Flat Flag Trigger */}
             <button
@@ -179,15 +227,32 @@ export default function Header({ onOpenLanguageDrawer, onLogoClick, onNavigateTo
               <FlagIcon code={language} className="w-7 h-[18px] block object-cover" />
             </button>
 
-            {/* Minimalist Shopping Cart Outline Icon with Badge */}
-            <CartButton totalCount={totalCount} openCart={openCart} />
+            {/* Minimalist Shopping Cart Outline Icon with Badge (if cart enabled) */}
+            {settings.isCartEnabled && (
+              <CartButton totalCount={totalCount} openCart={openCart} />
+            )}
 
           </div>
 
-          {/* Right Mobile Controls (md:hidden flex items-center gap-3) */}
-          <div className="md:hidden flex items-center gap-3">
-            {/* Quick-access Cart Icon visible with its quantity badge */}
-            <CartButton totalCount={totalCount} openCart={openCart} />
+          {/* Right Mobile Controls (md:hidden flex items-center gap-2.5) */}
+          <div className="md:hidden flex items-center gap-2.5">
+            {/* Share Trigger for Mobile if enabled */}
+            {settings.customMenuEnabled && (
+              <button
+                onClick={handleShareMenu}
+                type="button"
+                className="p-2 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200"
+                title={t("shareMenu")}
+                aria-label="Share menu"
+              >
+                <Share2 className="w-4 h-4" />
+              </button>
+            )}
+
+            {/* Quick-access Cart Icon visible with its quantity badge (if cart enabled) */}
+            {settings.isCartEnabled && (
+              <CartButton totalCount={totalCount} openCart={openCart} />
+            )}
 
             {/* Hamburger Menu Button */}
             <button
@@ -313,23 +378,102 @@ export default function Header({ onOpenLanguageDrawer, onLogoClick, onNavigateTo
                 </div>
               </div>
 
-              {/* 4. Cart Action: Clear button with Cart icon and item counter badge */}
-              <button
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  openCart();
-                }}
-                type="button"
-                className="w-full flex items-center justify-between p-4 rounded-2xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold shadow-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-all active:scale-[0.99] text-left cursor-pointer"
-              >
-                <span className="flex items-center gap-3">
-                  <ShoppingCart className="w-5 h-5" strokeWidth={2} />
-                  <span className="text-base font-bold">{t("cartTitle")}</span>
-                </span>
-                <span className="px-3 py-1 rounded-full bg-amber-500 text-white text-xs font-bold shadow-xs">
-                  {totalCount}
-                </span>
-              </button>
+              {/* Quick Table Services & Actions */}
+              {(settings.callWaiterEnabled || settings.requestBillEnabled || settings.customMenuEnabled || settings.reviewFormEnabled) && (
+                <div className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-800 space-y-2">
+                  <div className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                    {t("service")}
+                  </div>
+
+                  {settings.callWaiterEnabled && (
+                    <button
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        window.dispatchEvent(new CustomEvent("staropub:open-waiter"));
+                      }}
+                      type="button"
+                      className="w-full flex items-center justify-between p-3 rounded-xl bg-amber-500/10 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 font-bold border border-amber-600/20 text-left cursor-pointer hover:bg-amber-500/20 transition"
+                    >
+                      <span className="flex items-center gap-3">
+                        <Bell className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                        <span className="text-sm font-semibold">{t("callWaiter")}</span>
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-amber-600/70" />
+                    </button>
+                  )}
+
+                  {settings.requestBillEnabled && (
+                    <button
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        window.dispatchEvent(new CustomEvent("staropub:open-bill"));
+                      }}
+                      type="button"
+                      className="w-full flex items-center justify-between p-3 rounded-xl bg-zinc-100 dark:bg-zinc-800/90 text-zinc-900 dark:text-white font-bold border border-zinc-200 dark:border-zinc-700 text-left cursor-pointer hover:bg-zinc-200/70 transition"
+                    >
+                      <span className="flex items-center gap-3">
+                        <Receipt className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                        <span className="text-sm font-semibold">{t("requestBill")}</span>
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                    </button>
+                  )}
+
+                  {settings.customMenuEnabled && (
+                    <button
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        handleShareMenu();
+                      }}
+                      type="button"
+                      className="w-full flex items-center justify-between p-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-semibold border border-gray-200 dark:border-gray-700 text-left cursor-pointer hover:border-gray-300 transition"
+                    >
+                      <span className="flex items-center gap-3">
+                        <Share2 className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                        <span className="text-sm">{t("shareMenu")}</span>
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-gray-400" />
+                    </button>
+                  )}
+
+                  {settings.reviewFormEnabled && (
+                    <button
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        window.dispatchEvent(new CustomEvent("staropub:open-review"));
+                      }}
+                      type="button"
+                      className="w-full flex items-center justify-between p-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-semibold border border-gray-200 dark:border-gray-700 text-left cursor-pointer hover:border-gray-300 transition"
+                    >
+                      <span className="flex items-center gap-3">
+                        <MessageSquareHeart className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                        <span className="text-sm">{t("leaveReview")}</span>
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-gray-400" />
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* 4. Cart Action: Clear button with Cart icon and item counter badge (visible only when cart enabled) */}
+              {settings.isCartEnabled && (
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    openCart();
+                  }}
+                  type="button"
+                  className="w-full flex items-center justify-between p-4 rounded-2xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold shadow-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-all active:scale-[0.99] text-left cursor-pointer"
+                >
+                  <span className="flex items-center gap-3">
+                    <ShoppingCart className="w-5 h-5" strokeWidth={2} />
+                    <span className="text-base font-bold">{t("cartTitle")}</span>
+                  </span>
+                  <span className="px-3 py-1 rounded-full bg-amber-500 text-white text-xs font-bold shadow-xs">
+                    {totalCount}
+                  </span>
+                </button>
+              )}
             </div>
 
             {/* Drawer Footer */}

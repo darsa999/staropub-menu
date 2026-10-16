@@ -1,9 +1,11 @@
 import React from "react";
 import { Phone, Mail, UtensilsCrossed } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
+import { useSettings } from "../context/SettingsContext";
 
 export default function Footer({ onNavHome, onNavAbout }) {
   const { t } = useLanguage();
+  const { settings } = useSettings();
 
   return (
     <footer className="bg-zinc-950 text-zinc-400 mt-20 border-t border-zinc-800/80">
@@ -113,6 +115,17 @@ export default function Footer({ onNavHome, onNavAbout }) {
                   {t("navPrivacy")}
                 </a>
               </li>
+              {settings.reviewFormEnabled && (
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => window.dispatchEvent(new CustomEvent("staropub:open-review"))}
+                    className="hover:text-amber-300 transition-colors text-amber-500 font-semibold text-left flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span>⭐ {t("leaveReview")}</span>
+                  </button>
+                </li>
+              )}
             </ul>
           </div>
         </div>

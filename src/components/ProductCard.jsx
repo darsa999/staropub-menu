@@ -3,11 +3,13 @@ import { ShoppingCart, Check } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 import { useCart } from "../context/CartContext";
 import { useViewMode } from "../context/ViewModeContext";
+import { useSettings } from "../context/SettingsContext";
 
 export default function ProductCard({ product }) {
   const { t, getLocalizedField } = useLanguage();
   const { addItem } = useCart();
   const { viewMode } = useViewMode();
+  const { settings } = useSettings();
   const [isAddedRecently, setIsAddedRecently] = useState(false);
 
   const handleAdd = (e) => {
@@ -65,29 +67,31 @@ export default function ProductCard({ product }) {
                 </span>
               </div>
 
-              <button
-                onClick={handleAdd}
-                disabled={!product.available}
-                type="button"
-                className={`flex items-center space-x-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 shadow-sm active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer shrink-0 ${
-                  isAddedRecently
-                    ? "bg-emerald-600 text-white"
-                    : "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100"
-                }`}
-                aria-label={`${t("addToCart")} ${localizedTitle}`}
-              >
-                {isAddedRecently ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 stroke-[3]" />
-                    <span>{t("added")}</span>
-                  </>
-                ) : (
-                  <>
-                    <ShoppingCart className="w-3.5 h-3.5 stroke-[2.2]" />
-                    <span>{t("addToCart")}</span>
-                  </>
-                )}
-              </button>
+              {settings.isCartEnabled && (
+                <button
+                  onClick={handleAdd}
+                  disabled={!product.available}
+                  type="button"
+                  className={`flex items-center space-x-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 shadow-sm active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer shrink-0 ${
+                    isAddedRecently
+                      ? "bg-emerald-600 text-white"
+                      : "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100"
+                  }`}
+                  aria-label={`${t("addToCart")} ${localizedTitle}`}
+                >
+                  {isAddedRecently ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 stroke-[3]" />
+                      <span>{t("added")}</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingCart className="w-3.5 h-3.5 stroke-[2.2]" />
+                      <span>{t("addToCart")}</span>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -136,30 +140,32 @@ export default function ProductCard({ product }) {
             </span>
           </div>
 
-          {/* Right: Action button "+ დამატება" with shopping cart icon */}
-          <button
-            onClick={handleAdd}
-            disabled={!product.available}
-            type="button"
-            className={`w-full sm:w-auto flex items-center justify-center space-x-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 shadow-sm active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer ${
-              isAddedRecently
-                ? "bg-emerald-600 text-white"
-                : "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100"
-            }`}
-            aria-label={`${t("addToCart")} ${localizedTitle}`}
-          >
-            {isAddedRecently ? (
-              <>
-                <Check className="w-3.5 h-3.5 stroke-[3]" />
-                <span>{t("added")}</span>
-              </>
-            ) : (
-              <>
-                <ShoppingCart className="w-3.5 h-3.5 stroke-[2.2]" />
-                <span>{t("addToCart")}</span>
-              </>
-            )}
-          </button>
+          {/* Right: Action button "+ დამატება" with shopping cart icon (visible only when cart enabled) */}
+          {settings.isCartEnabled && (
+            <button
+              onClick={handleAdd}
+              disabled={!product.available}
+              type="button"
+              className={`w-full sm:w-auto flex items-center justify-center space-x-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 shadow-sm active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer ${
+                isAddedRecently
+                  ? "bg-emerald-600 text-white"
+                  : "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100"
+              }`}
+              aria-label={`${t("addToCart")} ${localizedTitle}`}
+            >
+              {isAddedRecently ? (
+                <>
+                  <Check className="w-3.5 h-3.5 stroke-[3]" />
+                  <span>{t("added")}</span>
+                </>
+              ) : (
+                <>
+                  <ShoppingCart className="w-3.5 h-3.5 stroke-[2.2]" />
+                  <span>{t("addToCart")}</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
     </>

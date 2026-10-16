@@ -29,6 +29,14 @@
       "destination": "/api/catalog"
     },
     {
+      "source": "/api/calls",
+      "destination": "/api/calls"
+    },
+    {
+      "source": "/api/reviews",
+      "destination": "/api/reviews"
+    },
+    {
       "source": "/api/dishes/:path*",
       "destination": "https://staropub-menu.onrender.com/api/dishes/:path*"
     },
