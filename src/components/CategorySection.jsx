@@ -4,7 +4,7 @@ import ViewSwitcherToggle from "./ViewSwitcherToggle";
 import { useLanguage } from "../context/LanguageContext";
 import { useViewMode } from "../context/ViewModeContext";
 
-export default function CategorySection({ category }) {
+export default function CategorySection({ category, isFirstSection = false }) {
   const { getLocalizedField } = useLanguage();
   const { viewMode } = useViewMode();
   const title = getLocalizedField(category.title || category.name);
@@ -40,8 +40,12 @@ export default function CategorySection({ category }) {
             : "grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-6 xl:gap-8 w-full"
         }
       >
-        {products.map((product) => (
-          <ProductCard key={product.id} product={product} />
+        {products.map((product, index) => (
+          <ProductCard
+            key={product.id}
+            product={product}
+            priority={isFirstSection && index < 4}
+          />
         ))}
       </div>
     </section>

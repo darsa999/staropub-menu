@@ -3,6 +3,7 @@ import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight, CheckCircle2 } from "l
 import { useCart } from "../context/CartContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useSettings } from "../context/SettingsContext";
+import { getOptimizedImageUrl } from "../services/api";
 
 export default function CartDrawer() {
   const {
@@ -127,7 +128,7 @@ export default function CartDrawer() {
                     className="flex items-center space-x-4 p-3.5 rounded-2xl bg-gray-50 dark:bg-zinc-800/50 border border-gray-100 dark:border-zinc-800"
                   >
                     <img
-                      src={product.image}
+                      src={getOptimizedImageUrl(product.image, { width: 160 })}
                       alt={localizedTitle}
                       loading="lazy"
                       decoding="async"

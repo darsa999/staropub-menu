@@ -180,6 +180,7 @@ export default function Header({ onOpenLanguageDrawer, onLogoClick, onNavigateTo
               <img
                 src="/logo.jpg"
                 alt="StaroPub Logo"
+                fetchPriority="high"
                 decoding="async"
                 className="w-full h-full object-cover"
               />

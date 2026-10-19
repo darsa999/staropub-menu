@@ -2,12 +2,25 @@ import React from "react";
 import { ChevronRight } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 import { useViewMode } from "../context/ViewModeContext";
+import { getResponsiveImageProps } from "../services/api";
 
 export default function CategoryCard({ category, onClick, priority = false }) {
   const { getLocalizedField } = useLanguage();
   const { viewMode } = useViewMode();
   const title = getLocalizedField(category.title || category.name);
   const productsCount = category.products?.length || 0;
+
+  const listImgProps = getResponsiveImageProps(category.image, {
+    defaultWidth: 240,
+    widths: [120, 240],
+    sizes: "112px",
+  });
+
+  const gridImgProps = getResponsiveImageProps(category.image, {
+    defaultWidth: 600,
+    widths: [280, 420, 600],
+    sizes: "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw",
+  });
 
   return (
     <>
@@ -29,7 +42,9 @@ export default function CategoryCard({ category, onClick, priority = false }) {
           {/* Left: Square rounded photo */}
           <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden shrink-0 bg-gray-100 dark:bg-zinc-800 shadow-xs">
             <img
-              src={category.image}
+              src={listImgProps.src}
+              srcSet={listImgProps.srcSet}
+              sizes={listImgProps.sizes}
               alt={title}
               loading={priority ? "eager" : "lazy"}
               fetchPriority={priority ? "high" : "auto"}
@@ -74,7 +89,9 @@ export default function CategoryCard({ category, onClick, priority = false }) {
         {/* Food presentation dish image container */}
         <div className="relative w-full aspect-[4/3] overflow-hidden bg-gray-100 dark:bg-zinc-800">
           <img
-            src={category.image}
+            src={gridImgProps.src}
+            srcSet={gridImgProps.srcSet}
+            sizes={gridImgProps.sizes}
             alt={title}
             loading={priority ? "eager" : "lazy"}
             fetchPriority={priority ? "high" : "auto"}
@@ -82,7 +99,7 @@ export default function CategoryCard({ category, onClick, priority = false }) {
             className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
           />
           {/* Subtle hover gradient sheen */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-40 group-hover:opacity-20 transition-opacity" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
         </div>
 
         {/* Bottom banner overlay / bar: Dark brownish-black translucent strip with bold Georgian text */}

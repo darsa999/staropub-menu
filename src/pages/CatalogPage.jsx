@@ -96,10 +96,11 @@ export default function CatalogPage({
 
       {/* Grouped Category Sections Container */}
       {!isLoading &&
-        categories.map((category) => (
+        categories.map((category, catIndex) => (
           <CategorySection
             key={category.id}
             category={category}
+            isFirstSection={catIndex === 0}
           />
         ))}
     </div>

@@ -4,8 +4,9 @@ import { useLanguage } from "../context/LanguageContext";
 import { useCart } from "../context/CartContext";
 import { useViewMode } from "../context/ViewModeContext";
 import { useSettings } from "../context/SettingsContext";
+import { getResponsiveImageProps } from "../services/api";
 
-export default function ProductCard({ product }) {
+export default function ProductCard({ product, priority = false }) {
   const { t, getLocalizedField } = useLanguage();
   const { addItem } = useCart();
   const { viewMode } = useViewMode();
@@ -25,6 +26,18 @@ export default function ProductCard({ product }) {
   const formattedPrice = Number(product.price).toFixed(2);
   const localizedTitle = getLocalizedField(product.name);
 
+  const listImgProps = getResponsiveImageProps(product.image, {
+    defaultWidth: 240,
+    widths: [140, 260],
+    sizes: "128px",
+  });
+
+  const gridImgProps = getResponsiveImageProps(product.image, {
+    defaultWidth: 600,
+    widths: [280, 420, 600],
+    sizes: "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw",
+  });
+
   return (
     <>
       {/* ─── MOBILE LIST VIEW ROW (visible only when viewMode === 'list' on mobile/tablet < 1024px) ─── */}
@@ -33,9 +46,12 @@ export default function ProductCard({ product }) {
           {/* Left: Square rounded food photo (w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden flex-shrink-0 object-cover) */}
           <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden shrink-0 bg-gray-100 dark:bg-zinc-800 shadow-xs">
             <img
-              src={product.image}
+              src={listImgProps.src}
+              srcSet={listImgProps.srcSet}
+              sizes={listImgProps.sizes}
               alt={localizedTitle}
-              loading="lazy"
+              loading={priority ? "eager" : "lazy"}
+              fetchPriority={priority ? "high" : "auto"}
               decoding="async"
               className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
             />
@@ -108,9 +124,12 @@ export default function ProductCard({ product }) {
           {/* Image Container: On mobile aspect-square, on desktop lg:aspect-[4/3] */}
           <div className="relative w-full aspect-square lg:aspect-[4/3] overflow-hidden rounded-2xl bg-gray-100 dark:bg-zinc-800 mb-2.5 sm:mb-3.5">
             <img
-              src={product.image}
+              src={gridImgProps.src}
+              srcSet={gridImgProps.srcSet}
+              sizes={gridImgProps.sizes}
               alt={localizedTitle}
-              loading="lazy"
+              loading={priority ? "eager" : "lazy"}
+              fetchPriority={priority ? "high" : "auto"}
               decoding="async"
               className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
             />

@@ -140,6 +140,40 @@ export function extractNumericPrice(dish) {
 }
 
 /**
+ * Optimizes an image URL (specifically Cloudinary assets) with automatic WebP/AVIF format
+ * and intelligent quality compression.
+ */
+export function getOptimizedImageUrl(url, { width = 600, quality = "auto", format = "auto" } = {}) {
+  if (!url || typeof url !== "string") return url || "";
+  const trimmed = url.trim();
+  if (!trimmed) return "";
+
+  if (trimmed.includes("res.cloudinary.com") && trimmed.includes("/image/upload/")) {
+    const parts = trimmed.split("/image/upload/");
+    if (parts.length === 2) {
+      const prefix = `${parts[0]}/image/upload`;
+      let rest = parts[1];
+
+      const transforms = [];
+      if (format) transforms.push(`f_${format}`);
+      if (quality) transforms.push(`q_${quality}`);
+      if (width) transforms.push(`w_${width},c_limit`);
+      const transformStr = transforms.join(",");
+
+      const existingTransformRegex = /^(?:[a-z]_[a-zA-Z0-9_-]+(?:,[a-z]_[a-zA-Z0-9_-]+)*\/)/;
+      if (existingTransformRegex.test(rest)) {
+        rest = rest.replace(existingTransformRegex, `${transformStr}/`);
+      } else {
+        rest = `${transformStr}/${rest}`;
+      }
+      return `${prefix}/${rest}`;
+    }
+  }
+
+  return trimmed;
+}
+
+/**
  * Resolves media URL to full accessible URL.
  */
 export function resolveMediaUrl(imagePath, apiOrigin = "https://staropub-menu.onrender.com") {
@@ -193,7 +227,7 @@ export function adaptDishToProduct(dish, apiOrigin = "https://staropub-menu.onre
   const price = extractNumericPrice(dish);
   let image = resolveMediaUrl(dish.image, apiOrigin);
   if (!image) {
-    image = `${apiOrigin}/Images/staropub_main.jpg`;
+    image = "/Images/staropub_main.jpg";
   }
 
   const isUnavailable =
@@ -266,7 +300,7 @@ export function transformMenuData(rawCategories, rawDishes, apiOrigin = "https:/
       image = catProducts[0].image;
     }
     if (!image) {
-      image = `${apiOrigin}/Images/staropub_main.jpg`;
+      image = "/Images/staropub_main.jpg";
     }
 
     return {
