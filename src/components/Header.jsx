@@ -101,7 +101,13 @@ export default function Header({ onOpenLanguageDrawer, onLogoClick, onNavigateTo
   const { isDark, toggleTheme } = useTheme();
   const { language, setLanguage, t } = useLanguage();
   const { totalCount, openCart } = useCart();
-  const { settings } = useSettings();
+  const { settings, isSettingsLoaded } = useSettings();
+  const isCartActive = isSettingsLoaded && Boolean(settings?.isCartEnabled || settings?.cartEnabled);
+  const isShareActive = isSettingsLoaded && Boolean(settings?.customMenuEnabled);
+  const isWaiterActive = isSettingsLoaded && Boolean(settings?.callWaiterEnabled);
+  const isBillActive = isSettingsLoaded && Boolean(settings?.requestBillEnabled);
+  const isReviewActive = isSettingsLoaded && Boolean(settings?.reviewFormEnabled);
+  const hasAnyMobileService = isWaiterActive || isBillActive || isShareActive || isReviewActive;
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
 
@@ -197,7 +203,7 @@ export default function Header({ onOpenLanguageDrawer, onLogoClick, onNavigateTo
             <ThemeTogglePill isDark={isDark} toggleTheme={toggleTheme} />
 
             {/* Share Menu Trigger */}
-            {settings.customMenuEnabled && (
+            {isShareActive && (
               <div className="relative">
                 <button
                   onClick={handleShareMenu}
@@ -228,7 +234,7 @@ export default function Header({ onOpenLanguageDrawer, onLogoClick, onNavigateTo
             </button>
 
             {/* Minimalist Shopping Cart Outline Icon with Badge (if cart enabled) */}
-            {settings.isCartEnabled && (
+            {isCartActive && (
               <CartButton totalCount={totalCount} openCart={openCart} />
             )}
 
@@ -237,7 +243,7 @@ export default function Header({ onOpenLanguageDrawer, onLogoClick, onNavigateTo
           {/* Right Mobile Controls (md:hidden flex items-center gap-2.5) */}
           <div className="md:hidden flex items-center gap-2.5">
             {/* Share Trigger for Mobile if enabled */}
-            {settings.customMenuEnabled && (
+            {isShareActive && (
               <button
                 onClick={handleShareMenu}
                 type="button"
@@ -250,7 +256,7 @@ export default function Header({ onOpenLanguageDrawer, onLogoClick, onNavigateTo
             )}
 
             {/* Quick-access Cart Icon visible with its quantity badge (if cart enabled) */}
-            {settings.isCartEnabled && (
+            {isCartActive && (
               <CartButton totalCount={totalCount} openCart={openCart} />
             )}
 
@@ -379,13 +385,13 @@ export default function Header({ onOpenLanguageDrawer, onLogoClick, onNavigateTo
               </div>
 
               {/* Quick Table Services & Actions */}
-              {(settings.callWaiterEnabled || settings.requestBillEnabled || settings.customMenuEnabled || settings.reviewFormEnabled) && (
+              {hasAnyMobileService && (
                 <div className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-800 space-y-2">
                   <div className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
                     {t("service")}
                   </div>
 
-                  {settings.callWaiterEnabled && (
+                  {isWaiterActive && (
                     <button
                       onClick={() => {
                         setIsMobileMenuOpen(false);
@@ -402,7 +408,7 @@ export default function Header({ onOpenLanguageDrawer, onLogoClick, onNavigateTo
                     </button>
                   )}
 
-                  {settings.requestBillEnabled && (
+                  {isBillActive && (
                     <button
                       onClick={() => {
                         setIsMobileMenuOpen(false);
@@ -419,7 +425,7 @@ export default function Header({ onOpenLanguageDrawer, onLogoClick, onNavigateTo
                     </button>
                   )}
 
-                  {settings.customMenuEnabled && (
+                  {isShareActive && (
                     <button
                       onClick={() => {
                         setIsMobileMenuOpen(false);
@@ -436,7 +442,7 @@ export default function Header({ onOpenLanguageDrawer, onLogoClick, onNavigateTo
                     </button>
                   )}
 
-                  {settings.reviewFormEnabled && (
+                  {isReviewActive && (
                     <button
                       onClick={() => {
                         setIsMobileMenuOpen(false);
@@ -456,7 +462,7 @@ export default function Header({ onOpenLanguageDrawer, onLogoClick, onNavigateTo
               )}
 
               {/* 4. Cart Action: Clear button with Cart icon and item counter badge (visible only when cart enabled) */}
-              {settings.isCartEnabled && (
+              {isCartActive && (
                 <button
                   onClick={() => {
                     setIsMobileMenuOpen(false);

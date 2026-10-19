@@ -353,6 +353,42 @@ export async function fetchServerMenu(bypassCache = false) {
 }
 
 /**
+ * Server-side orchestrator that fetches live settings with in-memory caching and safe fallbacks.
+ */
+export async function fetchServerSettings(bypassCache = false) {
+  const now = Date.now();
+  if (
+    !bypassCache &&
+    memoryCache.settings &&
+    typeof memoryCache.settings === "object" &&
+    Object.keys(memoryCache.settings).length > 0 &&
+    now - (memoryCache.settingsTimestamp || 0) < 60000
+  ) {
+    return memoryCache.settings;
+  }
+
+  const raw = await safeFetchEndpoint(`${BACKEND_BASE}/settings`, null, 8000);
+  if (raw && typeof raw === "object") {
+    memoryCache.settings = raw;
+    memoryCache.settingsTimestamp = now;
+    return raw;
+  }
+
+  if (memoryCache.settings && typeof memoryCache.settings === "object") {
+    return memoryCache.settings;
+  }
+
+  return {
+    isCartEnabled: false,
+    cartEnabled: false,
+    callWaiterEnabled: false,
+    requestBillEnabled: false,
+    customMenuEnabled: false,
+    reviewFormEnabled: false,
+  };
+}
+
+/**
  * Vercel Serverless Function Handler (/api/menu)
  * Always returns live server menu data with Edge Stale Caching.
  */

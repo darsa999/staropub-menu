@@ -5,7 +5,7 @@ import { useSettings } from "../context/SettingsContext";
 
 export default function Footer({ onNavHome, onNavAbout }) {
   const { t } = useLanguage();
-  const { settings } = useSettings();
+  const { settings, isSettingsLoaded } = useSettings();
 
   return (
     <footer className="bg-zinc-950 text-zinc-400 mt-20 border-t border-zinc-800/80">
@@ -115,7 +115,7 @@ export default function Footer({ onNavHome, onNavAbout }) {
                   {t("navPrivacy")}
                 </a>
               </li>
-              {settings.reviewFormEnabled && (
+              {isSettingsLoaded && settings.reviewFormEnabled && (
                 <li>
                   <button
                     type="button"

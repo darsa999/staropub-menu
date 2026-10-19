@@ -5,6 +5,9 @@
     },
     "api/catalog.js": {
       "maxDuration": 60
+    },
+    "api/settings.js": {
+      "maxDuration": 60
     }
   },
   "headers": [
@@ -31,6 +34,10 @@
     {
       "source": "/api/menu",
       "destination": "/api/menu"
+    },
+    {
+      "source": "/api/settings",
+      "destination": "/api/settings"
     },
     {
       "source": "/api/catalog",

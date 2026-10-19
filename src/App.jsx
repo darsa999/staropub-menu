@@ -67,7 +67,7 @@ function MainApp() {
     try {
       const [freshData] = await Promise.allSettled([
         getMenuData({ forceRefresh: true }),
-        refreshSettings(),
+        refreshSettings(true),
       ]);
       if (freshData.status === "fulfilled" && Array.isArray(freshData.value) && freshData.value.length > 0) {
         setMenuData(freshData.value);

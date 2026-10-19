@@ -5,7 +5,7 @@ import { useSettings } from "../context/SettingsContext";
 
 export default function ReviewModal() {
   const { t } = useLanguage();
-  const { settings } = useSettings();
+  const { settings, isSettingsLoaded } = useSettings();
   const [isOpen, setIsOpen] = useState(false);
   const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
@@ -32,7 +32,7 @@ export default function ReviewModal() {
     return () => window.removeEventListener("staropub:open-review", handleOpen);
   }, []);
 
-  if (!isOpen || !settings.reviewFormEnabled) return null;
+  if (!isOpen || !isSettingsLoaded || !settings.reviewFormEnabled) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();

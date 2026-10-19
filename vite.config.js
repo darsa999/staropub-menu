@@ -1,6 +1,6 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
-import { fetchServerMenu } from './api/menu.js'
+import { fetchServerMenu, fetchServerSettings } from './api/menu.js'
 
 function serverMenuPlugin() {
   return {
@@ -21,6 +21,22 @@ function serverMenuPlugin() {
             res.statusCode = 200;
             res.setHeader('Content-Type', 'application/json; charset=utf-8');
             res.end(JSON.stringify([]));
+            return;
+          }
+        }
+        if (url === '/api/settings') {
+          try {
+            const data = await fetchServerSettings();
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.setHeader('Cache-Control', 'no-store');
+            res.statusCode = 200;
+            res.end(JSON.stringify(data || {}));
+            return;
+          } catch (err) {
+            console.error('[Dev /api/settings Error]:', err);
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.end(JSON.stringify({}));
             return;
           }
         }

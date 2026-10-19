@@ -16,7 +16,7 @@ export default function CartDrawer() {
     clearCart,
   } = useCart();
   const { t, getLocalizedField } = useLanguage();
-  const { settings } = useSettings();
+  const { settings, isSettingsLoaded } = useSettings();
   const [isOrdered, setIsOrdered] = useState(false);
 
   // Close on escape
@@ -43,7 +43,7 @@ export default function CartDrawer() {
     };
   }, [isCartOpen]);
 
-  if (!isCartOpen || !settings.isCartEnabled) return null;
+  if (!isCartOpen || !isSettingsLoaded || !(settings?.isCartEnabled || settings?.cartEnabled)) return null;
 
   const handleCheckout = () => {
     setIsOrdered(true);

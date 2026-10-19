@@ -9,7 +9,8 @@ export default function ProductCard({ product }) {
   const { t, getLocalizedField } = useLanguage();
   const { addItem } = useCart();
   const { viewMode } = useViewMode();
-  const { settings } = useSettings();
+  const { settings, isSettingsLoaded } = useSettings();
+  const isCartActive = isSettingsLoaded && Boolean(settings?.isCartEnabled || settings?.cartEnabled);
   const [isAddedRecently, setIsAddedRecently] = useState(false);
 
   const handleAdd = (e) => {
@@ -67,7 +68,7 @@ export default function ProductCard({ product }) {
                 </span>
               </div>
 
-              {settings.isCartEnabled && (
+              {isCartActive && (
                 <button
                   onClick={handleAdd}
                   disabled={!product.available}
@@ -141,7 +142,7 @@ export default function ProductCard({ product }) {
           </div>
 
           {/* Right: Action button "+ დამატება" with shopping cart icon (visible only when cart enabled) */}
-          {settings.isCartEnabled && (
+          {isCartActive && (
             <button
               onClick={handleAdd}
               disabled={!product.available}

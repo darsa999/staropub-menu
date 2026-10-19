@@ -5,7 +5,11 @@ import { useSettings } from "../context/SettingsContext";
 
 export default function ServiceFab() {
   const { t } = useLanguage();
-  const { settings } = useSettings();
+  const { settings, isSettingsLoaded } = useSettings();
+
+  const isWaiterActive = isSettingsLoaded && Boolean(settings?.callWaiterEnabled);
+  const isBillActive = isSettingsLoaded && Boolean(settings?.requestBillEnabled);
+  const hasAnyService = isWaiterActive || isBillActive;
 
   const [activeModal, setActiveModal] = useState(null); // 'waiter' | 'bill' | null
   const [table, setTable] = useState("");
@@ -90,15 +94,13 @@ export default function ServiceFab() {
     }
   };
 
-  const hasAnyService = settings.callWaiterEnabled || settings.requestBillEnabled;
-
   return (
     <>
       {/* ─── Floating Action Dock ─── */}
       {hasAnyService && (
         <div className="fixed bottom-6 right-4 sm:right-6 z-40 flex items-center gap-2.5 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md p-1.5 rounded-full shadow-2xl border border-gray-200/90 dark:border-zinc-800 transition-all select-none">
           {/* Waiter Button */}
-          {settings.callWaiterEnabled && (
+          {isWaiterActive && (
             <button
               onClick={() => {
                 setSuccessMessage("");
@@ -114,7 +116,7 @@ export default function ServiceFab() {
           )}
 
           {/* Bill Button */}
-          {settings.requestBillEnabled && (
+          {isBillActive && (
             <button
               onClick={() => {
                 setSuccessMessage("");

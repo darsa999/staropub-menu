@@ -3,36 +3,53 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 export const SettingsContext = createContext();
 
 const DEFAULT_SETTINGS = {
-  isCartEnabled: true,
-  callWaiterEnabled: true,
-  requestBillEnabled: true,
-  customMenuEnabled: true,
-  reviewFormEnabled: true,
+  isCartEnabled: false,
+  cartEnabled: false,
+  callWaiterEnabled: false,
+  requestBillEnabled: false,
+  customMenuEnabled: false,
+  reviewFormEnabled: false,
+  bannerSettings: null,
+  unavailableDishIds: [],
 };
 
 export function SettingsProvider({ children }) {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
+  const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
 
-  const refreshSettings = useCallback(async () => {
+  const refreshSettings = useCallback(async (forceRefresh = false) => {
     try {
-      const res = await fetch(`/api/settings?t=${Date.now()}`);
+      const url = forceRefresh ? `/api/settings?refresh=true&t=${Date.now()}` : `/api/settings`;
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
+        const isCart =
+          typeof data.isCartEnabled === "boolean"
+            ? data.isCartEnabled
+            : typeof data.cartEnabled === "boolean"
+              ? data.cartEnabled
+              : false;
+
         setSettings({
-          isCartEnabled: typeof data.isCartEnabled === "boolean" ? data.isCartEnabled : true,
-          callWaiterEnabled: typeof data.callWaiterEnabled === "boolean" ? data.callWaiterEnabled : true,
-          requestBillEnabled: typeof data.requestBillEnabled === "boolean" ? data.requestBillEnabled : true,
-          customMenuEnabled: typeof data.customMenuEnabled === "boolean" ? data.customMenuEnabled : true,
+          isCartEnabled: isCart,
+          cartEnabled: isCart,
+          callWaiterEnabled: typeof data.callWaiterEnabled === "boolean" ? data.callWaiterEnabled : false,
+          requestBillEnabled: typeof data.requestBillEnabled === "boolean" ? data.requestBillEnabled : false,
+          customMenuEnabled: typeof data.customMenuEnabled === "boolean" ? data.customMenuEnabled : false,
           reviewFormEnabled: typeof data.reviewFormEnabled === "boolean"
             ? data.reviewFormEnabled
-            : (typeof data.isFeedbackEnabled === "boolean" ? data.isFeedbackEnabled : true),
+            : (typeof data.isFeedbackEnabled === "boolean" ? data.isFeedbackEnabled : false),
+          bannerSettings: data.bannerSettings || null,
+          unavailableDishIds: Array.isArray(data.unavailableDishIds) ? data.unavailableDishIds : [],
         });
+        setIsSettingsLoaded(true);
       }
     } catch (err) {
       console.warn("Failed to fetch settings:", err);
     } finally {
       setLoading(false);
+      setIsSettingsLoaded(true);
     }
   }, []);
 
@@ -41,7 +58,7 @@ export function SettingsProvider({ children }) {
   }, [refreshSettings]);
 
   return (
-    <SettingsContext.Provider value={{ settings, loading, refreshSettings }}>
+    <SettingsContext.Provider value={{ settings, loading, isSettingsLoaded, refreshSettings }}>
       {children}
     </SettingsContext.Provider>
   );
