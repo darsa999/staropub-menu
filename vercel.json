@@ -1,4 +1,12 @@
 {
+  "functions": {
+    "api/menu.js": {
+      "maxDuration": 60
+    },
+    "api/catalog.js": {
+      "maxDuration": 60
+    }
+  },
   "headers": [
     {
       "source": "/(.*)",

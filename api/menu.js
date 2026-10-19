@@ -1,8 +1,10 @@
 import https from "node:https";
 
+export const maxDuration = 60;
+
 const BACKEND_BASE = "https://staropub-menu.onrender.com/api";
-const CACHE_TTL_MS = 15 * 1000; // 15 seconds server-side in-memory cache for burst protection
-const UPSTREAM_TIMEOUT_MS = 9000; // 9s timeout to handle Render cold-starts safely
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes server-side in-memory cache
+const UPSTREAM_TIMEOUT_MS = 35000; // 35s timeout to handle Render cold-starts safely
 
 let memoryCache = {
   data: null,
@@ -352,38 +354,54 @@ export async function fetchServerMenu(bypassCache = false) {
 
 /**
  * Vercel Serverless Function Handler (/api/menu)
- * Always returns HTTP 200 with live server menu data.
+ * Always returns live server menu data with Edge Stale Caching.
  */
 export default async function handler(req, res) {
   let data = [];
+  const isRefresh =
+    req?.query?.refresh === "true" ||
+    req?.headers?.["cache-control"]?.includes("no-cache");
+
   try {
-    const isRefresh = req?.query?.refresh === "true" || req?.query?.t !== undefined || req?.headers?.["cache-control"]?.includes("no-cache");
     data = await fetchServerMenu(isRefresh);
-    if (!Array.isArray(data)) {
-      data = memoryCache.data || [];
+    if (!Array.isArray(data) || data.length === 0) {
+      if (Array.isArray(memoryCache.data) && memoryCache.data.length > 0) {
+        data = memoryCache.data;
+      }
     }
   } catch (err) {
     console.error("[Serverless /api/menu Notice]:", err);
-    data = memoryCache.data || [];
+    if (Array.isArray(memoryCache.data) && memoryCache.data.length > 0) {
+      data = memoryCache.data;
+    }
   }
+
+  const hasData = Array.isArray(data) && data.length > 0;
+  // Edge Stale Caching:
+  // Once fetched, Vercel CDN caches for 300s and serves stale for up to 86400s (24h) while revalidating
+  const cacheHeader = hasData && !isRefresh
+    ? "s-maxage=300, stale-while-revalidate=86400"
+    : "no-cache, no-store, must-revalidate";
+
+  const statusCode = hasData ? 200 : (isRefresh ? 200 : 503);
 
   if (res && typeof res.setHeader === "function") {
     res.setHeader("Content-Type", "application/json; charset=utf-8");
-    res.setHeader("Cache-Control", "no-store, max-age=0");
+    res.setHeader("Cache-Control", cacheHeader);
     res.setHeader("Access-Control-Allow-Origin", "*");
 
     if (typeof res.status === "function") {
-      return res.status(200).json(data);
+      return res.status(statusCode).json(data);
     }
-    res.statusCode = 200;
+    res.statusCode = statusCode;
     return res.end(JSON.stringify(data));
   }
 
   return new Response(JSON.stringify(data), {
-    status: 200,
+    status: statusCode,
     headers: {
       "Content-Type": "application/json; charset=utf-8",
-      "Cache-Control": "no-store, max-age=0",
+      "Cache-Control": cacheHeader,
       "Access-Control-Allow-Origin": "*",
     },
   });

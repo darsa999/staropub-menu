@@ -5,7 +5,7 @@ import { useViewMode } from "../context/ViewModeContext";
 export default function CategoriesGrid({ categories, onSelectCategory, isLoading }) {
   const { viewMode } = useViewMode();
 
-  if (isLoading) {
+  if (isLoading || !Array.isArray(categories) || categories.length === 0) {
     return (
       <div
         className={

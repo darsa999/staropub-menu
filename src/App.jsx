@@ -66,10 +66,10 @@ function MainApp() {
     setCurrentView("home");
     try {
       const [freshData] = await Promise.allSettled([
-        getMenuData(),
+        getMenuData({ forceRefresh: true }),
         refreshSettings(),
       ]);
-      if (freshData.status === "fulfilled" && Array.isArray(freshData.value)) {
+      if (freshData.status === "fulfilled" && Array.isArray(freshData.value) && freshData.value.length > 0) {
         setMenuData(freshData.value);
       }
     } catch {}
@@ -82,7 +82,7 @@ function MainApp() {
       try {
         setIsLoading(true);
         const data = await getMenuData();
-        if (!isCancelled && Array.isArray(data)) {
+        if (!isCancelled && Array.isArray(data) && data.length > 0) {
           setMenuData(data);
         }
       } catch (err) {

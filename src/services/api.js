@@ -205,56 +205,179 @@ export function transformMenuData(rawCategories, rawDishes, apiOrigin = API_ORIG
   });
 }
 
+let inFlightMenuPromise = null;
+
 /**
- * Fetch full grouped menu data (categories with nested products) strictly from the server.
- * Zero localStorage caching and zero mock fallbacks.
+ * Low-level direct proxy fallback fetcher (/api/categories + /api/dishes + /api/settings).
  */
-export async function getMenuData() {
-  try {
-    const res = await fetch(`/api/menu?t=${Date.now()}`, {
-      cache: "no-store",
-      headers: { Accept: "application/json" },
-    });
+export async function fetchDirectFallback(timeoutMs = 25000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-    if (res.ok) {
-      const payload = await res.json();
-      const data = Array.isArray(payload)
-        ? payload
-        : Array.isArray(payload?.categories)
-          ? payload.categories
-          : Array.isArray(payload?.menu)
-            ? payload.menu
-            : [];
-
-      if (Array.isArray(data) && data.length > 0) {
-        return data;
-      }
-    }
-  } catch (err) {
-    console.warn("[StaroPub API] /api/menu fetch error:", err.message);
-  }
-
-  // Direct same-origin proxy fallback (/api/categories + /api/dishes)
   try {
     const [catRes, dishRes, settingsRes] = await Promise.all([
-      fetch(`${API_BASE_URL}/categories`, { cache: "no-store", headers: { Accept: "application/json" } }),
-      fetch(`${API_BASE_URL}/dishes`, { cache: "no-store", headers: { Accept: "application/json" } }),
-      fetch(`${API_BASE_URL}/settings`, { cache: "no-store", headers: { Accept: "application/json" } }).catch(() => null),
+      fetch(`${API_BASE_URL}/categories`, {
+        signal: controller.signal,
+        headers: { Accept: "application/json" },
+      }),
+      fetch(`${API_BASE_URL}/dishes`, {
+        signal: controller.signal,
+        headers: { Accept: "application/json" },
+      }),
+      fetch(`${API_BASE_URL}/settings`, {
+        signal: controller.signal,
+        headers: { Accept: "application/json" },
+      }).catch(() => null),
     ]);
 
     if (catRes.ok && dishRes.ok) {
       const [categories, dishes] = await Promise.all([catRes.json(), dishRes.json()]);
-      const settings = settingsRes && settingsRes.ok ? await settingsRes.json().catch(() => ({})) : {};
+      const settings =
+        settingsRes && settingsRes.ok ? await settingsRes.json().catch(() => ({})) : {};
       const unavailableSet = new Set(
         Array.isArray(settings?.unavailableDishIds) ? settings.unavailableDishIds : []
       );
-      return transformMenuData(categories, dishes, API_ORIGIN, unavailableSet);
+      if (Array.isArray(categories) && categories.length > 0) {
+        const transformed = transformMenuData(categories, dishes, API_ORIGIN, unavailableSet);
+        if (Array.isArray(transformed) && transformed.length > 0) {
+          return transformed;
+        }
+      }
     }
   } catch (err) {
-    console.warn("[StaroPub API] Direct proxy fetch error:", err.message);
+    console.warn("[StaroPub API] Direct proxy fallback attempt warning:", err.message);
+  } finally {
+    clearTimeout(timer);
+  }
+  return null;
+}
+
+/**
+ * Attempts a single menu fetch cycle:
+ * Queries /api/menu (benefiting from Vercel CDN Edge Cache), and if delayed (>2.5s)
+ * triggers a parallel direct fallback to ensure fast completion.
+ */
+async function attemptMenuFetch(forceRefresh = false) {
+  let fallbackTimer = null;
+  let fallbackPromise = null;
+
+  const serverlessPromise = (async () => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 28000);
+    try {
+      const url = forceRefresh ? `/api/menu?refresh=true&t=${Date.now()}` : `/api/menu`;
+      const res = await fetch(url, {
+        signal: controller.signal,
+        headers: { Accept: "application/json" },
+        ...(forceRefresh ? { cache: "no-store" } : {}),
+      });
+
+      if (res.ok) {
+        const payload = await res.json();
+        const data = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.categories)
+            ? payload.categories
+            : Array.isArray(payload?.menu)
+              ? payload.menu
+              : [];
+
+        if (Array.isArray(data) && data.length > 0) {
+          return data;
+        }
+      }
+    } catch (err) {
+      console.warn("[StaroPub API] Serverless /api/menu warning:", err.message);
+    } finally {
+      clearTimeout(timer);
+    }
+    return null;
+  })();
+
+  // If serverless takes longer than 2.5s (e.g. cold start), trigger direct fallback in parallel
+  const delayedFallbackStarter = new Promise((resolve) => {
+    fallbackTimer = setTimeout(() => {
+      fallbackPromise = fetchDirectFallback(25000);
+      resolve(fallbackPromise);
+    }, 2500);
+  });
+
+  // Whichever completes first with non-empty categories returns immediately
+  const winner = await Promise.race([
+    serverlessPromise.then((data) => (data && data.length > 0 ? data : new Promise(() => {}))),
+    delayedFallbackStarter.then((p) => p).then((data) => (data && data.length > 0 ? data : new Promise(() => {}))),
+    new Promise((resolve) => setTimeout(() => resolve(null), 30000)),
+  ]);
+
+  if (fallbackTimer) clearTimeout(fallbackTimer);
+
+  if (Array.isArray(winner) && winner.length > 0) {
+    return winner;
   }
 
-  return [];
+  // If race didn't catch an immediate winner, check serverless promise
+  const serverlessResult = await serverlessPromise;
+  if (Array.isArray(serverlessResult) && serverlessResult.length > 0) {
+    return serverlessResult;
+  }
+
+  // Fallback to direct call if not already run
+  if (!fallbackPromise) {
+    fallbackPromise = fetchDirectFallback(25000);
+  }
+  const fallbackResult = await fallbackPromise;
+  if (Array.isArray(fallbackResult) && fallbackResult.length > 0) {
+    return fallbackResult;
+  }
+
+  return null;
+}
+
+/**
+ * Fetch full grouped menu data (categories with nested products) strictly from the server.
+ * Implements Edge CDN cache, resilient parallel fallback, and auto-retry with exponential backoff (up to 3 retries).
+ */
+export async function getMenuData(options = {}) {
+  const forceRefresh = Boolean(options?.forceRefresh);
+  if (!forceRefresh && inFlightMenuPromise) {
+    return inFlightMenuPromise;
+  }
+
+  const promise = (async () => {
+    const maxRetries = typeof options?.maxRetries === "number" ? options.maxRetries : 3;
+    const retryDelays = [2000, 3500, 5000];
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const isCurrentRefresh = forceRefresh && attempt === 0;
+        const data = await attemptMenuFetch(isCurrentRefresh);
+        if (Array.isArray(data) && data.length > 0) {
+          return data;
+        }
+      } catch (err) {
+        console.warn(`[StaroPub API] Menu attempt ${attempt + 1} exception:`, err.message);
+      }
+
+      if (attempt < maxRetries) {
+        const delay = retryDelays[attempt] || 5000;
+        console.info(`[StaroPub API] Menu empty/failed, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})...`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+
+    console.warn("[StaroPub API] All menu fetch attempts exhausted.");
+    return [];
+  })().finally(() => {
+    if (!forceRefresh) {
+      inFlightMenuPromise = null;
+    }
+  });
+
+  if (!forceRefresh) {
+    inFlightMenuPromise = promise;
+  }
+
+  return promise;
 }
 
 /**

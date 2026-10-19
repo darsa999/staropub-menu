@@ -49,7 +49,7 @@ export default function CatalogPage({
       />
 
       {/* Loading Skeletons */}
-      {isLoading && (
+      {(isLoading || (!categories || categories.length === 0)) && !searchQuery && (
         <div className="space-y-12">
           {[1, 2, 3].map((s) => (
             <div key={s} className="animate-pulse">
@@ -73,7 +73,7 @@ export default function CatalogPage({
       )}
 
       {/* Empty State when live search returns zero results */}
-      {!isLoading && categories.length === 0 && (
+      {!isLoading && categories.length === 0 && searchQuery && (
         <div className="py-24 text-center flex flex-col items-center justify-center bg-white dark:bg-zinc-900/60 rounded-3xl border border-dashed border-gray-300 dark:border-zinc-800 p-8 my-6">
           <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-600 flex items-center justify-center mb-4">
             <UtensilsCrossed className="w-8 h-8 opacity-70" />
