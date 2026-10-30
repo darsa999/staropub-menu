@@ -3,8 +3,8 @@ import OriginalAdminDashboard from "../../components/admin/OriginalAdminDashboar
 // Imported statically (this page is already a lazy chunk) so signInWithPopup runs directly
 // inside the click handler; awaiting a dynamic import first makes Safari block the popup.
 import { auth, googleProvider, signInWithPopup } from "../../admin/firebase";
+import { authLog } from "../../services/authDebug";
 import {
-  AuthError,
   checkAdminSession,
   fetchAdminCategories,
   fetchAdminDishes,
@@ -34,9 +34,20 @@ const NOT_STORED_HINT = (field) =>
   "თუ სტუმრები უკვე აგზავნიან, ორი მიზეზი შეიძლება იყოს: Vercel-ში არ არის დაყენებული BACKEND_SERVICE_TOKEN " +
   `ან Render-ის settings სქემა ${field} ველს არ ინახავს. ზუსტი მიზეზი ჩანს Vercel-ის ლოგებში (/api/calls, /api/reviews).`;
 
+const NOT_ADMIN_MESSAGE = "ამ ანგარიშს ადმინისტრატორის უფლება არ აქვს.";
+const SESSION_NOT_KEPT_MESSAGE =
+  "შესვლა მოხერხდა, მაგრამ სესია ვერ შენარჩუნდა (სერვერმა ის ვერ დაადასტურა). " +
+  "შეამოწმეთ, ბრაუზერი ხომ არ ბლოკავს სხვა საიტის cookie-ებს, და სცადეთ თავიდან.";
+const SESSION_EXPIRED_MESSAGE = "სესია ამოიწურა. გთხოვთ, თავიდან შეხვიდეთ.";
+const BACKEND_UNAVAILABLE_MESSAGE = "ავტორიზაციის სერვერი არ პასუხობს (შესაძლოა ახლა იღვიძებს). სცადეთ რამდენიმე წამში.";
+
 function describeLoadError(err) {
   const message = err?.message || "";
-  if (err instanceof AuthError) return err.message;
+  if (err?.status === 401) {
+    return "ზარები და შეფასებები ვერ ჩაიტვირთა: სერვერმა ადმინის სესია ვერ დაადასტურა. დანარჩენი პანელი მუშაობს. " +
+      "თუ ეს მუდმივად მეორდება, ნახეთ Vercel-ის ლოგები (/api/calls) და დარწმუნდით, რომ Render-ი login-ზე token-ს აბრუნებს.";
+  }
+  if (err?.status === 403 || err?.status === 503) return message;
   if (message === "upstream_unavailable") return "Render backend-ი არ პასუხობს (/api/settings). სცადეთ ცოტა ხანში.";
   if (err?.status === 404 || err?.status === 405) {
     return "/api/calls ფუნქცია ვერ მოიძებნა. ეს ფუნქციები მხოლოდ Vercel-ზე მუშაობს (Netlify-ზე არა).";
@@ -158,29 +169,46 @@ export default function AdminPage({ onBackToSite }) {
     }
   }, [refreshCalls]);
 
-  // A 401 from any admin request drops the session and shows the login form again.
+  // A 401 from the backend's own admin endpoints means the session really ended.
   useEffect(() => {
-    setUnauthorizedHandler(() => setIsAdmin(false));
+    setUnauthorizedHandler(() => {
+      authLog("backend returned 401 → back to login");
+      setIsAdmin(false);
+      setAuthError(SESSION_EXPIRED_MESSAGE);
+    });
     return () => setUnauthorizedHandler(null);
   }, []);
 
-  // Validate the session first; only load admin data once we know the user is an admin.
+  // Show the loader until the stored session has been checked; never decide "not logged in"
+  // just because the check has not finished or the backend is still waking up.
+  const [sessionCheckError, setSessionCheckError] = useState("");
+  const [sessionCheckAttempt, setSessionCheckAttempt] = useState(0);
+
   useEffect(() => {
     let isMounted = true;
-    (async () => {
-      try {
-        const me = await checkAdminSession();
-        if (isMounted && me) setIsAdmin(true);
-      } catch (err) {
-        console.warn("Session validation failed:", err);
-      } finally {
-        if (isMounted) setIsCheckingSession(false);
+    checkAdminSession().then((session) => {
+      if (!isMounted) return;
+      authLog("session check:", session.state);
+      if (session.state === "ok") {
+        setIsAdmin(true);
+      } else if (session.state === "forbidden") {
+        setAuthError(NOT_ADMIN_MESSAGE);
+      } else if (session.state === "unavailable") {
+        setSessionCheckError(BACKEND_UNAVAILABLE_MESSAGE);
+        return; // stay on the loader screen with a retry button
       }
-    })();
+      setSessionCheckError("");
+      setIsCheckingSession(false);
+    });
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [sessionCheckAttempt]);
+
+  const retrySessionCheck = () => {
+    setSessionCheckError("");
+    setSessionCheckAttempt((n) => n + 1);
+  };
 
   useEffect(() => {
     if (!isAdmin) return undefined;
@@ -191,7 +219,15 @@ export default function AdminPage({ onBackToSite }) {
     return () => clearInterval(id);
   }, [isAdmin, refreshMenuData, refreshCalls]);
 
-  const completeLogin = () => {
+  // After a successful login, confirm the session the same way a page refresh will,
+  // so a session that cannot survive a refresh is reported instead of silently dropped.
+  const completeLogin = async () => {
+    const session = await checkAdminSession();
+    authLog("post-login session check:", session.state);
+    if (session.state === "forbidden") throw new Error(NOT_ADMIN_MESSAGE);
+    if (session.state === "unauthenticated") throw new Error(SESSION_NOT_KEPT_MESSAGE);
+    // "unavailable": login itself just succeeded, so let the admin in.
+    authLog("→ admin panel");
     setIsAdmin(true);
     setAuthEmail("");
     setAuthPassword("");
@@ -207,7 +243,7 @@ export default function AdminPage({ onBackToSite }) {
       } else {
         await registerAdmin({ email: authEmail, password: authPassword });
       }
-      completeLogin();
+      await completeLogin();
     } catch (err) {
       console.error(`[admin] ${authTab} failed:`, err);
       setAuthError(err.message);
@@ -223,7 +259,7 @@ export default function AdminPage({ onBackToSite }) {
       const result = await signInWithPopup(auth, googleProvider);
       const idToken = await result.user.getIdToken();
       await socialLoginAdmin(idToken);
-      completeLogin();
+      await completeLogin();
     } catch (err) {
       console.error("[admin] Google sign-in failed:", err);
       setAuthError(FIREBASE_ERRORS[err?.code] || (err?.code ? `Google-ით შესვლა ვერ მოხერხდა (${err.code}).` : err.message));
@@ -231,8 +267,10 @@ export default function AdminPage({ onBackToSite }) {
   };
 
   const handleLogout = async () => {
+    authLog("logout");
     await logoutAdmin();
     setIsAdmin(false);
+    setAuthError("");
   };
 
   if (isCheckingSession) {
@@ -241,6 +279,18 @@ export default function AdminPage({ onBackToSite }) {
         <div style={{ textAlign: "center" }}>
           <div style={{ width: 36, height: 36, border: "3px solid rgba(240,192,96,0.2)", borderTopColor: "#f0c060", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
           <span style={{ fontSize: 13, letterSpacing: 1, textTransform: "uppercase" }}>ავტორიზაციის შემოწმება...</span>
+          {sessionCheckError && (
+            <div role="alert" style={{ marginTop: 16, maxWidth: 360, fontSize: 12, color: "#f87171", lineHeight: 1.5 }}>
+              ⚠️ {sessionCheckError}
+              <button
+                type="button"
+                onClick={retrySessionCheck}
+                style={{ display: "block", margin: "12px auto 0", background: "linear-gradient(135deg, #b86520, #7a3a08)", border: "1px solid #f0c060", borderRadius: 10, color: "#fff", padding: "8px 16px", cursor: "pointer", fontSize: 12, fontWeight: "bold" }}
+              >
+                თავიდან ცდა
+              </button>
+            </div>
+          )}
         </div>
         <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
       </div>

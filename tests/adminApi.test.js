@@ -63,3 +63,63 @@ describe("admin auth endpoint", () => {
     await expect(loginAdmin({ email: "a@b.c", password: "x" })).rejects.toThrow("სერვერთან დაკავშირება ვერ მოხერხდა");
   });
 });
+
+function memoryStorage(initial = {}) {
+  const data = { ...initial };
+  return {
+    getItem: (k) => (k in data ? data[k] : null),
+    setItem: (k, v) => { data[k] = String(v); },
+    removeItem: (k) => { delete data[k]; },
+    data,
+  };
+}
+
+describe("admin session", () => {
+  const TOKEN = { staropub_admin_token: "t" };
+
+  async function setup(response) {
+    const local = memoryStorage(TOKEN);
+    vi.stubGlobal("localStorage", local);
+    vi.stubGlobal("sessionStorage", memoryStorage());
+    vi.stubGlobal("fetch", vi.fn(async () => (typeof response === "function" ? response() : response)));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const api = await loadWithApiUrl("");
+    return { api, local };
+  }
+
+  it.each([
+    [200, "ok", true],
+    [401, "unauthenticated", false],
+    [403, "forbidden", false],
+    [502, "unavailable", true],
+  ])("/auth/me %i → %s (token kept: %s)", async (status, state, tokenKept) => {
+    const { api, local } = await setup(new Response("{}", { status }));
+    const session = await api.checkAdminSession();
+    expect(session.state).toBe(state);
+    expect("staropub_admin_token" in local.data).toBe(tokenKept);
+  });
+
+  it("treats a network failure as unavailable and keeps the token", async () => {
+    const { api, local } = await setup(() => { throw new TypeError("Failed to fetch"); });
+    expect((await api.checkAdminSession()).state).toBe("unavailable");
+    expect(local.data.staropub_admin_token).toBe("t");
+  });
+
+  it("does not log the admin out when the calls function answers 401", async () => {
+    const { api, local } = await setup(new Response(JSON.stringify({ error: "admin_unverified" }), { status: 401 }));
+    const onUnauthorized = vi.fn();
+    api.setUnauthorizedHandler(onUnauthorized);
+    await expect(api.fetchWaiterCalls()).rejects.toThrow("ადმინის სესია ვერ დადასტურდა");
+    expect(onUnauthorized).not.toHaveBeenCalled();
+    expect(local.data.staropub_admin_token).toBe("t");
+  });
+
+  it("still logs out when a backend admin endpoint answers 401", async () => {
+    const { api, local } = await setup(new Response("{}", { status: 401 }));
+    const onUnauthorized = vi.fn();
+    api.setUnauthorizedHandler(onUnauthorized);
+    await expect(api.updateAdminSettings({})).rejects.toThrow();
+    expect(onUnauthorized).toHaveBeenCalled();
+    expect("staropub_admin_token" in local.data).toBe(false);
+  });
+});

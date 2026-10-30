@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "./api";
+import { authLog } from "./authDebug";
 
 const TOKEN_KEY = "staropub_admin_token";
 
@@ -60,10 +61,13 @@ const CONNECTION_ERROR = "სერვერთან დაკავშირ�
 function friendlyHttpError(status, data) {
   const serverMessage = typeof data?.error === "string" ? data.error : typeof data?.message === "string" ? data.message : "";
   if (status === 404 || status === 405) return "სერვერთან დაკავშირება ვერ მოხერხდა (სერვისი ვერ მოიძებნა).";
-  if (status >= 500) return serverMessage && !/^[a-z_]+$/.test(serverMessage)
+  if (status >= 500 && serverMessage !== "auth_backend_unavailable") return serverMessage && !/^[a-z_]+$/.test(serverMessage)
     ? serverMessage
     : "სერვერი დროებით მიუწვდომელია. სცადეთ რამდენიმე წამში.";
   if (status === 429) return "ძალიან ბევრი მცდელობა. სცადეთ ცოტა ხანში.";
+  if (serverMessage === "auth_backend_unavailable") return "ავტორიზაციის სერვერი (Render) ჯერ არ პასუხობს. სცადეთ რამდენიმე წამში.";
+  if (serverMessage === "admin_unverified") return "ადმინის სესია ვერ დადასტურდა ამ სერვისისთვის.";
+  if (serverMessage === "not_admin") return "ამ ანგარიშს ადმინისტრატორის უფლება არ აქვს.";
   // 400/401/403/409 from the backend carry a meaningful message (e.g. wrong password).
   return serverMessage || `მოთხოვნა ვერ შესრულდა (კოდი ${status}).`;
 }
@@ -114,8 +118,15 @@ export async function request(path, { method = "GET", body, signal, handleUnauth
 // ─── Authentication ────────────────────────────────────────────────────────
 
 async function authenticate(path, payload, remember) {
+  authLog(`POST ${API_BASE_URL}${path}`);
   const data = await request(path, { method: "POST", body: payload, handleUnauthorized: false });
-  if (data.token) setAdminToken(data.token, remember);
+  if (data.token) {
+    setAdminToken(data.token, remember);
+    authLog("login ok, token stored in", remember ? "localStorage" : "sessionStorage");
+  } else {
+    // Without a token the session lives only in the backend's cookie.
+    authLog("login ok, but the backend returned no token (cookie-only session)");
+  }
   return data;
 }
 
@@ -131,13 +142,34 @@ export function socialLoginAdmin(idToken) {
   return authenticate("/auth/social-login", { token: idToken }, true);
 }
 
+/**
+ * Asks the backend who is logged in.
+ * @returns {Promise<{ state: "ok", user: object } | { state: "unauthenticated" | "forbidden" | "unavailable", status?: number }>}
+ *   Only "unauthenticated" clears the stored token; a cold or unreachable backend
+ *   must not log the admin out.
+ */
 export async function checkAdminSession() {
-  const res = await authFetch("/auth/me");
-  if (!res.ok) {
-    if (res.status === 401 || res.status === 403) clearAdminToken();
-    return null;
+  authLog("checking session", getAdminToken() ? "(token present)" : "(no token, relying on cookie)");
+  let res;
+  try {
+    res = await authFetch("/auth/me", { signal: AbortSignal.timeout(40000) });
+  } catch (err) {
+    console.error("[adminApi] GET /auth/me failed:", err);
+    return { state: "unavailable", status: 0 };
   }
-  return res.json().catch(() => ({}));
+
+  authLog("/auth/me →", res.status);
+  if (res.ok) return { state: "ok", user: await res.json().catch(() => ({})) };
+  if (res.status === 401) {
+    clearAdminToken();
+    return { state: "unauthenticated", status: 401 };
+  }
+  if (res.status === 403) {
+    clearAdminToken();
+    return { state: "forbidden", status: 403 };
+  }
+  console.error(`[adminApi] GET /auth/me → HTTP ${res.status}`);
+  return { state: "unavailable", status: res.status };
 }
 
 export async function logoutAdmin() {
@@ -188,9 +220,14 @@ function expectArray(key) {
 }
 
 /** Resolves to `{ items, stored }`; `stored: false` means the backend has never kept one. */
+// These go through Vercel functions that verify the admin with the backend themselves;
+// a failure there (cold backend, cookie-only session) is shown in the section and must
+// not log the admin out of the panel.
+const sideRequest = (path, options = {}) => request(path, { ...options, handleUnauthorized: false });
+
 export const fetchWaiterCalls = () =>
-  request("/api/calls").then((d) => ({ items: expectArray("calls")(d), stored: d.stored !== false }));
-export const deleteWaiterCall = (id) => request(`/api/calls?id=${encodeURIComponent(id)}`, { method: "DELETE" }).then(expectArray("calls"));
-export const clearWaiterCalls = () => request("/api/calls", { method: "DELETE" }).then(expectArray("calls"));
+  sideRequest("/api/calls").then((d) => ({ items: expectArray("calls")(d), stored: d.stored !== false }));
+export const deleteWaiterCall = (id) => sideRequest(`/api/calls?id=${encodeURIComponent(id)}`, { method: "DELETE" }).then(expectArray("calls"));
+export const clearWaiterCalls = () => sideRequest("/api/calls", { method: "DELETE" }).then(expectArray("calls"));
 export const fetchReviews = () =>
-  request("/api/reviews").then((d) => ({ items: expectArray("reviews")(d), stored: d.stored !== false }));
+  sideRequest("/api/reviews").then((d) => ({ items: expectArray("reviews")(d), stored: d.stored !== false }));

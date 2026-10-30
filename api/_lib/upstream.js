@@ -51,24 +51,40 @@ export function forwardedAuthHeaders(req) {
 
 const adminCache = new Map();
 const ADMIN_CACHE_TTL_MS = 60 * 1000;
+// Long enough for a cold Render start; a short timeout used to look like "not an admin".
+const ADMIN_CHECK_TIMEOUT_MS = 35000;
 
-/** Verifies the caller is a logged-in admin by asking the backend's /auth/me. */
+/**
+ * Verifies the caller is a logged-in admin by asking the backend's /auth/me.
+ * @returns {Promise<"ok" | "unauthenticated" | "forbidden" | "unavailable">}
+ *   "unavailable" means the backend could not be reached, which is not an auth failure.
+ */
 export async function verifyAdmin(req) {
   const headers = forwardedAuthHeaders(req);
   const key = `${headers.Authorization || ""}|${headers.Cookie || ""}`;
-  if (key === "|") return false;
+  if (key === "|") return "unauthenticated";
 
   const cached = adminCache.get(key);
-  if (cached && Date.now() - cached < ADMIN_CACHE_TTL_MS) return true;
+  if (cached && Date.now() - cached < ADMIN_CACHE_TTL_MS) return "ok";
 
-  const res = await requestJson(`${BACKEND_BASE}/auth/me`, { headers, timeoutMs: 8000 });
+  const res = await requestJson(`${BACKEND_BASE}/auth/me`, { headers, timeoutMs: ADMIN_CHECK_TIMEOUT_MS });
   if (res.ok) {
     if (adminCache.size > 500) adminCache.clear();
     adminCache.set(key, Date.now());
-    return true;
+    return "ok";
   }
   adminCache.delete(key);
-  return false;
+  if (res.status === 401) return "unauthenticated";
+  if (res.status === 403) return "forbidden";
+  console.warn(`[verifyAdmin] backend /auth/me unavailable (status ${res.status})`);
+  return "unavailable";
+}
+
+/** Sends the response for a failed verifyAdmin() result. */
+export function sendAdminCheckFailure(res, result) {
+  const status = result === "unavailable" ? 503 : result === "forbidden" ? 403 : 401;
+  const error = result === "unavailable" ? "auth_backend_unavailable" : result === "forbidden" ? "not_admin" : "admin_unverified";
+  return sendJson(res, status, { error }, { "Cache-Control": "no-store" });
 }
 
 const rateBuckets = new Map();

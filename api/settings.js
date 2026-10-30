@@ -28,7 +28,7 @@ export default async function handler(req, res) {
   }
 
   const wantsRefresh = req.query?.refresh === "true";
-  const isRefresh = wantsRefresh && (await verifyAdmin(req));
+  const isRefresh = wantsRefresh && (await verifyAdmin(req)) === "ok";
 
   let data = {};
   try {

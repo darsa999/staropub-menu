@@ -88,7 +88,7 @@ export default async function handler(req, res) {
 
   // Cache bypass is reserved for admins so it cannot be used to hammer the backend.
   const wantsRefresh = req.query?.refresh === "true";
-  const isRefresh = wantsRefresh && (await verifyAdmin(req));
+  const isRefresh = wantsRefresh && (await verifyAdmin(req)) === "ok";
 
   let data = [];
   try {

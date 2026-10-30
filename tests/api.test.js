@@ -126,6 +126,24 @@ describe("/api/calls", () => {
     expect(ok.body.stored).toBe(true);
   });
 
+  it("answers 503 (not 401) when the auth backend is unreachable", async () => {
+    upstream.meStatus = 502;
+    const { default: handler } = await import("../api/calls.js");
+    const res = mockRes();
+    await handler({ method: "GET", query: {}, headers: { authorization: "Bearer t" } }, res);
+    expect(res.statusCode).toBe(503);
+    expect(res.body.error).toBe("auth_backend_unavailable");
+  });
+
+  it("answers 403 for a logged-in non-admin", async () => {
+    upstream.meStatus = 403;
+    const { default: handler } = await import("../api/calls.js");
+    const res = mockRes();
+    await handler({ method: "GET", query: {}, headers: { authorization: "Bearer t" } }, res);
+    expect(res.statusCode).toBe(403);
+    expect(res.body.error).toBe("not_admin");
+  });
+
   it("tells the admin when the backend has never stored calls", async () => {
     upstream.meStatus = 200;
     delete upstream.settings.waiterCalls;

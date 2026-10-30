@@ -9,6 +9,7 @@ import {
   requestJson,
   sendJson,
   serviceAuthHeaders,
+  sendAdminCheckFailure,
   verifyAdmin,
 } from "./_lib/upstream.js";
 
@@ -126,7 +127,8 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "GET" || req.method === "DELETE") {
-    if (!(await verifyAdmin(req))) return sendJson(res, 401, { error: "unauthorized" }, noStore);
+    const adminCheck = await verifyAdmin(req);
+    if (adminCheck !== "ok") return sendAdminCheckFailure(res, adminCheck);
 
     const settings = await readSettings();
     if (!settings) return sendJson(res, 502, { error: "upstream_unavailable" }, noStore);
