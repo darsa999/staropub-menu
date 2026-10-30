@@ -1,115 +1,127 @@
-import https from "node:https";
+import { fetchServerMenu } from "./menu.js";
+import {
+  BACKEND_BASE,
+  cleanString,
+  clientIp,
+  forwardedAuthHeaders,
+  rateLimit,
+  readBody,
+  requestJson,
+  sendJson,
+  serviceAuthHeaders,
+  verifyAdmin,
+} from "./_lib/upstream.js";
 
-const BACKEND_SETTINGS_URL = "https://staropub-menu.onrender.com/api/settings";
+const SETTINGS_URL = `${BACKEND_BASE}/settings`;
+const MAX_CALLS = 50;
 
-const httpsAgent = new https.Agent({
-  rejectUnauthorized: false,
-  keepAlive: true,
-});
+const KINDS = {
+  waiter: "მიმტანი 💁‍♂️",
+  bill: "ანგარიში 🧾",
+  order: "შეკვეთა 🛒",
+};
+const PAYMENT_METHODS = { cash: "ნაღდი ფული", card: "ბარათი" };
 
-function fetchJson(url, options = {}) {
-  return new Promise((resolve, reject) => {
-    const parsedUrl = new URL(url);
-    const reqOptions = {
-      hostname: parsedUrl.hostname,
-      port: parsedUrl.port || 443,
-      path: parsedUrl.pathname + parsedUrl.search,
-      method: options.method || "GET",
-      agent: httpsAgent,
-      timeout: 8000,
-      headers: {
-        Accept: "application/json",
-        ...(options.headers || {}),
-      },
-    };
+async function readCalls() {
+  const res = await requestJson(SETTINGS_URL);
+  if (!res.ok) return null;
+  return Array.isArray(res.data?.waiterCalls) ? res.data.waiterCalls : [];
+}
 
-    const req = https.request(reqOptions, (res) => {
-      let data = "";
-      res.setEncoding("utf8");
-      res.on("data", (chunk) => { data += chunk; });
-      res.on("end", () => {
-        try {
-          const parsed = JSON.parse(data || "{}");
-          resolve({ status: res.statusCode, data: parsed, ok: res.statusCode >= 200 && res.statusCode < 300 });
-        } catch (err) {
-          resolve({ status: res.statusCode, data, ok: false });
-        }
-      });
-    });
-
-    req.on("error", (err) => reject(err));
-    req.on("timeout", () => { req.destroy(); reject(new Error("Timeout")); });
-
-    if (options.body) {
-      req.write(typeof options.body === "string" ? options.body : JSON.stringify(options.body));
-    }
-    req.end();
+function writeCalls(calls, headers) {
+  // NOTE: read-modify-write on the shared settings document. Concurrent writes can
+  // still race; an atomic calls collection on the backend is the real fix.
+  return requestJson(SETTINGS_URL, {
+    method: "PUT",
+    headers,
+    body: { waiterCalls: calls.slice(0, MAX_CALLS) },
+    timeoutMs: 10000,
   });
 }
 
-export default async function handler(req, res) {
-  if (req.method === "OPTIONS") {
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
-    return res.status(204).end();
-  }
+async function resolveOrderItems(rawItems) {
+  if (!Array.isArray(rawItems) || rawItems.length === 0) return null;
+  const menu = await fetchServerMenu();
+  const byId = new Map();
+  for (const cat of menu) for (const p of cat.products) byId.set(p.id, p);
 
-  res.setHeader("Content-Type", "application/json; charset=utf-8");
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  const items = [];
+  for (const raw of rawItems.slice(0, 50)) {
+    const product = byId.get(String(raw?.id || ""));
+    const quantity = Math.min(99, Math.max(1, Math.floor(Number(raw?.quantity) || 0)));
+    if (!product || !product.available) continue;
+    items.push({ id: product.id, name: product.name.ka, quantity, price: product.price });
+  }
+  return items.length ? items : null;
+}
+
+export default async function handler(req, res) {
+  const noStore = { "Cache-Control": "no-store" };
 
   if (req.method === "POST") {
-    try {
-      const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
-      const table = String(body.table || "1").trim();
-      const type = String(body.type || "Waiter 👨🍳").trim();
-      const paymentMethod = String(body.paymentMethod || "").trim();
+    if (!rateLimit(`calls:${clientIp(req)}`, 10, 60 * 1000)) {
+      return sendJson(res, 429, { ok: false, error: "too_many_requests" }, noStore);
+    }
 
-      const newCall = {
-        id: Date.now(),
-        table,
-        type: paymentMethod ? `${type} (${paymentMethod})` : type,
-        time: new Date().toLocaleTimeString("ka-GE", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-      };
+    const body = readBody(req);
+    const table = cleanString(body.table, 10);
+    const kind = Object.hasOwn(KINDS, body.kind) ? body.kind : "waiter";
+    if (!table) return sendJson(res, 400, { ok: false, error: "table_required" }, noStore);
 
-      // Pull current waiterCalls from settings and prepend
-      let existingCalls = [];
-      try {
-        const settingsRes = await fetchJson(BACKEND_SETTINGS_URL);
-        if (settingsRes.ok && Array.isArray(settingsRes.data?.waiterCalls)) {
-          existingCalls = settingsRes.data.waiterCalls;
-        }
-      } catch {}
+    const newCall = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      kind,
+      table,
+      type: KINDS[kind],
+      createdAt: new Date().toISOString(),
+      time: new Date().toLocaleTimeString("ka-GE", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        timeZone: "Asia/Tbilisi",
+      }),
+    };
 
-      const updatedCalls = [newCall, ...existingCalls].slice(0, 50);
-
-      // Persist to backend settings
-      try {
-        await fetchJson(BACKEND_SETTINGS_URL, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ waiterCalls: updatedCalls }),
-        });
-      } catch (err) {
-        console.warn("[API Calls] Failed to save to upstream settings:", err.message);
+    if (kind === "bill") {
+      const method = PAYMENT_METHODS[body.paymentMethod];
+      if (method) {
+        newCall.paymentMethod = body.paymentMethod;
+        newCall.type = `${KINDS.bill} (${method})`;
       }
-
-      return res.status(200).json({ ok: true, call: newCall, message: "Call registered successfully" });
-    } catch (err) {
-      console.error("[API Calls] Error:", err);
-      return res.status(500).json({ error: err.message });
     }
+
+    if (kind === "order") {
+      const items = await resolveOrderItems(body.items);
+      if (!items) return sendJson(res, 400, { ok: false, error: "empty_order" }, noStore);
+      newCall.items = items;
+      newCall.total = Math.round(items.reduce((s, i) => s + i.price * i.quantity, 0) * 100) / 100;
+    }
+
+    const existing = await readCalls();
+    if (existing === null) return sendJson(res, 502, { ok: false, error: "upstream_unavailable" }, noStore);
+
+    const saved = await writeCalls([newCall, ...existing], serviceAuthHeaders());
+    if (!saved.ok) {
+      console.error("[/api/calls] upstream write failed with status", saved.status);
+      return sendJson(res, 502, { ok: false, error: "upstream_write_failed" }, noStore);
+    }
+    return sendJson(res, 201, { ok: true, call: newCall }, noStore);
   }
 
-  if (req.method === "GET") {
-    try {
-      const settingsRes = await fetchJson(BACKEND_SETTINGS_URL);
-      const calls = (settingsRes.ok && Array.isArray(settingsRes.data?.waiterCalls)) ? settingsRes.data.waiterCalls : [];
-      return res.status(200).json({ calls });
-    } catch (err) {
-      return res.status(200).json({ calls: [] });
-    }
+  if (req.method === "GET" || req.method === "DELETE") {
+    if (!(await verifyAdmin(req))) return sendJson(res, 401, { error: "unauthorized" }, noStore);
+
+    const calls = await readCalls();
+    if (calls === null) return sendJson(res, 502, { error: "upstream_unavailable" }, noStore);
+    if (req.method === "GET") return sendJson(res, 200, { calls }, noStore);
+
+    // DELETE ?id=<id> removes one call, DELETE without id clears all.
+    const id = req.query?.id ? String(req.query.id) : null;
+    const remaining = id ? calls.filter((c) => String(c.id) !== id) : [];
+    const saved = await writeCalls(remaining, forwardedAuthHeaders(req));
+    if (!saved.ok) return sendJson(res, saved.status || 502, { error: "upstream_write_failed" }, noStore);
+    return sendJson(res, 200, { calls: remaining }, noStore);
   }
 
-  return res.status(405).json({ error: "Method not allowed" });
+  return sendJson(res, 405, { error: "Method not allowed" }, { ...noStore, Allow: "GET, POST, DELETE" });
 }
