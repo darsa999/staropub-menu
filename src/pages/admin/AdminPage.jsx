@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import OriginalAdminDashboard from "../../components/admin/OriginalAdminDashboard";
+// Imported statically (this page is already a lazy chunk) so signInWithPopup runs directly
+// inside the click handler; awaiting a dynamic import first makes Safari block the popup.
+import { auth, googleProvider, signInWithPopup } from "../../admin/firebase";
 import {
   AuthError,
   checkAdminSession,
@@ -17,6 +20,15 @@ import {
 
 const CALLS_POLL_INTERVAL_MS = 15000;
 
+const FIREBASE_ERRORS = {
+  "auth/popup-closed-by-user": "Google-ის ფანჯარა დაიხურა შესვლის დასრულებამდე.",
+  "auth/cancelled-popup-request": "Google-ის ფანჯარა დაიხურა შესვლის დასრულებამდე.",
+  "auth/popup-blocked": "ბრაუზერმა Google-ის ფანჯარა დაბლოკა. დაუშვით pop-up ამ საიტისთვის.",
+  "auth/unauthorized-domain": "ეს დომენი Firebase-ში ავტორიზებული არ არის (Authentication → Settings → Authorized domains).",
+  "auth/network-request-failed": "სერვერთან დაკავშირება ვერ მოხერხდა. შეამოწმეთ ინტერნეტი.",
+  "auth/operation-not-allowed": "Google-ით შესვლა Firebase-ში ჩართული არ არის.",
+};
+
 const NOT_STORED_HINT = (field) =>
   `Backend-ზე ჯერ არცერთი ჩანაწერი არ შენახულა (settings.${field} არ არსებობს). ` +
   "თუ სტუმრები უკვე აგზავნიან, ორი მიზეზი შეიძლება იყოს: Vercel-ში არ არის დაყენებული BACKEND_SERVICE_TOKEN " +
@@ -26,7 +38,7 @@ function describeLoadError(err) {
   const message = err?.message || "";
   if (err instanceof AuthError) return err.message;
   if (message === "upstream_unavailable") return "Render backend-ი არ პასუხობს (/api/settings). სცადეთ ცოტა ხანში.";
-  if (/HTTP 404|HTTP 405/.test(message)) {
+  if (err?.status === 404 || err?.status === 405) {
     return "/api/calls ფუნქცია ვერ მოიძებნა. ეს ფუნქციები მხოლოდ Vercel-ზე მუშაობს (Netlify-ზე არა).";
   }
   return `ჩატვირთვა ვერ მოხერხდა: ${message || "უცნობი შეცდომა"}`;
@@ -197,6 +209,7 @@ export default function AdminPage({ onBackToSite }) {
       }
       completeLogin();
     } catch (err) {
+      console.error(`[admin] ${authTab} failed:`, err);
       setAuthError(err.message);
     } finally {
       setAuthSubmitting(false);
@@ -207,14 +220,13 @@ export default function AdminPage({ onBackToSite }) {
     setAuthError("");
     try {
       if (providerName !== "google") throw new Error("Unsupported provider");
-      // Firebase is only downloaded when someone actually signs in with Google.
-      const { auth, googleProvider, signInWithPopup } = await import("../../admin/firebase");
       const result = await signInWithPopup(auth, googleProvider);
       const idToken = await result.user.getIdToken();
       await socialLoginAdmin(idToken);
       completeLogin();
     } catch (err) {
-      setAuthError(err.message);
+      console.error("[admin] Google sign-in failed:", err);
+      setAuthError(FIREBASE_ERRORS[err?.code] || (err?.code ? `Google-ით შესვლა ვერ მოხერხდა (${err.code}).` : err.message));
     }
   };
 

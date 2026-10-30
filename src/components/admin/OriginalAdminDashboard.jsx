@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import { authFetch, request } from "../../services/adminApi";
+import { BACKEND_ORIGIN } from "../../services/api";
 import { getVolumeSizesForDish, parseMultiPrice, resolveImageSrc } from "./adminUtils";
 import CallsSection from "./CallsSection";
 import ReviewsSection from "./ReviewsSection";
 
-const RAW_API_URL = import.meta.env.VITE_API_URL || "";
-const API_URL = RAW_API_URL ? RAW_API_URL.replace(/\/api\/?$/, "").replace(/\/+$/, "") : "";
+// All admin requests use `${API_URL}/api/...`; the origin is normalized in services/api.
+const API_URL = BACKEND_ORIGIN;
 
 const INITIAL_CATEGORY_LABELS = {};
 

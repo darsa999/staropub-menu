@@ -54,19 +54,48 @@ export function authFetch(path, options = {}) {
   });
 }
 
+const CONNECTION_ERROR = "სერვერთან დაკავშირება ვერ მოხერხდა. შეამოწმეთ ინტერნეტი და სცადეთ თავიდან.";
+
+/** Turns an HTTP failure into a message an admin can act on (details go to the console). */
+function friendlyHttpError(status, data) {
+  const serverMessage = typeof data?.error === "string" ? data.error : typeof data?.message === "string" ? data.message : "";
+  if (status === 404 || status === 405) return "სერვერთან დაკავშირება ვერ მოხერხდა (სერვისი ვერ მოიძებნა).";
+  if (status >= 500) return serverMessage && !/^[a-z_]+$/.test(serverMessage)
+    ? serverMessage
+    : "სერვერი დროებით მიუწვდომელია. სცადეთ რამდენიმე წამში.";
+  if (status === 429) return "ძალიან ბევრი მცდელობა. სცადეთ ცოტა ხანში.";
+  // 400/401/403/409 from the backend carry a meaningful message (e.g. wrong password).
+  return serverMessage || `მოთხოვნა ვერ შესრულდა (კოდი ${status}).`;
+}
+
 /**
  * Authenticated JSON request that throws on any non-2xx response.
  * Bodies that are FormData are sent as-is; everything else is JSON-encoded.
  */
 export async function request(path, { method = "GET", body, signal, handleUnauthorized = true } = {}) {
   const isForm = typeof FormData !== "undefined" && body instanceof FormData;
-  const res = await authFetch(path, {
-    method,
-    signal,
-    headers: body !== undefined && !isForm ? { "Content-Type": "application/json" } : {},
-    body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
-  });
-  const data = await res.json().catch(() => ({}));
+  let res;
+  try {
+    res = await authFetch(path, {
+      method,
+      signal,
+      headers: body !== undefined && !isForm ? { "Content-Type": "application/json" } : {},
+      body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
+    });
+  } catch (err) {
+    console.error(`[adminApi] ${method} ${path} network error:`, err);
+    const error = new Error(CONNECTION_ERROR);
+    error.status = 0;
+    throw error;
+  }
+
+  const raw = await res.text();
+  let data = {};
+  try {
+    data = raw ? JSON.parse(raw) : {};
+  } catch {
+    data = {};
+  }
 
   if (res.status === 401 && handleUnauthorized) {
     clearAdminToken();
@@ -74,7 +103,10 @@ export async function request(path, { method = "GET", body, signal, handleUnauth
     throw new AuthError();
   }
   if (!res.ok) {
-    throw new Error(data?.error || data?.message || `HTTP ${res.status}`);
+    console.error(`[adminApi] ${method} ${res.url || path} → HTTP ${res.status}`, raw.slice(0, 500));
+    const error = new Error(friendlyHttpError(res.status, data));
+    error.status = res.status;
+    throw error;
   }
   return data;
 }
@@ -146,7 +178,11 @@ export async function uploadImage(file) {
 // so the expected array is required rather than defaulting to an empty list.
 function expectArray(key) {
   return (data) => {
-    if (!Array.isArray(data?.[key])) throw new Error("HTTP 404");
+    if (!Array.isArray(data?.[key])) {
+      const error = new Error("სერვერთან დაკავშირება ვერ მოხერხდა (სერვისი ვერ მოიძებნა).");
+      error.status = 404;
+      throw error;
+    }
     return data[key];
   };
 }

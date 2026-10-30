@@ -12,9 +12,15 @@ export {
 
 const env = import.meta.env || {};
 
-// Base URL of the Render backend API (auth, categories, dishes, uploads).
-// Defaults to the same-origin /api proxy defined in vercel.json / vite.config.js.
-export const API_BASE_URL = (env.VITE_API_URL || "/api").replace(/\/+$/, "");
+// Origin of the Render backend (auth, categories, dishes, uploads). VITE_API_URL has been
+// configured both with and without a trailing "/api", so accept either form.
+// Empty means same-origin, i.e. the /api proxy in vercel.json / vite.config.js.
+export const BACKEND_ORIGIN = String(env.VITE_API_URL || "")
+  .trim()
+  .replace(/\/+$/, "")
+  .replace(/\/api$/, "");
+
+export const API_BASE_URL = `${BACKEND_ORIGIN}/api`;
 
 const MENU_TIMEOUT_MS = 45000; // the function itself waits up to 35s for a cold Render start
 const RETRY_DELAYS_MS = [2000, 4000];
