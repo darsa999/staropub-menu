@@ -22,21 +22,36 @@ const KINDS = {
 };
 const PAYMENT_METHODS = { cash: "ნაღდი ფული", card: "ბარათი" };
 
-async function readCalls() {
+async function readSettings() {
   const res = await requestJson(SETTINGS_URL);
-  if (!res.ok) return null;
-  return Array.isArray(res.data?.waiterCalls) ? res.data.waiterCalls : [];
+  return res.ok && res.data && typeof res.data === "object" ? res.data : null;
 }
 
-function writeCalls(calls, headers) {
+async function readCalls() {
+  const settings = await readSettings();
+  if (!settings) return null;
+  return Array.isArray(settings.waiterCalls) ? settings.waiterCalls : [];
+}
+
+/** `isPersisted(storedCalls)` checks the write actually landed upstream. */
+async function writeCalls(calls, headers, isPersisted) {
   // NOTE: read-modify-write on the shared settings document. Concurrent writes can
   // still race; an atomic calls collection on the backend is the real fix.
-  return requestJson(SETTINGS_URL, {
+  const next = calls.slice(0, MAX_CALLS);
+  const res = await requestJson(SETTINGS_URL, {
     method: "PUT",
     headers,
-    body: { waiterCalls: calls.slice(0, MAX_CALLS) },
+    body: { waiterCalls: next },
     timeoutMs: 10000,
   });
+  if (!res.ok) return { ok: false, status: res.status, error: "upstream_write_failed" };
+
+  // A 2xx alone is not proof: a backend schema without `waiterCalls` silently drops it.
+  const stored = Array.isArray(res.data?.waiterCalls) ? res.data.waiterCalls : await readCalls();
+  if (!isPersisted(stored || [])) {
+    return { ok: false, status: 502, error: "upstream_did_not_persist" };
+  }
+  return { ok: true, status: res.status };
 }
 
 async function resolveOrderItems(rawItems) {
@@ -100,10 +115,12 @@ export default async function handler(req, res) {
     const existing = await readCalls();
     if (existing === null) return sendJson(res, 502, { ok: false, error: "upstream_unavailable" }, noStore);
 
-    const saved = await writeCalls([newCall, ...existing], serviceAuthHeaders());
+    const saved = await writeCalls([newCall, ...existing], serviceAuthHeaders(), (stored) =>
+      stored.some((c) => String(c.id) === newCall.id)
+    );
     if (!saved.ok) {
-      console.error("[/api/calls] upstream write failed with status", saved.status);
-      return sendJson(res, 502, { ok: false, error: "upstream_write_failed" }, noStore);
+      console.error(`[/api/calls] ${saved.error} (upstream status ${saved.status})`);
+      return sendJson(res, 502, { ok: false, error: saved.error, upstreamStatus: saved.status }, noStore);
     }
     return sendJson(res, 201, { ok: true, call: newCall }, noStore);
   }
@@ -111,15 +128,23 @@ export default async function handler(req, res) {
   if (req.method === "GET" || req.method === "DELETE") {
     if (!(await verifyAdmin(req))) return sendJson(res, 401, { error: "unauthorized" }, noStore);
 
-    const calls = await readCalls();
-    if (calls === null) return sendJson(res, 502, { error: "upstream_unavailable" }, noStore);
-    if (req.method === "GET") return sendJson(res, 200, { calls }, noStore);
+    const settings = await readSettings();
+    if (!settings) return sendJson(res, 502, { error: "upstream_unavailable" }, noStore);
+    const calls = Array.isArray(settings.waiterCalls) ? settings.waiterCalls : [];
+    if (req.method === "GET") {
+      // `stored: false` means the backend has never kept a call — usually its settings
+      // schema drops `waiterCalls`, or guest writes are rejected (BACKEND_SERVICE_TOKEN).
+      return sendJson(res, 200, { calls, stored: Array.isArray(settings.waiterCalls) }, noStore);
+    }
 
     // DELETE ?id=<id> removes one call, DELETE without id clears all.
     const id = req.query?.id ? String(req.query.id) : null;
     const remaining = id ? calls.filter((c) => String(c.id) !== id) : [];
-    const saved = await writeCalls(remaining, forwardedAuthHeaders(req));
-    if (!saved.ok) return sendJson(res, saved.status || 502, { error: "upstream_write_failed" }, noStore);
+    const removed = new Set(calls.filter((c) => !remaining.includes(c)).map((c) => String(c.id)));
+    const saved = await writeCalls(remaining, forwardedAuthHeaders(req), (stored) =>
+      stored.every((c) => !removed.has(String(c.id)))
+    );
+    if (!saved.ok) return sendJson(res, 502, { error: saved.error, upstreamStatus: saved.status }, noStore);
     return sendJson(res, 200, { calls: remaining }, noStore);
   }
 

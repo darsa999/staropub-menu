@@ -50,16 +50,24 @@ export default async function handler(req, res) {
     });
     if (!saved.ok) {
       console.error("[/api/reviews] upstream write failed with status", saved.status);
-      return sendJson(res, 502, { ok: false, error: "upstream_write_failed" }, noStore);
+      return sendJson(res, 502, { ok: false, error: "upstream_write_failed", upstreamStatus: saved.status }, noStore);
+    }
+
+    // A 2xx alone is not proof: a backend schema without `reviews` silently drops it.
+    const stored = Array.isArray(saved.data?.reviews) ? saved.data.reviews : await readReviews();
+    if (!(stored || []).some((r) => String(r.id) === newReview.id)) {
+      console.error("[/api/reviews] upstream accepted the write but did not persist `reviews`");
+      return sendJson(res, 502, { ok: false, error: "upstream_did_not_persist" }, noStore);
     }
     return sendJson(res, 201, { ok: true, review: newReview }, noStore);
   }
 
   if (req.method === "GET") {
     if (!(await verifyAdmin(req))) return sendJson(res, 401, { error: "unauthorized" }, noStore);
-    const reviews = await readReviews();
-    if (reviews === null) return sendJson(res, 502, { error: "upstream_unavailable" }, noStore);
-    return sendJson(res, 200, { reviews }, noStore);
+    const settings = await requestJson(SETTINGS_URL);
+    if (!settings.ok || !settings.data) return sendJson(res, 502, { error: "upstream_unavailable" }, noStore);
+    const stored = Array.isArray(settings.data.reviews);
+    return sendJson(res, 200, { reviews: stored ? settings.data.reviews : [], stored }, noStore);
   }
 
   return sendJson(res, 405, { error: "Method not allowed" }, { ...noStore, Allow: "GET, POST" });

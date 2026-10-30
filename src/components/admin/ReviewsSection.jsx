@@ -1,11 +1,13 @@
 import React from "react";
+import LoadErrorBanner from "./LoadErrorBanner";
 
-export default function ReviewsSection({ reviews }) {
+export default function ReviewsSection({ reviews, loadError }) {
   return (
     <div>
       <h3 style={{ margin: "0 0 16px", fontFamily: "'Georgia', serif" }}>სტუმრების შეფასებების ჟურნალი</h3>
+      <LoadErrorBanner message={loadError} />
       {reviews.length === 0 ? (
-        <p style={{ color: "#8a6040", textAlign: "center", margin: "40px 0" }}>სტუმრების შეფასებები ჯერ არ არის შემოსული.</p>
+        !loadError && <p style={{ color: "#8a6040", textAlign: "center", margin: "40px 0" }}>სტუმრების შეფასებები ჯერ არ არის შემოსული.</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {reviews.map((rev) => {

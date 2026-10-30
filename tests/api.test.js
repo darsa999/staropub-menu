@@ -15,7 +15,7 @@ let upstream;
 
 beforeEach(() => {
   vi.resetModules();
-  upstream = { settings: { isCartEnabled: true, waiterCalls: [], reviews: [{ name: "a" }] }, puts: [], putStatus: 200, meStatus: 401 };
+  upstream = { settings: { isCartEnabled: true, waiterCalls: [], reviews: [{ name: "a" }] }, puts: [], putStatus: 200, meStatus: 401, persist: true };
   vi.stubGlobal("fetch", vi.fn(async (url, init = {}) => {
     const path = new URL(url).pathname;
     if (path.endsWith("/auth/me")) return jsonResponse({}, upstream.meStatus);
@@ -23,7 +23,9 @@ beforeEach(() => {
     if (path.endsWith("/dishes")) return jsonResponse([{ id: "d1", category: "beer", name_ka: "ლუდი", price: 7 }]);
     if (path.endsWith("/settings")) {
       if (init.method === "PUT") {
-        upstream.puts.push(JSON.parse(init.body));
+        const patch = JSON.parse(init.body);
+        upstream.puts.push(patch);
+        if (upstream.persist && upstream.putStatus < 300) Object.assign(upstream.settings, patch);
         return jsonResponse({ ok: upstream.putStatus < 300 }, upstream.putStatus);
       }
       return jsonResponse(upstream.settings);
@@ -83,6 +85,15 @@ describe("/api/calls", () => {
     expect(res.body.ok).toBe(false);
   });
 
+  it("detects a backend that accepts the write but drops the field", async () => {
+    upstream.persist = false;
+    const { default: handler } = await import("../api/calls.js");
+    const res = mockRes();
+    await handler(post({ kind: "waiter", table: "4" }), res);
+    expect(res.statusCode).toBe(502);
+    expect(res.body.error).toBe("upstream_did_not_persist");
+  });
+
   it("prices orders from the server-side menu, ignoring client prices", async () => {
     const { default: handler } = await import("../api/calls.js");
     const res = mockRes();
@@ -112,10 +123,29 @@ describe("/api/calls", () => {
     const ok = mockRes();
     await handler({ method: "GET", query: {}, headers: { authorization: "Bearer t" } }, ok);
     expect(ok.statusCode).toBe(200);
+    expect(ok.body.stored).toBe(true);
+  });
+
+  it("tells the admin when the backend has never stored calls", async () => {
+    upstream.meStatus = 200;
+    delete upstream.settings.waiterCalls;
+    const { default: handler } = await import("../api/calls.js");
+    const res = mockRes();
+    await handler({ method: "GET", query: {}, headers: { authorization: "Bearer t" } }, res);
+    expect(res.body).toEqual({ calls: [], stored: false });
   });
 });
 
 describe("/api/reviews", () => {
+  it("detects a backend that accepts the write but drops the field", async () => {
+    upstream.persist = false;
+    const { default: handler } = await import("../api/reviews.js");
+    const res = mockRes();
+    await handler(post({ rating: 4, comment: "ok" }), res);
+    expect(res.statusCode).toBe(502);
+    expect(res.body.error).toBe("upstream_did_not_persist");
+  });
+
   it("clamps and trims input", async () => {
     const { default: handler } = await import("../api/reviews.js");
     const res = mockRes();

@@ -19,6 +19,7 @@ export default function AdminDashboard({
   isCartEnabled, setIsCartEnabled,
   reviewFormEnabled, setReviewFormEnabled,
   reviews,
+  callsError = "", reviewsError = "",
   unavailableDishIds = [], setUnavailableDishIds,
   allItems = [], setAllItems,
   categoryOrder = [], setCategoryOrder,
@@ -1161,7 +1162,7 @@ export default function AdminDashboard({
         </div>
         
         {activeAdminSection === "calls" && (
-          <CallsSection calls={waiterCalls} setCalls={setWaiterCalls} onError={(msg) => {
+          <CallsSection calls={waiterCalls} setCalls={setWaiterCalls} loadError={callsError} onError={(msg) => {
             setToastMessage(`⚠️ ${msg}`);
             setTimeout(() => setToastMessage(""), 4000);
           }} />
@@ -1358,7 +1359,7 @@ export default function AdminDashboard({
           </div>
         )}
 
-        {activeAdminSection === "reviews" && <ReviewsSection reviews={reviews} />}
+        {activeAdminSection === "reviews" && <ReviewsSection reviews={reviews} loadError={reviewsError} />}
 
         {activeAdminSection === "availability" && (
           <div>

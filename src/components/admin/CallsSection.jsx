@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { clearWaiterCalls, deleteWaiterCall } from "../../services/adminApi";
+import LoadErrorBanner from "./LoadErrorBanner";
 
 const KIND_LABELS = {
   waiter: "მიმტანი 💁‍♂️",
@@ -23,7 +24,7 @@ const buttonStyle = {
   cursor: "pointer",
 };
 
-export default function CallsSection({ calls, setCalls, onError }) {
+export default function CallsSection({ calls, setCalls, loadError, onError }) {
   const [busyId, setBusyId] = useState(null);
 
   const run = async (id, action) => {
@@ -56,8 +57,10 @@ export default function CallsSection({ calls, setCalls, onError }) {
         </button>
       </div>
 
+      <LoadErrorBanner message={loadError} />
+
       {calls.length === 0 ? (
-        <p style={{ color: "#8a6040", textAlign: "center", margin: "40px 0" }}>მაგიდებიდან აქტიური გამოძახება არ არის.</p>
+        !loadError && <p style={{ color: "#8a6040", textAlign: "center", margin: "40px 0" }}>მაგიდებიდან აქტიური გამოძახება არ არის.</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {calls.map((call) => (

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import OriginalAdminDashboard from "../../components/admin/OriginalAdminDashboard";
 import {
+  AuthError,
   checkAdminSession,
   fetchAdminCategories,
   fetchAdminDishes,
@@ -15,6 +16,21 @@ import {
 } from "../../services/adminApi";
 
 const CALLS_POLL_INTERVAL_MS = 15000;
+
+const NOT_STORED_HINT = (field) =>
+  `Backend-ზე ჯერ არცერთი ჩანაწერი არ შენახულა (settings.${field} არ არსებობს). ` +
+  "თუ სტუმრები უკვე აგზავნიან, ორი მიზეზი შეიძლება იყოს: Vercel-ში არ არის დაყენებული BACKEND_SERVICE_TOKEN " +
+  `ან Render-ის settings სქემა ${field} ველს არ ინახავს. ზუსტი მიზეზი ჩანს Vercel-ის ლოგებში (/api/calls, /api/reviews).`;
+
+function describeLoadError(err) {
+  const message = err?.message || "";
+  if (err instanceof AuthError) return err.message;
+  if (message === "upstream_unavailable") return "Render backend-ი არ პასუხობს (/api/settings). სცადეთ ცოტა ხანში.";
+  if (/HTTP 404|HTTP 405/.test(message)) {
+    return "/api/calls ფუნქცია ვერ მოიძებნა. ეს ფუნქციები მხოლოდ Vercel-ზე მუშაობს (Netlify-ზე არა).";
+  }
+  return `ჩატვირთვა ვერ მოხერხდა: ${message || "უცნობი შეცდომა"}`;
+}
 
 export default function AdminPage({ onBackToSite }) {
   const lang = "ka";
@@ -54,10 +70,24 @@ export default function AdminPage({ onBackToSite }) {
   const [isCartEnabled, setIsCartEnabled] = useState(true);
   const [reviewFormEnabled, setReviewFormEnabled] = useState(true);
 
+  const [callsError, setCallsError] = useState("");
+  const [reviewsError, setReviewsError] = useState("");
+
   const refreshCalls = useCallback(async () => {
     const [calls, revs] = await Promise.allSettled([fetchWaiterCalls(), fetchReviews()]);
-    if (calls.status === "fulfilled") setWaiterCalls(calls.value);
-    if (revs.status === "fulfilled") setReviews(revs.value);
+    // Show load failures instead of an empty list that looks like "no calls".
+    if (calls.status === "fulfilled") setWaiterCalls(calls.value.items);
+    setCallsError(
+      calls.status === "rejected"
+        ? describeLoadError(calls.reason)
+        : calls.value.stored ? "" : NOT_STORED_HINT("waiterCalls")
+    );
+    if (revs.status === "fulfilled") setReviews(revs.value.items);
+    setReviewsError(
+      revs.status === "rejected"
+        ? describeLoadError(revs.reason)
+        : revs.value.stored ? "" : NOT_STORED_HINT("reviews")
+    );
   }, []);
 
   const refreshMenuData = useCallback(async () => {
@@ -415,6 +445,8 @@ export default function AdminPage({ onBackToSite }) {
           reviewFormEnabled={reviewFormEnabled}
           setReviewFormEnabled={setReviewFormEnabled}
           reviews={reviews}
+          callsError={callsError}
+          reviewsError={reviewsError}
           unavailableDishIds={unavailableDishIds}
           setUnavailableDishIds={setUnavailableDishIds}
           allItems={allItems}

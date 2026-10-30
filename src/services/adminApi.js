@@ -142,7 +142,19 @@ export async function uploadImage(file) {
 }
 
 // Waiter calls and reviews live in same-origin Vercel functions, not on Render.
-export const fetchWaiterCalls = () => request("/api/calls").then((d) => d.calls || []);
-export const deleteWaiterCall = (id) => request(`/api/calls?id=${encodeURIComponent(id)}`, { method: "DELETE" }).then((d) => d.calls || []);
-export const clearWaiterCalls = () => request("/api/calls", { method: "DELETE" }).then((d) => d.calls || []);
-export const fetchReviews = () => request("/api/reviews").then((d) => d.reviews || []);
+// A host without these functions (e.g. a static SPA fallback) answers 200 with HTML,
+// so the expected array is required rather than defaulting to an empty list.
+function expectArray(key) {
+  return (data) => {
+    if (!Array.isArray(data?.[key])) throw new Error("HTTP 404");
+    return data[key];
+  };
+}
+
+/** Resolves to `{ items, stored }`; `stored: false` means the backend has never kept one. */
+export const fetchWaiterCalls = () =>
+  request("/api/calls").then((d) => ({ items: expectArray("calls")(d), stored: d.stored !== false }));
+export const deleteWaiterCall = (id) => request(`/api/calls?id=${encodeURIComponent(id)}`, { method: "DELETE" }).then(expectArray("calls"));
+export const clearWaiterCalls = () => request("/api/calls", { method: "DELETE" }).then(expectArray("calls"));
+export const fetchReviews = () =>
+  request("/api/reviews").then((d) => ({ items: expectArray("reviews")(d), stored: d.stored !== false }));
