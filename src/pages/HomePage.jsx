@@ -3,11 +3,14 @@ import { LayoutGrid } from "lucide-react";
 import SearchBar from "../components/SearchBar";
 import CategoriesGrid from "../components/CategoriesGrid";
 import ViewSwitcherToggle from "../components/ViewSwitcherToggle";
+import LoadError from "../components/LoadError";
 import { useLanguage } from "../context/LanguageContext";
 
 export default function HomePage({
   categories,
   isLoading,
+  loadError,
+  onRetry,
   searchQuery,
   onSearchChange,
   onSelectCategory,
@@ -43,11 +46,15 @@ export default function HomePage({
       </div>
 
       {/* Strict 4-Column Categories Grid */}
-      <CategoriesGrid
-        categories={categories}
-        onSelectCategory={onSelectCategory}
-        isLoading={isLoading}
-      />
+      {loadError && !isLoading ? (
+        <LoadError onRetry={onRetry} />
+      ) : (
+        <CategoriesGrid
+          categories={categories}
+          onSelectCategory={onSelectCategory}
+          isLoading={isLoading}
+        />
+      )}
     </div>
   );
 }

@@ -2,14 +2,26 @@
 <html lang="ka">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/jpeg" href="/logo.jpg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>StaroPub - სტარო პაბი</title>
-    <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
-    <link rel="dns-prefetch" href="https://res.cloudinary.com">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="description" content="StaroPub-ის ციფრული მენიუ — ჩეხური და ევროპული ლუდი, საფირმო ნეკნები გლდანში." />
+    <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- Apply the saved theme and language before first paint to avoid a light/dark flash. -->
+    <script>
+      try {
+        var t = localStorage.getItem("app_theme");
+        if (t === "dark" || (!t && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+          document.documentElement.classList.add("dark");
+        }
+        var l = localStorage.getItem("app_lang");
+        if (l === "ka" || l === "en" || l === "ru") document.documentElement.lang = l;
+      } catch (e) {}
+    </script>
+    <!-- Start the data requests in parallel with the JS bundle download. -->
+    <link rel="preload" href="/api/menu" as="fetch" crossorigin="anonymous" />
+    <link rel="preload" href="/api/settings" as="fetch" crossorigin="anonymous" />
+    <link rel="preconnect" href="https://res.cloudinary.com" crossorigin />
   </head>
   <body class="bg-gray-50 text-gray-900 antialiased dark:bg-zinc-950 dark:text-zinc-100 transition-colors duration-200">
     <div id="root"></div>

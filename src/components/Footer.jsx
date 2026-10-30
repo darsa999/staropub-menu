@@ -1,5 +1,5 @@
 import React from "react";
-import { Phone, Mail, UtensilsCrossed } from "lucide-react";
+import { Phone, Mail } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 import { useSettings } from "../context/SettingsContext";
 
@@ -19,11 +19,19 @@ export default function Footer({ onNavHome, onNavAbout }) {
               className="flex items-center space-x-3 cursor-pointer group"
               role="button"
               tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onNavHome?.();
+                }
+              }}
             >
               <div className="w-11 h-11 rounded-xl overflow-hidden border border-amber-600/30 shadow-md group-hover:scale-105 transition-transform bg-[#0a2318] shrink-0">
                 <img
-                  src="/logo.jpg"
+                  src="/logo-96.webp"
                   alt="StaroPub Logo"
+                  width="44"
+                  height="44"
                   loading="lazy"
                   decoding="async"
                   className="w-full h-full object-cover"

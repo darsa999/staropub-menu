@@ -1,59 +1,58 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
 /**
- * Custom hook for two-way synchronized scrolling (Scrollspy)
- * @param {Array<string>} sectionIds - List of section IDs to observe
- * @param {number} offset - Pixel offset from top for sticky header/tabs (default 140px)
+ * Two-way synchronized scrolling (scrollspy) backed by IntersectionObserver,
+ * so no layout is read on every scroll event.
+ * @param {Array<string>} sectionIds - section element IDs, in document order
+ * @param {number} offset - height of the sticky header + category bar in px
  */
 export function useScrollSpy(sectionIds = [], offset = 140) {
   const [activeId, setActiveId] = useState(sectionIds[0] || "");
   const isProgrammaticScrollRef = useRef(false);
   const scrollTimeoutRef = useRef(null);
 
-  // Scroll listener with bounding rect detection for accuracy across all section heights
   useEffect(() => {
-    if (!sectionIds || sectionIds.length === 0) return;
+    if (!sectionIds.length || typeof IntersectionObserver === "undefined") return undefined;
 
-    const handleScroll = () => {
-      // Don't override activeId while programmatic smooth scrolling is executing
+    const visible = new Set();
+    const pick = () => {
       if (isProgrammaticScrollRef.current) return;
-
-      const scrollPosition = window.scrollY + offset + 20;
-
-      // Find the last section that has scrolled past the trigger threshold
-      let currentActive = sectionIds[0];
-      for (const id of sectionIds) {
-        const el = document.getElementById(id);
-        if (el) {
-          const top = el.offsetTop;
-          if (scrollPosition >= top) {
-            currentActive = id;
-          }
-        }
-      }
-
-      // Check if user scrolled to the very bottom of the page
-      if (
-        window.innerHeight + window.scrollY >=
-        document.documentElement.scrollHeight - 50
-      ) {
-        currentActive = sectionIds[sectionIds.length - 1];
-      }
-
-      setActiveId(currentActive);
+      // Near the bottom of the page the last (often short) section can never reach the top band.
+      const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 50;
+      const next = atBottom
+        ? sectionIds[sectionIds.length - 1]
+        : sectionIds.find((id) => visible.has(id));
+      if (next) setActiveId((prev) => (prev === next ? prev : next));
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    // Initial check
-    handleScroll();
+    // The observed band is the strip just below the sticky header.
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) visible.add(entry.target.id);
+          else visible.delete(entry.target.id);
+        }
+        pick();
+      },
+      { rootMargin: `-${offset + 20}px 0px -55% 0px` }
+    );
+
+    for (const id of sectionIds) {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    }
+
+    const onScrollEnd = () => pick();
+    window.addEventListener("scrollend", onScrollEnd, { passive: true });
 
     return () => {
-      window.removeEventListener("scroll", handleScroll);
-      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+      observer.disconnect();
+      window.removeEventListener("scrollend", onScrollEnd);
     };
   }, [sectionIds, offset]);
 
-  // Programmatic smooth scroll to a section by ID
+  useEffect(() => () => clearTimeout(scrollTimeoutRef.current), []);
+
   const scrollToSection = useCallback(
     (id) => {
       const el = document.getElementById(id);
@@ -62,16 +61,12 @@ export function useScrollSpy(sectionIds = [], offset = 140) {
       setActiveId(id);
       isProgrammaticScrollRef.current = true;
 
-      const elementPosition = el.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.scrollY - offset;
-
       window.scrollTo({
-        top: Math.max(0, offsetPosition),
+        top: Math.max(0, el.getBoundingClientRect().top + window.scrollY - offset),
         behavior: "smooth",
       });
 
-      // Clear programmatic flag after smooth scroll finishes
-      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+      clearTimeout(scrollTimeoutRef.current);
       scrollTimeoutRef.current = setTimeout(() => {
         isProgrammaticScrollRef.current = false;
       }, 700);
@@ -79,9 +74,5 @@ export function useScrollSpy(sectionIds = [], offset = 140) {
     [offset]
   );
 
-  return {
-    activeId,
-    setActiveId,
-    scrollToSection,
-  };
+  return { activeId, setActiveId, scrollToSection };
 }

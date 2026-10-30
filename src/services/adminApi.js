@@ -2,9 +2,16 @@ import { API_BASE_URL } from "./api";
 
 const TOKEN_KEY = "staropub_admin_token";
 
+export class AuthError extends Error {
+  constructor(message = "სესია ამოიწურა, გთხოვთ თავიდან შეხვიდეთ") {
+    super(message);
+    this.name = "AuthError";
+  }
+}
+
 export function getAdminToken() {
   try {
-    return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || "";
+    return sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY) || "";
   } catch {
     return "";
   }
@@ -12,275 +19,130 @@ export function getAdminToken() {
 
 export function setAdminToken(token, remember = true) {
   try {
-    if (token) {
-      if (remember) {
-        localStorage.setItem(TOKEN_KEY, token);
-      } else {
-        sessionStorage.setItem(TOKEN_KEY, token);
-      }
-    } else {
-      localStorage.removeItem(TOKEN_KEY);
-      sessionStorage.removeItem(TOKEN_KEY);
-    }
+    localStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
+    if (token) (remember ? localStorage : sessionStorage).setItem(TOKEN_KEY, token);
   } catch {}
 }
 
 export function clearAdminToken() {
-  try {
-    localStorage.removeItem(TOKEN_KEY);
-    sessionStorage.removeItem(TOKEN_KEY);
-  } catch {}
+  setAdminToken("");
 }
 
-function getAuthHeaders(isJson = true) {
-  const headers = {};
+export function getAuthHeaders() {
   const token = getAdminToken();
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-  if (isJson) {
-    headers["Content-Type"] = "application/json";
-  }
-  return headers;
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-// ─── Authentication Endpoints ───────────────────────────────────────────────
+let onUnauthorized = null;
 
-export async function loginAdmin({ email, password, rememberMe = true }) {
-  const res = await fetch(`${API_BASE_URL}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: email.trim(), password, rememberMe }),
-    credentials: "include"
+/** Registers a callback that runs whenever an authenticated request returns 401. */
+export function setUnauthorizedHandler(fn) {
+  onUnauthorized = fn;
+}
+
+/**
+ * Low-level authenticated fetch. Resolves with the raw Response.
+ * `path` is either absolute (http…), same-origin (/api/calls) or relative to API_BASE_URL.
+ */
+export function authFetch(path, options = {}) {
+  const url = /^https?:\/\//.test(path) || path.startsWith("/api/") ? path : `${API_BASE_URL}${path}`;
+  return fetch(url, {
+    ...options,
+    headers: { ...getAuthHeaders(), ...(options.headers || {}) },
+    credentials: "include",
   });
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.error || "ავტორიზაცია ვერ მოხერხდა");
+}
+
+/**
+ * Authenticated JSON request that throws on any non-2xx response.
+ * Bodies that are FormData are sent as-is; everything else is JSON-encoded.
+ */
+export async function request(path, { method = "GET", body, signal, handleUnauthorized = true } = {}) {
+  const isForm = typeof FormData !== "undefined" && body instanceof FormData;
+  const res = await authFetch(path, {
+    method,
+    signal,
+    headers: body !== undefined && !isForm ? { "Content-Type": "application/json" } : {},
+    body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+
+  if (res.status === 401 && handleUnauthorized) {
+    clearAdminToken();
+    if (onUnauthorized) onUnauthorized();
+    throw new AuthError();
   }
-  if (data.token) {
-    setAdminToken(data.token, rememberMe);
+  if (!res.ok) {
+    throw new Error(data?.error || data?.message || `HTTP ${res.status}`);
   }
   return data;
 }
 
-export async function registerAdmin({ email, password }) {
-  const res = await fetch(`${API_BASE_URL}/auth/register`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: email.trim(), password }),
-    credentials: "include"
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.error || "რეგისტრაცია ვერ მოხერხდა");
-  }
-  if (data.token) {
-    setAdminToken(data.token, true);
-  }
+// ─── Authentication ────────────────────────────────────────────────────────
+
+async function authenticate(path, payload, remember) {
+  const data = await request(path, { method: "POST", body: payload, handleUnauthorized: false });
+  if (data.token) setAdminToken(data.token, remember);
   return data;
 }
 
-export async function socialLoginAdmin(idToken) {
-  const res = await fetch(`${API_BASE_URL}/auth/social-login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token: idToken }),
-    credentials: "include"
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.error || "სოციალური ავტორიზაცია ვერ მოხერხდა");
-  }
-  if (data.token) {
-    setAdminToken(data.token, true);
-  }
-  return data;
+export function loginAdmin({ email, password, rememberMe = true }) {
+  return authenticate("/auth/login", { email: email.trim(), password, rememberMe }, rememberMe);
+}
+
+export function registerAdmin({ email, password }) {
+  return authenticate("/auth/register", { email: email.trim(), password }, true);
+}
+
+export function socialLoginAdmin(idToken) {
+  return authenticate("/auth/social-login", { token: idToken }, true);
 }
 
 export async function checkAdminSession() {
-  const token = getAdminToken();
-  const headers = {};
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
-  const res = await fetch(`${API_BASE_URL}/auth/me`, {
-    method: "GET",
-    headers,
-    credentials: "include"
-  });
-
+  const res = await authFetch("/auth/me");
   if (!res.ok) {
-    // If unauthorized, clear invalid local token
-    clearAdminToken();
+    if (res.status === 401 || res.status === 403) clearAdminToken();
     return null;
   }
-  return await res.json();
+  return res.json().catch(() => ({}));
 }
 
 export async function logoutAdmin() {
   clearAdminToken();
   try {
-    await fetch(`${API_BASE_URL}/auth/logout`, {
-      method: "POST",
-      credentials: "include"
-    });
+    await authFetch("/auth/logout", { method: "POST" });
   } catch {}
-  return true;
 }
 
-// ─── Categories Management (CRUD) ──────────────────────────────────────────
+// ─── Data ──────────────────────────────────────────────────────────────────
 
-export async function fetchAdminCategories() {
-  const res = await fetch(`${API_BASE_URL}/categories`, {
-    credentials: "include"
-  });
-  if (!res.ok) throw new Error("კატეგორიების ჩატვირთვა ვერ მოხერხდა");
-  return await res.json();
-}
+export const fetchAdminCategories = () => request("/categories");
+export const fetchAdminDishes = () => request("/dishes");
+// refresh=true bypasses the edge cache on the same-origin function (ignored by Render).
+export const fetchAdminSettings = () => request(`/settings?refresh=true&t=${Date.now()}`);
+export const updateAdminSettings = (settings) => request("/settings", { method: "PUT", body: settings });
 
-export async function createCategory(formDataOrObject) {
-  const isFormData = formDataOrObject instanceof FormData;
-  const res = await fetch(`${API_BASE_URL}/categories`, {
-    method: "POST",
-    headers: getAuthHeaders(!isFormData),
-    body: isFormData ? formDataOrObject : JSON.stringify(formDataOrObject),
-    credentials: "include"
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "კატეგორიის დამატება ვერ მოხერხდა");
-  return data;
-}
+export const createCategory = (body) => request("/categories", { method: "POST", body });
+export const updateCategory = (id, body) => request(`/categories/${encodeURIComponent(id)}`, { method: "PUT", body });
+export const deleteCategory = (id) => request(`/categories/${encodeURIComponent(id)}`, { method: "DELETE" });
+export const reorderCategories = (ids) => request("/categories/reorder", { method: "PUT", body: { ids, order: ids } });
 
-export async function updateCategory(id, formDataOrObject) {
-  const isFormData = formDataOrObject instanceof FormData;
-  const res = await fetch(`${API_BASE_URL}/categories/${id}`, {
-    method: "PUT",
-    headers: getAuthHeaders(!isFormData),
-    body: isFormData ? formDataOrObject : JSON.stringify(formDataOrObject),
-    credentials: "include"
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "კატეგორიის განახლება ვერ მოხერხდა");
-  return data;
-}
-
-export async function deleteCategory(id) {
-  const res = await fetch(`${API_BASE_URL}/categories/${id}`, {
-    method: "DELETE",
-    headers: getAuthHeaders(true),
-    credentials: "include"
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "კატეგორიის წაშლა ვერ მოხერხდა");
-  return data;
-}
-
-export async function reorderCategories(ids) {
-  const res = await fetch(`${API_BASE_URL}/categories/reorder`, {
-    method: "PUT",
-    headers: getAuthHeaders(true),
-    body: JSON.stringify({ ids, order: ids }),
-    credentials: "include"
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "კატეგორიების რიგითობის განახლება ვერ მოხერხდა");
-  return data;
-}
-
-// ─── Dishes / Products Management (CRUD) ───────────────────────────────────
-
-export async function fetchAdminDishes() {
-  const res = await fetch(`${API_BASE_URL}/dishes`, {
-    credentials: "include"
-  });
-  if (!res.ok) throw new Error("კერძების ჩატვირთვა ვერ მოხერხდა");
-  return await res.json();
-}
-
-export async function createDish(formDataOrObject) {
-  const isFormData = formDataOrObject instanceof FormData;
-  const res = await fetch(`${API_BASE_URL}/dishes`, {
-    method: "POST",
-    headers: getAuthHeaders(!isFormData),
-    body: isFormData ? formDataOrObject : JSON.stringify(formDataOrObject),
-    credentials: "include"
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "კერძის დამატება ვერ მოხერხდა");
-  return data;
-}
-
-export async function updateDish(id, formDataOrObject) {
-  const isFormData = formDataOrObject instanceof FormData;
-  const res = await fetch(`${API_BASE_URL}/dishes/${id}`, {
-    method: "PUT",
-    headers: getAuthHeaders(!isFormData),
-    body: isFormData ? formDataOrObject : JSON.stringify(formDataOrObject),
-    credentials: "include"
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "კერძის განახლება ვერ მოხერხდა");
-  return data;
-}
-
-export async function deleteDish(id) {
-  const res = await fetch(`${API_BASE_URL}/dishes/${id}`, {
-    method: "DELETE",
-    headers: getAuthHeaders(true),
-    credentials: "include"
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "კერძის წაშლა ვერ მოხერხდა");
-  return data;
-}
-
-export async function reorderDishes(ids) {
-  const res = await fetch(`${API_BASE_URL}/dishes/reorder`, {
-    method: "PUT",
-    headers: getAuthHeaders(true),
-    body: JSON.stringify({ ids, order: ids }),
-    credentials: "include"
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "კერძების რიგითობის განახლება ვერ მოხერხდა");
-  return data;
-}
-
-// ─── Settings & Working Hours ──────────────────────────────────────────────
-
-export async function fetchAdminSettings() {
-  const res = await fetch(`${API_BASE_URL}/settings`, {
-    credentials: "include"
-  });
-  if (!res.ok) throw new Error("პარამეტრების ჩატვირთვა ვერ მოხერხდა");
-  return await res.json();
-}
-
-export async function updateAdminSettings(settingsObj) {
-  const res = await fetch(`${API_BASE_URL}/settings`, {
-    method: "PUT",
-    headers: getAuthHeaders(true),
-    body: JSON.stringify(settingsObj),
-    credentials: "include"
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "პარამეტრების განახლება ვერ მოხერხდა");
-  return data;
-}
-
-// ─── Direct Image Upload (Cloudinary) ──────────────────────────────────────
+export const createDish = (body) => request("/dishes", { method: "POST", body });
+export const updateDish = (id, body) => request(`/dishes/${encodeURIComponent(id)}`, { method: "PUT", body });
+export const patchDish = (id, body) => request(`/dishes/${encodeURIComponent(id)}`, { method: "PATCH", body });
+export const deleteDish = (id) => request(`/dishes/${encodeURIComponent(id)}`, { method: "DELETE" });
+export const reorderDishes = (ids) => request("/dishes/reorder", { method: "PUT", body: { ids, order: ids } });
 
 export async function uploadImage(file) {
   const formData = new FormData();
   formData.append("image", file);
-  const res = await fetch(`${API_BASE_URL}/upload`, {
-    method: "POST",
-    headers: getAuthHeaders(false),
-    body: formData,
-    credentials: "include"
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "სურათის ატვირთვა ვერ მოხერხდა");
+  const data = await request("/upload", { method: "POST", body: formData });
   return data.url;
 }
+
+// Waiter calls and reviews live in same-origin Vercel functions, not on Render.
+export const fetchWaiterCalls = () => request("/api/calls").then((d) => d.calls || []);
+export const deleteWaiterCall = (id) => request(`/api/calls?id=${encodeURIComponent(id)}`, { method: "DELETE" }).then((d) => d.calls || []);
+export const clearWaiterCalls = () => request("/api/calls", { method: "DELETE" }).then((d) => d.calls || []);
+export const fetchReviews = () => request("/api/reviews").then((d) => d.reviews || []);

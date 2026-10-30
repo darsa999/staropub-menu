@@ -2,6 +2,7 @@ import React from "react";
 import { ArrowLeft, UtensilsCrossed, X } from "lucide-react";
 import SearchBar from "../components/SearchBar";
 import CategorySection from "../components/CategorySection";
+import LoadError from "../components/LoadError";
 import { useLanguage } from "../context/LanguageContext";
 
 export default function CatalogPage({
@@ -10,6 +11,8 @@ export default function CatalogPage({
   onSearchChange,
   onBackToHome,
   isLoading,
+  loadError,
+  onRetry,
 }) {
   const { t } = useLanguage();
 
@@ -23,7 +26,7 @@ export default function CatalogPage({
           className="inline-flex items-center space-x-2 text-sm font-semibold text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white transition-colors py-1.5 px-3 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-800"
         >
           <ArrowLeft className="w-4 h-4 stroke-[2.2]" />
-          <span>მთავარი / {t("categoriesTitle")}</span>
+          <span>{t("backToCategories")}</span>
         </button>
 
         {searchQuery && (
@@ -31,7 +34,7 @@ export default function CatalogPage({
             onClick={() => onSearchChange("")}
             className="text-xs text-amber-700 dark:text-amber-400 font-medium hover:underline flex items-center space-x-1"
           >
-            <span>ძებნის გასუფთავება</span>
+            <span>{t("clearSearch")}</span>
             <X className="w-3 h-3" />
           </button>
         )}
@@ -48,8 +51,10 @@ export default function CatalogPage({
         isAllProductsActive={!searchQuery}
       />
 
+      {loadError && !isLoading && <LoadError onRetry={onRetry} />}
+
       {/* Loading Skeletons */}
-      {(isLoading || (!categories || categories.length === 0)) && !searchQuery && (
+      {isLoading && !searchQuery && (
         <div className="space-y-12">
           {[1, 2, 3].map((s) => (
             <div key={s} className="animate-pulse">
@@ -82,14 +87,14 @@ export default function CatalogPage({
             {t("noProductsFound")}
           </h3>
           <p className="text-sm text-gray-500 dark:text-zinc-400 max-w-sm mb-6">
-            საძიებო სიტყვით „{searchQuery}“ კერძები ვერ მოიძებნა.
+            {t("noSearchResults", { query: searchQuery })}
           </p>
           <button
             onClick={() => onSearchChange("")}
             className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-2xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 text-sm font-semibold hover:bg-zinc-800 transition-all shadow-sm"
           >
             <X className="w-4 h-4" />
-            <span>ძებნის გასუფთავება</span>
+            <span>{t("clearSearch")}</span>
           </button>
         </div>
       )}

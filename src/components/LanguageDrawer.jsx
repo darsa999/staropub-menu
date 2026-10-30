@@ -1,32 +1,22 @@
 import React, { useEffect } from "react";
 import { X, Check } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
+import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
 
 export default function LanguageDrawer({ isOpen, onClose }) {
   const { language, setLanguage, languages, t } = useLanguage();
 
   // Close on Escape key
   useEffect(() => {
+    if (!isOpen) return undefined;
     const handleKeyDown = (e) => {
-      if (e.key === "Escape" && isOpen) {
-        onClose();
-      }
+      if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Lock body scroll when open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isOpen]);
+  useBodyScrollLock(isOpen);
 
   if (!isOpen) return null;
 

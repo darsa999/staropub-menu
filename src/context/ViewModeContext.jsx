@@ -1,36 +1,30 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useMemo, useCallback } from "react";
 
-const ViewModeContext = createContext();
+const ViewModeContext = createContext(null);
 
 const STORAGE_KEY = "staropub_mobile_view_mode";
 
+function getInitialViewMode() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved === "list" || saved === "grid") return saved;
+  } catch {}
+  return "grid";
+}
+
 export function ViewModeProvider({ children }) {
-  const [viewMode, setViewModeState] = useState(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved === "list" || saved === "grid") {
-          return saved;
-        }
-      } catch {}
-    }
-    return "grid";
-  });
+  const [viewMode, setViewModeState] = useState(getInitialViewMode);
 
-  const setViewMode = (mode) => {
+  const setViewMode = useCallback((mode) => {
     setViewModeState(mode);
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem(STORAGE_KEY, mode);
-      } catch {}
-    }
-  };
+    try {
+      localStorage.setItem(STORAGE_KEY, mode);
+    } catch {}
+  }, []);
 
-  return (
-    <ViewModeContext.Provider value={{ viewMode, setViewMode }}>
-      {children}
-    </ViewModeContext.Provider>
-  );
+  const value = useMemo(() => ({ viewMode, setViewMode }), [viewMode, setViewMode]);
+
+  return <ViewModeContext.Provider value={value}>{children}</ViewModeContext.Provider>;
 }
 
 export function useViewMode() {

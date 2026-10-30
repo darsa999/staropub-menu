@@ -1,29 +1,31 @@
-import React, { useState } from "react";
+import React, { memo, useState } from "react";
 import { ShoppingCart, Check } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
-import { useCart } from "../context/CartContext";
+import { useCartActions } from "../context/CartContext";
 import { useViewMode } from "../context/ViewModeContext";
 import { useSettings } from "../context/SettingsContext";
 import { getResponsiveImageProps } from "../services/api";
+import { useTimeout } from "../hooks/useTimeout";
 
-export default function ProductCard({ product, priority = false }) {
+function ProductCard({ product, priority = false }) {
   const { t, getLocalizedField } = useLanguage();
-  const { addItem } = useCart();
+  const { addItem } = useCartActions();
   const { viewMode } = useViewMode();
   const { settings, isSettingsLoaded } = useSettings();
   const isCartActive = isSettingsLoaded && Boolean(settings?.isCartEnabled || settings?.cartEnabled);
   const [isAddedRecently, setIsAddedRecently] = useState(false);
+  const schedule = useTimeout();
 
   const handleAdd = (e) => {
     if (e) e.stopPropagation();
     addItem(product, 1);
     setIsAddedRecently(true);
-    setTimeout(() => {
-      setIsAddedRecently(false);
-    }, 1200);
+    schedule(() => setIsAddedRecently(false), 1200);
   };
 
   const formattedPrice = Number(product.price).toFixed(2);
+  // In list mode the grid card is hidden on mobile; avoid downloading both images eagerly.
+  const gridPriority = priority && viewMode !== "list";
   const localizedTitle = getLocalizedField(product.name);
 
   const listImgProps = getResponsiveImageProps(product.image, {
@@ -58,7 +60,7 @@ export default function ProductCard({ product, priority = false }) {
             {!product.available && (
               <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center">
                 <span className="text-white text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full bg-red-600/90">
-                  ამოიწურა
+                  {t("soldOut")}
                 </span>
               </div>
             )}
@@ -128,15 +130,15 @@ export default function ProductCard({ product, priority = false }) {
               srcSet={gridImgProps.srcSet}
               sizes={gridImgProps.sizes}
               alt={localizedTitle}
-              loading={priority ? "eager" : "lazy"}
-              fetchPriority={priority ? "high" : "auto"}
+              loading={gridPriority ? "eager" : "lazy"}
+              fetchPriority={gridPriority ? "high" : "auto"}
               decoding="async"
               className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
             />
             {!product.available && (
               <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center">
                 <span className="text-white text-xs font-semibold px-2.5 py-1 rounded-full bg-red-600/90">
-                  ამოიწურა
+                  {t("soldOut")}
                 </span>
               </div>
             )}
@@ -191,3 +193,5 @@ export default function ProductCard({ product, priority = false }) {
     </>
   );
 }
+
+export default memo(ProductCard);

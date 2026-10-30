@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { lazy, Suspense, useState, useEffect, useMemo, useCallback, useDeferredValue } from "react";
 import Header from "./components/Header";
 import StickyCategoryNav from "./components/StickyCategoryNav";
 import LanguageDrawer from "./components/LanguageDrawer";
@@ -6,220 +6,150 @@ import CartDrawer from "./components/CartDrawer";
 import Footer from "./components/Footer";
 import HomePage from "./pages/HomePage";
 import CatalogPage from "./pages/CatalogPage";
-import AboutPage from "./pages/AboutPage";
-import AdminPage from "./pages/admin/AdminPage";
 import ServiceFab from "./components/ServiceFab";
 import ReviewModal from "./components/ReviewModal";
+import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./context/ThemeContext";
 import { LanguageProvider } from "./context/LanguageContext";
 import { CartProvider } from "./context/CartContext";
 import { ViewModeProvider } from "./context/ViewModeContext";
 import { SettingsProvider, useSettings } from "./context/SettingsContext";
 import { useScrollSpy } from "./hooks/useScrollSpy";
-import { getMenuData } from "./services/api";
+import { useRoute } from "./hooks/useRoute";
+import { filterMenu, getMenuData } from "./services/api";
+import { getAuthHeaders } from "./services/adminApi";
+
+// Rarely visited views (and Firebase, via the admin page) are split into separate chunks.
+const AboutPage = lazy(() => import("./pages/AboutPage"));
+const AdminPage = lazy(() => import("./pages/admin/AdminPage"));
+
+const SCROLL_OFFSET = 150; // sticky header + sticky category bar
+
+function PageSpinner() {
+  return (
+    <div className="flex items-center justify-center py-24" aria-busy="true">
+      <div className="w-9 h-9 rounded-full border-[3px] border-amber-500/20 border-t-amber-500 animate-spin" />
+    </div>
+  );
+}
 
 function MainApp() {
-  const [mounted, setMounted] = useState(false);
-  const [isAdminRoute, setIsAdminRoute] = useState(false);
   const { refreshSettings } = useSettings();
+  const { view: currentView, hash, navigate } = useRoute();
 
-  // Current view: 'home' (Categories Grid ONLY) | 'catalog' (Grouped Products Catalog) | 'about'
-  const [currentView, setCurrentView] = useState("home");
   const [menuData, setMenuData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLangDrawerOpen, setIsLangDrawerOpen] = useState(false);
-  const pendingScrollCategoryRef = useRef(null);
+  const deferredQuery = useDeferredValue(searchQuery);
 
-  useEffect(() => {
-    setMounted(true);
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.removeItem("staropub_prod_menu_cache_v4");
-        localStorage.removeItem("staropub_menu");
-      } catch {}
-
-      const isNowAdmin =
-        window.location.pathname.startsWith("/admin") ||
-        window.location.search.includes("admin=true");
-      setIsAdminRoute(isNowAdmin);
-    }
-
-    const handlePopState = () => {
-      if (typeof window !== "undefined") {
-        const isNowAdmin =
-          window.location.pathname.startsWith("/admin") ||
-          window.location.search.includes("admin=true");
-        setIsAdminRoute(isNowAdmin);
-      }
-    };
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
+  const applyMenu = useCallback((data) => {
+    if (data.length > 0) setMenuData(data);
+    setLoadError(data.length === 0);
+    setIsLoading(false);
   }, []);
 
-  const handleExitAdmin = async () => {
-    if (typeof window !== "undefined") {
-      window.history.pushState({}, "", "/");
+  useEffect(() => {
+    getMenuData().then(applyMenu);
+  }, [applyMenu]);
+
+  const retryLoad = useCallback(() => {
+    setIsLoading(true);
+    setLoadError(false);
+    getMenuData().then(applyMenu);
+  }, [applyMenu]);
+
+  const handleExitAdmin = useCallback(async () => {
+    navigate("home");
+    window.scrollTo({ top: 0 });
+    // The admin may have changed dishes or feature flags; bypass the caches once.
+    const authHeaders = getAuthHeaders();
+    const [fresh] = await Promise.allSettled([
+      getMenuData({ forceRefresh: true, authHeaders }),
+      refreshSettings(true),
+    ]);
+    if (fresh.status === "fulfilled" && fresh.value.length > 0) setMenuData(fresh.value);
+  }, [navigate, refreshSettings]);
+
+  // Category-preserving live search: categories with no matches are hidden.
+  const filteredMenu = useMemo(() => filterMenu(menuData, deferredQuery), [menuData, deferredQuery]);
+
+  const sectionIds = useMemo(() => filteredMenu.map((cat) => `category-${cat.id}`), [filteredMenu]);
+  const { activeId, scrollToSection } = useScrollSpy(sectionIds, SCROLL_OFFSET);
+  const activeCategoryId = activeId ? activeId.replace("category-", "") : filteredMenu[0]?.id || "";
+
+  // Deep links (/menu#category-x) and clicks from the home grid scroll once sections exist.
+  useEffect(() => {
+    if (currentView !== "catalog" || !hash || isLoading) return undefined;
+    const timer = setTimeout(() => scrollToSection(hash), 70);
+    return () => clearTimeout(timer);
+  }, [currentView, hash, isLoading, scrollToSection]);
+
+  const handleSelectCategoryFromHome = useCallback(
+    (category) => {
+      const catId = typeof category === "object" ? category.id : category;
+      navigate("catalog", { hash: `category-${catId}` });
+    },
+    [navigate]
+  );
+
+  const goTo = useCallback(
+    (view) => {
+      setSearchQuery("");
+      navigate(view);
       window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-    setIsAdminRoute(false);
-    setCurrentView("home");
-    try {
-      const [freshData] = await Promise.allSettled([
-        getMenuData({ forceRefresh: true }),
-        refreshSettings(true),
-      ]);
-      if (freshData.status === "fulfilled" && Array.isArray(freshData.value) && freshData.value.length > 0) {
-        setMenuData(freshData.value);
-      }
-    } catch {}
-  };
+    },
+    [navigate]
+  );
 
-  // Fetch live menu data from serverless route /api/menu
-  useEffect(() => {
-    let isCancelled = false;
-    async function loadData() {
-      try {
-        setIsLoading(true);
-        const data = await getMenuData();
-        if (!isCancelled && Array.isArray(data) && data.length > 0) {
-          setMenuData(data);
-        }
-      } catch (err) {
-        console.error("Failed to fetch menu data:", err);
-      } finally {
-        if (!isCancelled) {
-          setIsLoading(false);
-        }
-      }
-    }
-    loadData();
-    return () => {
-      isCancelled = true;
-    };
-  }, []);
+  const handleViewAllProducts = useCallback(() => goTo("catalog"), [goTo]);
+  const handleLogoClick = useCallback(() => goTo("home"), [goTo]);
+  const handleNavAbout = useCallback(() => goTo("about"), [goTo]);
 
-  // Category-Preserving Live Search:
-  // Filters products within categories; category titles remain visible above matched items;
-  // Empty categories (0 matching items) are hidden.
-  const filteredMenu = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return menuData;
-    }
+  // Typing on the home view switches to the catalog with the filter applied.
+  const handleSearchChange = useCallback(
+    (query) => {
+      setSearchQuery(query);
+      if (currentView === "home" && query.trim()) navigate("catalog");
+    },
+    [currentView, navigate]
+  );
 
-    const q = searchQuery.trim().toLowerCase();
+  const handleSearchSubmit = useCallback(() => {
+    if (searchQuery.trim()) navigate("catalog");
+  }, [searchQuery, navigate]);
 
-    return menuData
-      .map((cat) => {
-        const matchingProducts = cat.products.filter((p) => {
-          const nameKa = (p.name?.ka || p.title?.ka || "").toLowerCase();
-          const nameEn = (p.name?.en || p.title?.en || "").toLowerCase();
-          const nameRu = (p.name?.ru || p.title?.ru || "").toLowerCase();
-          return (
-            nameKa.includes(q) ||
-            nameEn.includes(q) ||
-            nameRu.includes(q)
-          );
-        });
+  const handleSelectCategoryInCatalog = useCallback(
+    (categoryId) => {
+      const id = `category-${categoryId}`;
+      window.history.replaceState({}, "", `${window.location.pathname}${window.location.search}#${id}`);
+      scrollToSection(id);
+    },
+    [scrollToSection]
+  );
 
-        return {
-          ...cat,
-          products: matchingProducts,
-        };
-      })
-      .filter((cat) => cat.products.length > 0);
-  }, [menuData, searchQuery]);
+  const openLanguageDrawer = useCallback(() => setIsLangDrawerOpen(true), []);
+  const closeLanguageDrawer = useCallback(() => setIsLangDrawerOpen(false), []);
 
-  // Section IDs for Scrollspy
-  const sectionIds = useMemo(() => {
-    return filteredMenu.map((cat) => `category-${cat.id}`);
-  }, [filteredMenu]);
-
-  // Two-way synchronized scrolling (Scrollspy) with offset for sticky header + sticky category bar
-  const { activeId, scrollToSection } = useScrollSpy(sectionIds, 150);
-
-  const activeCategoryId = useMemo(() => {
-    if (activeId) {
-      return activeId.replace("category-", "");
-    }
-    return filteredMenu[0]?.id || "";
-  }, [activeId, filteredMenu]);
-
-  // Handle auto-scroll to category when transitioning from Home to Catalog
-  useEffect(() => {
-    if (currentView === "catalog" && pendingScrollCategoryRef.current) {
-      const targetCatId = pendingScrollCategoryRef.current;
-      pendingScrollCategoryRef.current = null;
-
-      // Small delay to ensure Catalog DOM elements are mounted and laid out
-      const timer = setTimeout(() => {
-        scrollToSection(`category-${targetCatId}`);
-      }, 70);
-
-      return () => clearTimeout(timer);
-    }
-  }, [currentView, scrollToSection]);
-
-  // 1. When clicking a Category card on Home page:
-  // Navigates to Catalog View AND smoothly auto-scrolls directly to that specific Category section
-  const handleSelectCategoryFromHome = (category) => {
-    const catId = typeof category === "object" ? category.id : category;
-    pendingScrollCategoryRef.current = catId;
-    setCurrentView("catalog");
-  };
-
-  // 2. When clicking "ყველა პროდუქტი":
-  // Navigates to Catalog View starting from the very top
-  const handleViewAllProducts = () => {
-    setSearchQuery("");
-    setCurrentView("catalog");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  // 3. When clicking Header Logo/Title:
-  // Returns to Home View (Categories)
-  const handleLogoClick = () => {
-    setCurrentView("home");
-    setSearchQuery("");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  // 4. When clicking Footer "ჩვენს შესახებ":
-  // Navigates to About Us View
-  const handleNavAbout = () => {
-    setCurrentView("about");
-    setSearchQuery("");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  // 5. When typing in search on Home View:
-  // Automatically transitions to Catalog View with the search filter active
-  const handleSearchChange = (query) => {
-    setSearchQuery(query);
-    if (currentView === "home" && query.trim()) {
-      setCurrentView("catalog");
-    }
-  };
-
-  const handleSelectCategoryInCatalog = (categoryId) => {
-    scrollToSection(`category-${categoryId}`);
-  };
-
-  if (mounted && isAdminRoute) {
-    return <AdminPage onBackToSite={handleExitAdmin} />;
+  if (currentView === "admin") {
+    return (
+      <ErrorBoundary>
+        <Suspense fallback={<div className="min-h-screen bg-[#0a0f1d]"><PageSpinner /></div>}>
+          <AdminPage onBackToSite={handleExitAdmin} />
+        </Suspense>
+      </ErrorBoundary>
+    );
   }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50/70 dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 transition-colors duration-200">
-      {/* Header: Logo, Title, Dark toggle, Lang drawer trigger, Cart */}
-      {/* Zero authentication or login icons */}
       <Header
-        onOpenLanguageDrawer={() => setIsLangDrawerOpen(true)}
+        onOpenLanguageDrawer={openLanguageDrawer}
         onLogoClick={handleLogoClick}
         onNavigateToAbout={handleNavAbout}
       />
 
-      {/* Sticky Category Navigation Bar: Persistently visible under header on Catalog View */}
       {currentView === "catalog" && (
         <StickyCategoryNav
           categories={filteredMenu}
@@ -228,54 +158,49 @@ function MainApp() {
         />
       )}
 
-      {/* Main View Router */}
       <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-        {currentView === "home" && (
-          <div className="pt-6">
-            {/* VIEW 1: HOME PAGE - ONLY Categories Grid */}
-            <HomePage
-              categories={menuData}
-              isLoading={isLoading}
+        <ErrorBoundary key={currentView}>
+          {currentView === "home" && (
+            <div className="pt-6">
+              <HomePage
+                categories={menuData}
+                isLoading={isLoading}
+                loadError={loadError}
+                onRetry={retryLoad}
+                searchQuery={searchQuery}
+                onSearchChange={handleSearchChange}
+                onSelectCategory={handleSelectCategoryFromHome}
+                onViewAllProducts={handleViewAllProducts}
+                onSearchSubmit={handleSearchSubmit}
+              />
+            </div>
+          )}
+
+          {currentView === "catalog" && (
+            <CatalogPage
+              categories={filteredMenu}
               searchQuery={searchQuery}
-              onSearchChange={handleSearchChange}
-              onSelectCategory={handleSelectCategoryFromHome}
-              onViewAllProducts={handleViewAllProducts}
-              onSearchSubmit={() => {
-                if (searchQuery.trim()) {
-                  setCurrentView("catalog");
-                }
-              }}
+              onSearchChange={setSearchQuery}
+              onBackToHome={handleLogoClick}
+              isLoading={isLoading}
+              loadError={loadError}
+              onRetry={retryLoad}
             />
-          </div>
-        )}
+          )}
 
-        {currentView === "catalog" && (
-          /* VIEW 2: CATALOG / PRODUCTS PAGE - Grouped Sections with Scrollspy */
-          <CatalogPage
-            categories={filteredMenu}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            onBackToHome={handleLogoClick}
-            isLoading={isLoading}
-          />
-        )}
-
-        {currentView === "about" && (
-          /* VIEW 3: ABOUT US PAGE - 360 Tour Hero & Dual Column Contacts / Map */
-          <AboutPage onBackToHome={handleLogoClick} />
-        )}
+          {currentView === "about" && (
+            <Suspense fallback={<PageSpinner />}>
+              <AboutPage onBackToHome={handleLogoClick} />
+            </Suspense>
+          )}
+        </ErrorBoundary>
       </main>
 
-      {/* Slide-over Drawers & Overlays */}
-      <LanguageDrawer
-        isOpen={isLangDrawerOpen}
-        onClose={() => setIsLangDrawerOpen(false)}
-      />
+      <LanguageDrawer isOpen={isLangDrawerOpen} onClose={closeLanguageDrawer} />
       <CartDrawer />
       <ServiceFab />
       <ReviewModal />
 
-      {/* Dark Footer with contacts and legal links */}
       <Footer onNavHome={handleLogoClick} onNavAbout={handleNavAbout} />
     </div>
   );

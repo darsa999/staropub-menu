@@ -1,56 +1,69 @@
 import React, { useEffect, useState } from "react";
 import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight, CheckCircle2 } from "lucide-react";
-import { useCart } from "../context/CartContext";
+import { useCartActions, useCartState } from "../context/CartContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useSettings } from "../context/SettingsContext";
-import { getOptimizedImageUrl } from "../services/api";
+import { getOptimizedImageUrl, postJson } from "../services/api";
+import { getStoredTable, saveTable } from "../services/table";
+import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
 
 export default function CartDrawer() {
-  const {
-    items,
-    totalCount,
-    totalPrice,
-    isCartOpen,
-    closeCart,
-    updateQuantity,
-    removeItem,
-    clearCart,
-  } = useCart();
+  const { items, totalCount, totalPrice, isCartOpen } = useCartState();
+  const { closeCart, updateQuantity, removeItem, clearCart } = useCartActions();
   const { t, getLocalizedField } = useLanguage();
   const { settings, isSettingsLoaded } = useSettings();
   const [isOrdered, setIsOrdered] = useState(false);
+  const [table, setTable] = useState(getStoredTable);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const isVisible = isCartOpen && isSettingsLoaded && Boolean(settings?.isCartEnabled || settings?.cartEnabled);
+  useBodyScrollLock(isVisible);
 
   // Close on escape
   useEffect(() => {
+    if (!isCartOpen) return undefined;
     const handleKeyDown = (e) => {
-      if (e.key === "Escape" && isCartOpen) {
-        closeCart();
-      }
+      if (e.key === "Escape") closeCart();
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isCartOpen, closeCart]);
 
-  // Lock scroll
-  useEffect(() => {
-    if (isCartOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
+  // Reset the confirmation screen once the drawer is closed.
+  const [wasOpen, setWasOpen] = useState(isCartOpen);
+  if (wasOpen !== isCartOpen) {
+    setWasOpen(isCartOpen);
+    if (!isCartOpen) {
       setIsOrdered(false);
+      setError("");
     }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isCartOpen]);
+  }
 
-  if (!isCartOpen || !isSettingsLoaded || !(settings?.isCartEnabled || settings?.cartEnabled)) return null;
+  if (!isVisible) return null;
 
-  const handleCheckout = () => {
-    setIsOrdered(true);
-    setTimeout(() => {
+  const handleCheckout = async () => {
+    const tableNumber = table.trim();
+    if (!tableNumber) {
+      setError(t("enterTableNumber"));
+      return;
+    }
+    setSubmitting(true);
+    setError("");
+    saveTable(tableNumber);
+    try {
+      await postJson("/api/calls", {
+        kind: "order",
+        table: tableNumber,
+        items: items.map(({ product, quantity }) => ({ id: product.id, quantity })),
+      });
+      setIsOrdered(true);
       clearCart();
-    }, 1800);
+    } catch (err) {
+      setError(err.status === 429 ? t("tooManyRequests") : t("orderFailed"));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -64,7 +77,7 @@ export default function CartDrawer() {
 
       {/* Slide-out Panel */}
       <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-md bg-white dark:bg-zinc-900 shadow-2xl flex flex-col border-l border-gray-200 dark:border-zinc-800">
+        <div role="dialog" aria-modal="true" aria-label={t("cartTitle")} className="w-screen max-w-md bg-white dark:bg-zinc-900 shadow-2xl flex flex-col border-l border-gray-200 dark:border-zinc-800">
           
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 dark:border-zinc-800">
@@ -200,13 +213,36 @@ export default function CartDrawer() {
                 </div>
               </div>
 
+              <div>
+                <label htmlFor="cart-table" className="block text-xs font-semibold text-gray-700 dark:text-zinc-300 mb-1.5">
+                  {t("tableNumber")} <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="cart-table"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={10}
+                  value={table}
+                  onChange={(e) => setTable(e.target.value)}
+                  placeholder={t("tableNumberPlaceholder")}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800/80 text-gray-900 dark:text-white font-bold text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+
+              {error && (
+                <p role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">
+                  {error}
+                </p>
+              )}
+
               <div className="space-y-2">
                 <button
                   onClick={handleCheckout}
+                  disabled={submitting}
                   type="button"
-                  className="w-full py-3.5 px-4 rounded-2xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-semibold text-sm hover:bg-zinc-800 dark:hover:bg-zinc-100 shadow-md flex items-center justify-center space-x-2 transition-all active:scale-[0.99]"
+                  className="w-full py-3.5 px-4 rounded-2xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-semibold text-sm hover:bg-zinc-800 dark:hover:bg-zinc-100 shadow-md flex items-center justify-center space-x-2 transition-all active:scale-[0.99] disabled:opacity-60"
                 >
-                  <span>{t("checkout")}</span>
+                  <span>{submitting ? t("submitting") : t("checkout")}</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
 

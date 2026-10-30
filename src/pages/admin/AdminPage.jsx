@@ -1,36 +1,42 @@
 import React, { useState, useEffect, useCallback } from "react";
 import OriginalAdminDashboard from "../../components/admin/OriginalAdminDashboard";
-import { auth, googleProvider, signInWithPopup } from "../../admin/firebase";
+import {
+  checkAdminSession,
+  fetchAdminCategories,
+  fetchAdminDishes,
+  fetchAdminSettings,
+  fetchReviews,
+  fetchWaiterCalls,
+  loginAdmin,
+  logoutAdmin,
+  registerAdmin,
+  setUnauthorizedHandler,
+  socialLoginAdmin,
+} from "../../services/adminApi";
 
-const RAW_API_URL = import.meta.env.VITE_API_URL || "";
-const API_URL = RAW_API_URL ? RAW_API_URL.replace(/\/api\/?$/, "").replace(/\/+$/, "") : "";
-
-const INITIAL_CATEGORY_LABELS = {};
-const INITIAL_CATEGORY_ICONS = {};
-const INITIAL_HOT_CATEGORIES = new Set();
+const CALLS_POLL_INTERVAL_MS = 15000;
 
 export default function AdminPage({ onBackToSite }) {
-  const [lang] = useState("ka");
+  const lang = "ka";
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
 
-  // Auth modal states
-  const [authModalOpen, setAuthModalOpen] = useState(true);
+  // Auth form state
   const [authTab, setAuthTab] = useState("login");
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authRememberMe, setAuthRememberMe] = useState(true);
   const [authError, setAuthError] = useState("");
+  const [authSubmitting, setAuthSubmitting] = useState(false);
 
   // Data states from server
   const [allItems, setAllItems] = useState([]);
   const [dbCategories, setDbCategories] = useState([]);
   const [categoryOrder, setCategoryOrder] = useState([]);
   const [dishOrder, setDishOrder] = useState([]);
-  const [categoryLabels, setCategoryLabels] = useState(INITIAL_CATEGORY_LABELS);
-  const [categoryIcons, setCategoryIcons] = useState(INITIAL_CATEGORY_ICONS);
-  const [hotCategories, setHotCategories] = useState(INITIAL_HOT_CATEGORIES);
+  const [categoryLabels, setCategoryLabels] = useState({});
+  const [categoryIcons, setCategoryIcons] = useState({});
+  const [hotCategories, setHotCategories] = useState(() => new Set());
   const [unavailableDishIds, setUnavailableDishIds] = useState([]);
 
   // Waiter & Settings states
@@ -48,200 +54,143 @@ export default function AdminPage({ onBackToSite }) {
   const [isCartEnabled, setIsCartEnabled] = useState(true);
   const [reviewFormEnabled, setReviewFormEnabled] = useState(true);
 
-  const refreshMenuData = useCallback(async () => {
-    try {
-      const token = typeof localStorage !== "undefined" ? (localStorage.getItem("staropub_admin_token") || "") : "";
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
-      const [catRes, settingsRes, dishRes] = await Promise.allSettled([
-        fetch(`${API_URL}/api/categories`, { headers, credentials: "include" }),
-        fetch(`${API_URL}/api/settings`, { headers, credentials: "include" }),
-        fetch(`${API_URL}/api/dishes`, { headers, credentials: "include" })
-      ]);
-
-      if (catRes.status === "fulfilled" && catRes.value.ok) {
-        const categoriesData = await catRes.value.json();
-        const labels = {};
-        const icons = {};
-        const hot = new Set();
-        categoriesData.forEach(cat => {
-          const key = cat.id || cat._id;
-          labels[key] = {
-            ka: cat.name_ka || key,
-            en: cat.name_en || key,
-            ru: cat.name_ru || key,
-          };
-          icons[key] = cat.icon || "🍽️";
-          if (cat.isHot) hot.add(key);
-        });
-
-        setCategoryLabels(labels);
-        setCategoryIcons(icons);
-        setHotCategories(hot);
-        setDbCategories(categoriesData);
-        setCategoryOrder(categoriesData.map(cat => cat.id || cat._id));
-      }
-
-      if (settingsRes.status === "fulfilled" && settingsRes.value.ok) {
-        const settingsMap = await settingsRes.value.json();
-        if (typeof settingsMap.callWaiterEnabled === "boolean") setCallWaiterEnabled(settingsMap.callWaiterEnabled);
-        if (typeof settingsMap.requestBillEnabled === "boolean") setRequestBillEnabled(settingsMap.requestBillEnabled);
-        if (typeof settingsMap.isCartEnabled === "boolean") setIsCartEnabled(settingsMap.isCartEnabled);
-        if (typeof settingsMap.reviewFormEnabled === "boolean") {
-          setReviewFormEnabled(settingsMap.reviewFormEnabled);
-        } else if (typeof settingsMap.isFeedbackEnabled === "boolean") {
-          setReviewFormEnabled(settingsMap.isFeedbackEnabled);
-        }
-        if (settingsMap.bannerSettings) setBannerSettings(settingsMap.bannerSettings);
-        if (typeof settingsMap.customMenuEnabled === "boolean") setCustomMenuEnabled(settingsMap.customMenuEnabled);
-        if (Array.isArray(settingsMap.unavailableDishIds)) setUnavailableDishIds(settingsMap.unavailableDishIds);
-      }
-
-      if (dishRes.status === "fulfilled" && dishRes.value.ok) {
-        const dishesData = await dishRes.value.json();
-        const formattedDishes = dishesData.map(dish => ({
-          ...dish,
-          id: dish.id || dish._id,
-        }));
-        setAllItems(formattedDishes);
-        setDishOrder(formattedDishes.map(d => d.id));
-      }
-    } catch (err) {
-      console.error("Failed to refresh admin menu data:", err);
-    }
+  const refreshCalls = useCallback(async () => {
+    const [calls, revs] = await Promise.allSettled([fetchWaiterCalls(), fetchReviews()]);
+    if (calls.status === "fulfilled") setWaiterCalls(calls.value);
+    if (revs.status === "fulfilled") setReviews(revs.value);
   }, []);
 
-  // Check auth session on mount
+  const refreshMenuData = useCallback(async () => {
+    const [catRes, settingsRes, dishRes] = await Promise.allSettled([
+      fetchAdminCategories(),
+      fetchAdminSettings(),
+      fetchAdminDishes(),
+      refreshCalls(),
+    ]);
+
+    if (catRes.status === "fulfilled" && Array.isArray(catRes.value)) {
+      const categoriesData = catRes.value;
+      const labels = {};
+      const icons = {};
+      const hot = new Set();
+      categoriesData.forEach(cat => {
+        const key = cat.id || cat._id;
+        labels[key] = {
+          ka: cat.name_ka || key,
+          en: cat.name_en || key,
+          ru: cat.name_ru || key,
+        };
+        icons[key] = cat.icon || "🍽️";
+        if (cat.isHot) hot.add(key);
+      });
+
+      setCategoryLabels(labels);
+      setCategoryIcons(icons);
+      setHotCategories(hot);
+      setDbCategories(categoriesData);
+      setCategoryOrder(categoriesData.map(cat => cat.id || cat._id));
+    }
+
+    if (settingsRes.status === "fulfilled" && settingsRes.value) {
+      const settingsMap = settingsRes.value;
+      if (typeof settingsMap.callWaiterEnabled === "boolean") setCallWaiterEnabled(settingsMap.callWaiterEnabled);
+      if (typeof settingsMap.requestBillEnabled === "boolean") setRequestBillEnabled(settingsMap.requestBillEnabled);
+      if (typeof settingsMap.isCartEnabled === "boolean") setIsCartEnabled(settingsMap.isCartEnabled);
+      if (typeof settingsMap.reviewFormEnabled === "boolean") {
+        setReviewFormEnabled(settingsMap.reviewFormEnabled);
+      } else if (typeof settingsMap.isFeedbackEnabled === "boolean") {
+        setReviewFormEnabled(settingsMap.isFeedbackEnabled);
+      }
+      if (settingsMap.bannerSettings) setBannerSettings(settingsMap.bannerSettings);
+      if (typeof settingsMap.customMenuEnabled === "boolean") setCustomMenuEnabled(settingsMap.customMenuEnabled);
+      if (Array.isArray(settingsMap.unavailableDishIds)) setUnavailableDishIds(settingsMap.unavailableDishIds);
+    }
+
+    if (dishRes.status === "fulfilled" && Array.isArray(dishRes.value)) {
+      const formattedDishes = dishRes.value.map(dish => ({
+        ...dish,
+        id: dish.id || dish._id,
+      }));
+      setAllItems(formattedDishes);
+      setDishOrder(formattedDishes.map(d => d.id));
+    }
+  }, [refreshCalls]);
+
+  // A 401 from any admin request drops the session and shows the login form again.
+  useEffect(() => {
+    setUnauthorizedHandler(() => setIsAdmin(false));
+    return () => setUnauthorizedHandler(null);
+  }, []);
+
+  // Validate the session first; only load admin data once we know the user is an admin.
   useEffect(() => {
     let isMounted = true;
-    const checkAuthSession = async () => {
+    (async () => {
       try {
-        const token = typeof localStorage !== "undefined" ? (localStorage.getItem("staropub_admin_token") || "") : "";
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
-        const meRes = await fetch(`${API_URL}/api/auth/me`, {
-          headers,
-          credentials: "include"
-        });
-
-        if (!isMounted) return;
-        if (meRes.ok) {
-          setIsAdmin(true);
-          setIsAuthenticated(true);
-          setAuthModalOpen(false);
-          await refreshMenuData();
-        } else {
-          setIsAdmin(false);
-          setIsAuthenticated(false);
-          setAuthModalOpen(true);
-        }
-      } catch (meErr) {
-        console.warn("Session validation failed:", meErr);
-        if (isMounted) {
-          setIsAdmin(false);
-          setIsAuthenticated(false);
-          setAuthModalOpen(true);
-        }
+        const me = await checkAdminSession();
+        if (isMounted && me) setIsAdmin(true);
+      } catch (err) {
+        console.warn("Session validation failed:", err);
       } finally {
-        if (isMounted) {
-          setIsCheckingSession(false);
-        }
+        if (isMounted) setIsCheckingSession(false);
       }
-    };
-
-    refreshMenuData();
-    checkAuthSession();
+    })();
     return () => {
       isMounted = false;
     };
-  }, [refreshMenuData]);
+  }, []);
 
-  // Auth Submit Handler
+  useEffect(() => {
+    if (!isAdmin) return undefined;
+    refreshMenuData();
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") refreshCalls();
+    }, CALLS_POLL_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [isAdmin, refreshMenuData, refreshCalls]);
+
+  const completeLogin = () => {
+    setIsAdmin(true);
+    setAuthEmail("");
+    setAuthPassword("");
+  };
+
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
     setAuthError("");
-    const url = authTab === "login"
-      ? `${API_URL}/api/auth/login`
-      : `${API_URL}/api/auth/register`;
-
+    setAuthSubmitting(true);
     try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: authEmail.trim(),
-          password: authPassword,
-          rememberMe: authRememberMe
-        }),
-        credentials: "include"
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "ავტორიზაცია ვერ მოხერხდა");
+      if (authTab === "login") {
+        await loginAdmin({ email: authEmail, password: authPassword, rememberMe: authRememberMe });
+      } else {
+        await registerAdmin({ email: authEmail, password: authPassword });
       }
-      if (data.token) {
-        localStorage.setItem("staropub_admin_token", data.token);
-      }
-      setIsAdmin(true);
-      setIsAuthenticated(true);
-      setAuthModalOpen(false);
-      setAuthEmail("");
-      setAuthPassword("");
-      await refreshMenuData();
+      completeLogin();
     } catch (err) {
       setAuthError(err.message);
+    } finally {
+      setAuthSubmitting(false);
     }
   };
 
-  // Google Social Login Handler
   const handleSocialLogin = async (providerName) => {
     setAuthError("");
     try {
-      let provider;
-      if (providerName === "google") {
-        provider = googleProvider;
-      } else {
-        throw new Error("Unsupported provider");
-      }
-
-      const result = await signInWithPopup(auth, provider);
+      if (providerName !== "google") throw new Error("Unsupported provider");
+      // Firebase is only downloaded when someone actually signs in with Google.
+      const { auth, googleProvider, signInWithPopup } = await import("../../admin/firebase");
+      const result = await signInWithPopup(auth, googleProvider);
       const idToken = await result.user.getIdToken();
-
-      const response = await fetch(`${API_URL}/api/auth/social-login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: idToken }),
-        credentials: "include"
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "სოციალური ავტორიზაცია ვერ მოხერხდა");
-      }
-      if (data.token) {
-        localStorage.setItem("staropub_admin_token", data.token);
-      }
-      setIsAdmin(true);
-      setIsAuthenticated(true);
-      setAuthModalOpen(false);
-      await refreshMenuData();
+      await socialLoginAdmin(idToken);
+      completeLogin();
     } catch (err) {
       setAuthError(err.message);
     }
   };
 
   const handleLogout = async () => {
-    try {
-      localStorage.removeItem("staropub_admin_token");
-      await fetch(`${API_URL}/api/auth/logout`, {
-        method: "POST",
-        credentials: "include"
-      });
-    } catch (e) {
-      console.error("Logout failed:", e);
-    }
+    await logoutAdmin();
     setIsAdmin(false);
-    setIsAuthenticated(false);
-    setAuthModalOpen(true);
   };
 
   if (isCheckingSession) {
@@ -259,7 +208,7 @@ export default function AdminPage({ onBackToSite }) {
   return (
     <div style={{ minHeight: "100vh", background: "#0a0f1d", width: "100%" }}>
       {/* ── ADMIN AUTH MODAL FORM ── */}
-      {authModalOpen && !isAuthenticated && (
+      {!isAdmin && (
         <div
           onClick={onBackToSite}
           style={{
@@ -372,6 +321,7 @@ export default function AdminPage({ onBackToSite }) {
 
               <button
                 type="submit"
+                disabled={authSubmitting}
                 style={{
                   background: "linear-gradient(135deg, #b86520, #7a3a08)",
                   border: "1px solid #f0c060",
@@ -388,7 +338,7 @@ export default function AdminPage({ onBackToSite }) {
                   boxShadow: "0 4px 12px rgba(184,101,32,0.3)"
                 }}
               >
-                {authTab === "login" ? "შესვლა" : "რეგისტრაცია"}
+                {authSubmitting ? "..." : authTab === "login" ? "შესვლა" : "რეგისტრაცია"}
               </button>
             </form>
 
@@ -465,7 +415,6 @@ export default function AdminPage({ onBackToSite }) {
           reviewFormEnabled={reviewFormEnabled}
           setReviewFormEnabled={setReviewFormEnabled}
           reviews={reviews}
-          setReviews={setReviews}
           unavailableDishIds={unavailableDishIds}
           setUnavailableDishIds={setUnavailableDishIds}
           allItems={allItems}

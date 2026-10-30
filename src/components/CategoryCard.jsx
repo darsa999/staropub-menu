@@ -1,14 +1,15 @@
-import React from "react";
+import React, { memo } from "react";
 import { ChevronRight } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 import { useViewMode } from "../context/ViewModeContext";
 import { getResponsiveImageProps } from "../services/api";
 
-export default function CategoryCard({ category, onClick, priority = false }) {
-  const { getLocalizedField } = useLanguage();
+function CategoryCard({ category, onClick, priority = false }) {
+  const { t, getLocalizedField } = useLanguage();
   const { viewMode } = useViewMode();
   const title = getLocalizedField(category.title || category.name);
   const productsCount = category.products?.length || 0;
+  const gridPriority = priority && viewMode !== "list";
 
   const listImgProps = getResponsiveImageProps(category.image, {
     defaultWidth: 240,
@@ -60,7 +61,7 @@ export default function CategoryCard({ category, onClick, priority = false }) {
                 {title}
               </h3>
               <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">
-                {productsCount} კერძი
+                {productsCount} {t("dishesCount")}
               </p>
             </div>
             <div className="p-2 rounded-full text-gray-400 group-hover:text-amber-600 transition-colors shrink-0">
@@ -93,8 +94,8 @@ export default function CategoryCard({ category, onClick, priority = false }) {
             srcSet={gridImgProps.srcSet}
             sizes={gridImgProps.sizes}
             alt={title}
-            loading={priority ? "eager" : "lazy"}
-            fetchPriority={priority ? "high" : "auto"}
+            loading={gridPriority ? "eager" : "lazy"}
+            fetchPriority={gridPriority ? "high" : "auto"}
             decoding="async"
             className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
           />
@@ -112,3 +113,5 @@ export default function CategoryCard({ category, onClick, priority = false }) {
     </>
   );
 }
+
+export default memo(CategoryCard);

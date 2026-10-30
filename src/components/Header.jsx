@@ -3,8 +3,10 @@ import { createPortal } from "react-dom";
 import { ShoppingCart, Menu, Sun, Moon, Info, ChevronRight, Share2, Bell, Receipt, MessageSquareHeart } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { useLanguage } from "../context/LanguageContext";
-import { useCart } from "../context/CartContext";
+import { useCartActions, useCartState } from "../context/CartContext";
 import { useSettings } from "../context/SettingsContext";
+import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
+import { useTimeout } from "../hooks/useTimeout";
 
 /**
  * Clean SVG flag icons for language selector
@@ -100,7 +102,8 @@ function CartButton({ totalCount, openCart }) {
 export default function Header({ onOpenLanguageDrawer, onLogoClick, onNavigateToAbout }) {
   const { isDark, toggleTheme } = useTheme();
   const { language, setLanguage, t } = useLanguage();
-  const { totalCount, openCart } = useCart();
+  const { totalCount } = useCartState();
+  const { openCart } = useCartActions();
   const { settings, isSettingsLoaded } = useSettings();
   const isCartActive = isSettingsLoaded && Boolean(settings?.isCartEnabled || settings?.cartEnabled);
   const isShareActive = isSettingsLoaded && Boolean(settings?.customMenuEnabled);
@@ -110,6 +113,7 @@ export default function Header({ onOpenLanguageDrawer, onLogoClick, onNavigateTo
   const hasAnyMobileService = isWaiterActive || isBillActive || isShareActive || isReviewActive;
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const schedule = useTimeout();
 
   const handleShareMenu = async () => {
     const shareData = {
@@ -123,14 +127,14 @@ export default function Header({ onOpenLanguageDrawer, onLogoClick, onNavigateTo
       } else {
         await navigator.clipboard.writeText(window.location.href);
         setShareCopied(true);
-        setTimeout(() => setShareCopied(false), 2000);
+        schedule(() => setShareCopied(false), 2000);
       }
     } catch (err) {
       if (err.name !== "AbortError") {
         try {
           await navigator.clipboard.writeText(window.location.href);
           setShareCopied(true);
-          setTimeout(() => setShareCopied(false), 2000);
+          schedule(() => setShareCopied(false), 2000);
         } catch {}
       }
     }
@@ -138,26 +142,15 @@ export default function Header({ onOpenLanguageDrawer, onLogoClick, onNavigateTo
 
   // Close mobile drawer on Escape key
   useEffect(() => {
+    if (!isMobileMenuOpen) return undefined;
     const handleKeyDown = (e) => {
-      if (e.key === "Escape" && isMobileMenuOpen) {
-        setIsMobileMenuOpen(false);
-      }
+      if (e.key === "Escape") setIsMobileMenuOpen(false);
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isMobileMenuOpen]);
 
-  // Lock body scroll when mobile menu is open
-  useEffect(() => {
-    if (isMobileMenuOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isMobileMenuOpen]);
+  useBodyScrollLock(isMobileMenuOpen);
 
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/90 dark:bg-zinc-900/90 border-b border-gray-200/80 dark:border-zinc-800 transition-colors duration-200">
@@ -172,15 +165,17 @@ export default function Header({ onOpenLanguageDrawer, onLogoClick, onNavigateTo
             tabIndex={0}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
                 if (onLogoClick) onLogoClick();
               }
             }}
           >
             <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-md shadow-amber-900/15 border border-amber-600/30 shrink-0 group-hover:scale-105 transition-transform bg-[#0a2318]">
               <img
-                src="/logo.jpg"
+                src="/logo-96.webp"
                 alt="StaroPub Logo"
-                fetchPriority="high"
+                width="48"
+                height="48"
                 decoding="async"
                 className="w-full h-full object-cover"
               />
@@ -296,7 +291,7 @@ export default function Header({ onOpenLanguageDrawer, onLogoClick, onNavigateTo
             <div className="flex items-center justify-between pb-5 border-b border-gray-100 dark:border-gray-800 shrink-0">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 rounded-xl overflow-hidden border border-amber-600/30 shrink-0 bg-[#0a2318] shadow-sm">
-                  <img src="/logo.jpg" alt="StaroPub Logo" loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                  <img src="/logo-96.webp" alt="StaroPub Logo" width="48" height="48" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                 </div>
                 <div>
                   <h2 className="text-sm font-bold text-gray-900 dark:text-white leading-tight">

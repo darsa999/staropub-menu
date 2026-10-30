@@ -30,7 +30,7 @@ export default function AboutPage({ onBackToHome }) {
           className="inline-flex items-center space-x-2 text-sm font-semibold text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white transition-colors py-1.5 px-3 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-800"
         >
           <ArrowLeft className="w-4 h-4 stroke-[2.2]" />
-          <span>{t("navHome")} / მენიუ</span>
+          <span>{t("backToMenu")}</span>
         </button>
       </div>
 
@@ -44,7 +44,8 @@ export default function AboutPage({ onBackToHome }) {
           <img
             src="/Images/staropub_main.jpg"
             alt="StaroPub Interior"
-            loading="lazy"
+            loading="eager"
+            fetchPriority="high"
             decoding="async"
             className="w-full h-full object-cover object-center scale-105 group-hover:scale-110 transition-transform duration-1000 ease-out opacity-40 filter blur-[1px]"
           />

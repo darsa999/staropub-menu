@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
 
-export const LanguageContext = createContext();
+const LanguageContext = createContext(null);
 
 export const translations = {
   ka: {
@@ -15,7 +15,7 @@ export const translations = {
     emptyCart: "თქვენი კალათა ცარიელია",
     emptyCartSubtext: "დაამატეთ თქვენთვის სასურველი კერძები მენიუდან.",
     orderReceived: "შეკვეთა მიღებულია!",
-    orderSentSuccess: "თქვენი შეკვეთა წარმატებით გადაეგზავნა სამზარეულოს.",
+    orderSentSuccess: "თქვენი შეკვეთა გადაეგზავნა პერსონალს.",
     subtotal: "ჯამური ღირებულება",
     total: "სულ გადასახდელი",
     checkout: "შეკვეთის გაფორმება",
@@ -58,6 +58,20 @@ export const translations = {
     optional: "(არასავალდებულო)",
     rating: "შეფასება",
     service: "სერვისი",
+    soldOut: "ამოიწურა",
+    dishesCount: "კერძი",
+    menuLoadError: "მენიუს ჩატვირთვა ვერ მოხერხდა",
+    menuLoadErrorHint: "შეამოწმეთ ინტერნეტ კავშირი და სცადეთ თავიდან.",
+    retry: "თავიდან ცდა",
+    requestFailed: "მოთხოვნა ვერ გაიგზავნა. სცადეთ თავიდან ან მიმართეთ პერსონალს.",
+    tooManyRequests: "ძალიან ბევრი მოთხოვნა. სცადეთ ცოტა ხანში.",
+    orderFailed: "შეკვეთა ვერ გაიგზავნა. სცადეთ თავიდან ან მიმართეთ ოფიციანტს.",
+    clearSearch: "ძებნის გასუფთავება",
+    noSearchResults: "საძიებო სიტყვით „{query}“ კერძები ვერ მოიძებნა.",
+    backToCategories: "მთავარი / კატეგორიები",
+    backToMenu: "მთავარი / მენიუ",
+    somethingWentWrong: "რაღაც შეცდომა მოხდა",
+    reloadPage: "გვერდის გადატვირთვა",
   },
   en: {
     restaurantName: "StaroPub - სტარო პაბი",
@@ -71,7 +85,7 @@ export const translations = {
     emptyCart: "Your cart is currently empty",
     emptyCartSubtext: "Add your favorite dishes from the menu.",
     orderReceived: "Order Received!",
-    orderSentSuccess: "Your order has been successfully sent to the kitchen.",
+    orderSentSuccess: "Your order has been sent to the staff.",
     subtotal: "Subtotal",
     total: "Total Amount",
     checkout: "Proceed to Checkout",
@@ -114,6 +128,20 @@ export const translations = {
     optional: "(optional)",
     rating: "Rating",
     service: "Service",
+    soldOut: "Sold out",
+    dishesCount: "dishes",
+    menuLoadError: "Could not load the menu",
+    menuLoadErrorHint: "Check your connection and try again.",
+    retry: "Try again",
+    requestFailed: "The request could not be sent. Please try again or ask the staff.",
+    tooManyRequests: "Too many requests. Please try again shortly.",
+    orderFailed: "The order could not be sent. Please try again or ask a waiter.",
+    clearSearch: "Clear search",
+    noSearchResults: "No dishes found for “{query}”.",
+    backToCategories: "Home / Categories",
+    backToMenu: "Home / Menu",
+    somethingWentWrong: "Something went wrong",
+    reloadPage: "Reload page",
   },
   ru: {
     restaurantName: "StaroPub - სტარო პაბი",
@@ -127,7 +155,7 @@ export const translations = {
     emptyCart: "Ваша корзина пуста",
     emptyCartSubtext: "Добавьте любимые блюда из меню.",
     orderReceived: "Заказ принят!",
-    orderSentSuccess: "Ваш заказ успешно отправлен на кухню.",
+    orderSentSuccess: "Ваш заказ отправлен персоналу.",
     subtotal: "Сумма",
     total: "Итого к оплате",
     checkout: "Оформить заказ",
@@ -170,6 +198,20 @@ export const translations = {
     optional: "(необязательно)",
     rating: "Оценка",
     service: "Обслуживание",
+    soldOut: "Нет в наличии",
+    dishesCount: "блюд",
+    menuLoadError: "Не удалось загрузить меню",
+    menuLoadErrorHint: "Проверьте подключение и попробуйте снова.",
+    retry: "Повторить",
+    requestFailed: "Не удалось отправить запрос. Попробуйте снова или обратитесь к персоналу.",
+    tooManyRequests: "Слишком много запросов. Попробуйте чуть позже.",
+    orderFailed: "Не удалось отправить заказ. Попробуйте снова или обратитесь к официанту.",
+    clearSearch: "Очистить поиск",
+    noSearchResults: "По запросу «{query}» блюда не найдены.",
+    backToCategories: "Главная / Категории",
+    backToMenu: "Главная / Меню",
+    somethingWentWrong: "Что-то пошло не так",
+    reloadPage: "Перезагрузить страницу",
   },
 };
 
@@ -194,51 +236,50 @@ export const LANGUAGES = [
   },
 ];
 
+const SUPPORTED = ["ka", "en", "ru"];
+
+// index.html sets <html lang> from storage before first paint; read the same source here.
+function getInitialLanguage() {
+  try {
+    const saved = localStorage.getItem("app_lang");
+    if (SUPPORTED.includes(saved)) return saved;
+  } catch {}
+  return "ka";
+}
+
 export function LanguageProvider({ children }) {
-  // Safe initial state matching server/HTML default
-  const [language, setLanguage] = useState("ka");
-  const [mounted, setMounted] = useState(false);
+  const [language, setLanguage] = useState(getInitialLanguage);
 
   useEffect(() => {
-    setMounted(true);
-    try {
-      const saved = localStorage.getItem("app_lang");
-      if (saved && ["ka", "en", "ru"].includes(saved)) {
-        setLanguage(saved);
-      }
-    } catch {}
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
+    document.documentElement.lang = language;
     try {
       localStorage.setItem("app_lang", language);
-      document.documentElement.lang = language;
     } catch {}
-  }, [language, mounted]);
+  }, [language]);
 
-  const t = (key) => {
-    return translations[language]?.[key] || translations.ka[key] || key;
-  };
-
-  const getLocalizedField = (fieldObj) => {
-    if (!fieldObj) return "";
-    return fieldObj[language] || fieldObj.ka || fieldObj.en || "";
-  };
-
-  return (
-    <LanguageContext.Provider
-      value={{
-        language,
-        setLanguage,
-        t,
-        getLocalizedField,
-        languages: LANGUAGES,
-      }}
-    >
-      {children}
-    </LanguageContext.Provider>
+  /** Translates a key; `{name}` placeholders are filled from `vars`. */
+  const t = useCallback(
+    (key, vars) => {
+      const text = translations[language]?.[key] || translations.ka[key] || key;
+      return vars ? text.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? "") : text;
+    },
+    [language]
   );
+
+  const getLocalizedField = useCallback(
+    (fieldObj) => {
+      if (!fieldObj) return "";
+      return fieldObj[language] || fieldObj.ka || fieldObj.en || "";
+    },
+    [language]
+  );
+
+  const value = useMemo(
+    () => ({ language, setLanguage, t, getLocalizedField, languages: LANGUAGES }),
+    [language, t, getLocalizedField]
+  );
+
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }
 
 export function useLanguage() {

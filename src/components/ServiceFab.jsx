@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { Bell, Receipt, X, CheckCircle2, CreditCard, Banknote } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 import { useSettings } from "../context/SettingsContext";
+import { postJson } from "../services/api";
+import { getStoredTable, saveTable } from "../services/table";
+import { useTimeout } from "../hooks/useTimeout";
 
 export default function ServiceFab() {
   const { t } = useLanguage();
@@ -12,30 +15,23 @@ export default function ServiceFab() {
   const hasAnyService = isWaiterActive || isBillActive;
 
   const [activeModal, setActiveModal] = useState(null); // 'waiter' | 'bill' | null
-  const [table, setTable] = useState("");
+  const [table, setTable] = useState(getStoredTable);
   const [paymentMethod, setPaymentMethod] = useState("card"); // 'cash' | 'card'
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const schedule = useTimeout();
 
-  // Load remembered table number
-  useEffect(() => {
-    try {
-      const urlParams = new URLSearchParams(window.location.search);
-      const initialTable = urlParams.get("table") || localStorage.getItem("staropub_table") || "";
-      if (initialTable) setTable(initialTable);
-    } catch {}
-  }, []);
+  const openModal = (kind) => {
+    setSuccessMessage("");
+    setErrorMessage("");
+    setActiveModal(kind);
+  };
 
-  // Event listeners from mobile drawer or other actions
+  // Opened from the mobile header drawer
   useEffect(() => {
-    const handleOpenWaiter = () => {
-      setSuccessMessage("");
-      setActiveModal("waiter");
-    };
-    const handleOpenBill = () => {
-      setSuccessMessage("");
-      setActiveModal("bill");
-    };
+    const handleOpenWaiter = () => openModal("waiter");
+    const handleOpenBill = () => openModal("bill");
 
     window.addEventListener("staropub:open-waiter", handleOpenWaiter);
     window.addEventListener("staropub:open-bill", handleOpenBill);
@@ -49,46 +45,33 @@ export default function ServiceFab() {
     if (submitting) return;
     setActiveModal(null);
     setSuccessMessage("");
+    setErrorMessage("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!table.trim()) return;
+    const tableNumber = table.trim();
+    if (!tableNumber) return;
 
     setSubmitting(true);
-    try {
-      localStorage.setItem("staropub_table", table.trim());
-    } catch {}
+    setErrorMessage("");
+    saveTable(tableNumber);
 
     const isWaiter = activeModal === "waiter";
-    const payload = {
-      table: table.trim(),
-      type: isWaiter ? "Waiter 👨‍🍳" : "Bill 🧾",
-      paymentMethod: isWaiter ? null : (paymentMethod === "cash" ? "ნაღდი ფული (Cash)" : "ბარათი (Card)"),
-    };
-
     try {
-      const res = await fetch("/api/calls", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      await postJson("/api/calls", {
+        kind: isWaiter ? "waiter" : "bill",
+        table: tableNumber,
+        ...(isWaiter ? {} : { paymentMethod }),
       });
-
-      if (res.ok) {
-        setSuccessMessage(isWaiter ? t("waiterCalledSuccess") : t("billRequestedSuccess"));
-        setTimeout(() => {
-          handleClose();
-        }, 2200);
-      } else {
-        throw new Error("Failed to send call");
-      }
+      setSuccessMessage(isWaiter ? t("waiterCalledSuccess") : t("billRequestedSuccess"));
+      schedule(() => {
+        setActiveModal(null);
+        setSuccessMessage("");
+      }, 2200);
     } catch (err) {
       console.error("Error dispatching service call:", err);
-      // Optimistic success fallback for UI responsiveness
-      setSuccessMessage(isWaiter ? t("waiterCalledSuccess") : t("billRequestedSuccess"));
-      setTimeout(() => {
-        handleClose();
-      }, 2200);
+      setErrorMessage(err.status === 429 ? t("tooManyRequests") : t("requestFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -102,10 +85,7 @@ export default function ServiceFab() {
           {/* Waiter Button */}
           {isWaiterActive && (
             <button
-              onClick={() => {
-                setSuccessMessage("");
-                setActiveModal("waiter");
-              }}
+              onClick={() => openModal("waiter")}
               type="button"
               className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-800 dark:text-amber-300 font-bold text-xs sm:text-sm border border-amber-600/20 shadow-xs transition active:scale-95 cursor-pointer"
               title={t("callWaiter")}
@@ -118,10 +98,7 @@ export default function ServiceFab() {
           {/* Bill Button */}
           {isBillActive && (
             <button
-              onClick={() => {
-                setSuccessMessage("");
-                setActiveModal("bill");
-              }}
+              onClick={() => openModal("bill")}
               type="button"
               className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-zinc-900 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-900 font-bold text-xs sm:text-sm shadow-xs transition active:scale-95 cursor-pointer"
               title={t("requestBill")}
@@ -146,6 +123,7 @@ export default function ServiceFab() {
             className="relative w-full max-w-sm bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl border border-gray-200/80 dark:border-zinc-800 p-6 z-10 animate-in fade-in zoom-in-95 duration-200"
             role="dialog"
             aria-modal="true"
+            aria-label={activeModal === "waiter" ? t("callWaiter") : t("requestBill")}
           >
             <button
               onClick={handleClose}
@@ -236,6 +214,12 @@ export default function ServiceFab() {
                       </button>
                     </div>
                   </div>
+                )}
+
+                {errorMessage && (
+                  <p role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">
+                    {errorMessage}
+                  </p>
                 )}
 
                 {/* Submit button */}

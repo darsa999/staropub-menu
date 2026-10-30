@@ -2,6 +2,10 @@ import React, { useState, useEffect } from "react";
 import { Star, X, CheckCircle2, MessageSquareHeart } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 import { useSettings } from "../context/SettingsContext";
+import { postJson } from "../services/api";
+import { getStoredTable, saveTable } from "../services/table";
+import { useTimeout } from "../hooks/useTimeout";
+import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
 
 export default function ReviewModal() {
   const { t } = useLanguage();
@@ -14,17 +18,17 @@ export default function ReviewModal() {
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
+  const schedule = useTimeout();
+
+  const isVisible = isOpen && isSettingsLoaded && Boolean(settings.reviewFormEnabled);
+  useBodyScrollLock(isVisible);
 
   useEffect(() => {
     const handleOpen = () => {
-      // Pre-fill table from localStorage or URL query
-      let initialTable = "";
-      try {
-        const urlParams = new URLSearchParams(window.location.search);
-        initialTable = urlParams.get("table") || localStorage.getItem("staropub_table") || "";
-      } catch {}
-      setTable(initialTable);
+      setTable(getStoredTable());
       setSubmitted(false);
+      setError("");
       setIsOpen(true);
     };
 
@@ -32,47 +36,29 @@ export default function ReviewModal() {
     return () => window.removeEventListener("staropub:open-review", handleOpen);
   }, []);
 
-  if (!isOpen || !isSettingsLoaded || !settings.reviewFormEnabled) return null;
+  if (!isVisible) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
+    setError("");
+    saveTable(table.trim());
     try {
-      if (table.trim()) {
-        try {
-          localStorage.setItem("staropub_table", table.trim());
-        } catch {}
-      }
-
-      const res = await fetch("/api/reviews", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name.trim() || "სტუმარი",
-          rating: Number(rating) || 5,
-          comment: comment.trim(),
-          table: table.trim(),
-        }),
+      await postJson("/api/reviews", {
+        name: name.trim() || "სტუმარი",
+        rating: Number(rating) || 5,
+        comment: comment.trim(),
+        table: table.trim(),
       });
-
-      if (res.ok) {
-        setSubmitted(true);
-        setTimeout(() => {
-          setIsOpen(false);
-          setComment("");
-          setSubmitted(false);
-        }, 1800);
-      } else {
-        throw new Error("Failed to submit review");
-      }
-    } catch (err) {
-      console.error("Error submitting review:", err);
-      // Fallback optimistic success
       setSubmitted(true);
-      setTimeout(() => {
+      schedule(() => {
         setIsOpen(false);
+        setComment("");
         setSubmitted(false);
       }, 1800);
+    } catch (err) {
+      console.error("Error submitting review:", err);
+      setError(err.status === 429 ? t("tooManyRequests") : t("requestFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -92,6 +78,7 @@ export default function ReviewModal() {
         className="relative w-full max-w-md bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl border border-gray-200/80 dark:border-zinc-800 p-6 z-10 animate-in fade-in zoom-in-95 duration-200"
         role="dialog"
         aria-modal="true"
+        aria-label={t("leaveReview")}
       >
         <button
           onClick={() => setIsOpen(false)}
@@ -167,6 +154,7 @@ export default function ReviewModal() {
                 </label>
                 <input
                   type="text"
+                  maxLength={60}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="მაგ. გიორგი"
@@ -180,6 +168,7 @@ export default function ReviewModal() {
                 </label>
                 <input
                   type="text"
+                  maxLength={10}
                   value={table}
                   onChange={(e) => setTable(e.target.value)}
                   placeholder={t("tableNumberPlaceholder")}
@@ -194,6 +183,7 @@ export default function ReviewModal() {
                 {t("yourComment")}
               </label>
               <textarea
+                maxLength={1000}
                 required
                 rows={3}
                 value={comment}
@@ -202,6 +192,12 @@ export default function ReviewModal() {
                 className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800/80 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
               />
             </div>
+
+            {error && (
+              <p role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">
+                {error}
+              </p>
+            )}
 
             {/* Submit button */}
             <button

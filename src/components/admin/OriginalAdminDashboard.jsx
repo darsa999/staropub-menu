@@ -1,105 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { authFetch, request } from "../../services/adminApi";
+import { getVolumeSizesForDish, parseMultiPrice, resolveImageSrc } from "./adminUtils";
+import CallsSection from "./CallsSection";
+import ReviewsSection from "./ReviewsSection";
 
 const RAW_API_URL = import.meta.env.VITE_API_URL || "";
 const API_URL = RAW_API_URL ? RAW_API_URL.replace(/\/api\/?$/, "").replace(/\/+$/, "") : "";
 
-export const resolveImageSrc = (img) => {
-  if (!img || typeof img !== "string") return "";
-  const trimmed = img.trim();
-  if (
-    trimmed.startsWith("http://") ||
-    trimmed.startsWith("https://") ||
-    trimmed.startsWith("data:") ||
-    trimmed.startsWith("blob:")
-  ) {
-    return trimmed;
-  }
-  if (trimmed.startsWith("/uploads/") || trimmed.startsWith("uploads/")) {
-    const cleanPath = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
-    return `${API_URL}${cleanPath}`;
-  }
-  if (trimmed.startsWith("Images/")) {
-    return `${API_URL}/${trimmed}`;
-  }
-  return `${API_URL}/Images/${trimmed}`;
-};
-
 const INITIAL_CATEGORY_LABELS = {};
-
-export function parseMultiPrice(rawOrItem) {
-  if (!rawOrItem) return null;
-
-  let pricesArray = null;
-  if (typeof rawOrItem === "object") {
-    if (Array.isArray(rawOrItem.prices) && rawOrItem.prices.length > 0) {
-      pricesArray = rawOrItem.prices;
-    } else if (typeof rawOrItem.price === "string") {
-      return parseMultiPrice(rawOrItem.price);
-    }
-  }
-
-  if (pricesArray) {
-    const valid = pricesArray.filter(
-      p => p && p.size && p.price !== undefined && p.price !== null && String(p.price).trim() !== ""
-    );
-    const nonZero = valid.filter(p => {
-      const n = typeof p.price === "number" ? p.price : parseFloat(String(p.price).replace("₾", "").replace(",", ".").trim());
-      return !isNaN(n) && n > 0;
-    });
-    if (nonZero.length > 0) {
-      return nonZero.map(p => {
-        const num = typeof p.price === "number" ? p.price : parseFloat(String(p.price).replace("₾", "").replace(",", ".").trim());
-        const priceStr = isNaN(num) ? String(p.price) : `₾${num.toFixed(2)}`;
-        return { size: p.size, price: priceStr, priceNum: isNaN(num) ? 0 : num };
-      });
-    }
-  }
-
-  if (typeof rawOrItem !== "string") return null;
-  const lines = rawOrItem.split(/\n|\n|\|/).map(l => l.trim()).filter(Boolean);
-  const parsed = [];
-  for (const line of lines) {
-    const sizeMatch = line.match(/^([\d.,]+\s*[ლმლმL][\w]*)/u);
-    if (sizeMatch) {
-      const size = sizeMatch[1].trim();
-      const rest = line.slice(sizeMatch[0].length).replace(/^[-:–—\s]+/, "").trim();
-      const numMatch = rest.match(/([\d.,]+)/);
-      const num = numMatch ? parseFloat(numMatch[1].replace(",", ".")) : NaN;
-      if (!isNaN(num) && num > 0) {
-        const priceStr = `₾${num.toFixed(2)}`;
-        parsed.push({ size, price: priceStr, priceNum: num });
-      }
-    }
-  }
-  return parsed.length > 0 ? parsed : null;
-}
-
-export function getVolumeSizesForDish(categoryKey, dishName, categoryLabels = {}, dbCategories = []) {
-  const catObj = dbCategories.find(c => (c.id || c._id) === categoryKey) || {};
-  const catLabel = (categoryLabels[categoryKey]?.ka || catObj.name_ka || categoryKey || "").toLowerCase();
-  const nameKa = (dishName || "").toLowerCase();
-
-  const isBeer = categoryKey === "beer" || catLabel.includes("ლუდი") || catLabel.includes("beer") || catLabel.includes("пиво");
-  const isSpirits = categoryKey === "Alcohol" || categoryKey === "alcohol" || categoryKey === "spirits" || catLabel.includes("სპირტიანი") || catLabel.includes("spirits") || catLabel.includes("крепкие") || catLabel.includes("alcohol");
-  const isChacha = nameKa.includes("სოფლის ჭაჭა") || nameKa.includes("ჭაჭა");
-
-  if (isBeer) {
-    return ["0.4 ლ", "1.0 ლ"];
-  }
-  if (isSpirits || isChacha) {
-    return ["0.25 ლ", "0.5 ლ"];
-  }
-  return null;
-}
-
-const authFetch = (url, options = {}) => {
-  const token = typeof localStorage !== "undefined" ? (localStorage.getItem("staropub_admin_token") || "") : "";
-  const headers = { ...(options.headers || {}) };
-  if (token && !headers["Authorization"]) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-  return fetch(url, { ...options, headers, credentials: "include" });
-};
 
 export default function AdminDashboard({
   lang, onClose, onLogout, onSaveSuccess,
@@ -110,7 +18,7 @@ export default function AdminDashboard({
   requestBillEnabled, setRequestBillEnabled,
   isCartEnabled, setIsCartEnabled,
   reviewFormEnabled, setReviewFormEnabled,
-  reviews, setReviews,
+  reviews,
   unavailableDishIds = [], setUnavailableDishIds,
   allItems = [], setAllItems,
   categoryOrder = [], setCategoryOrder,
@@ -130,28 +38,24 @@ export default function AdminDashboard({
   const handleGlobalSave = async () => {
     setIsSaving(true);
     try {
+      // request() throws on any non-2xx response, so a failed write never shows a success toast.
       if (categoryOrder.length > 0) {
-        await authFetch(`${API_URL}/api/categories/reorder`, {
+        await request(`${API_URL}/api/categories/reorder`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ids: categoryOrder, order: categoryOrder }),
-          credentials: "include"
+          body: { ids: categoryOrder, order: categoryOrder },
         });
       }
 
       if (dishOrder.length > 0) {
-        await authFetch(`${API_URL}/api/dishes/reorder`, {
+        await request(`${API_URL}/api/dishes/reorder`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ids: dishOrder, order: dishOrder }),
-          credentials: "include"
+          body: { ids: dishOrder, order: dishOrder },
         });
       }
 
-      await authFetch(`${API_URL}/api/settings`, {
+      await request(`${API_URL}/api/settings`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: {
           callWaiterEnabled,
           requestBillEnabled,
           isCartEnabled,
@@ -160,8 +64,7 @@ export default function AdminDashboard({
           bannerSettings,
           customMenuEnabled,
           unavailableDishIds
-        }),
-        credentials: "include"
+        },
       });
 
       if (onSaveSuccess) {
@@ -273,31 +176,24 @@ export default function AdminDashboard({
     const nextVal = !reviewFormEnabled;
     setReviewFormEnabled(nextVal);
     try {
-      await authFetch(`${API_URL}/api/settings`, {
+      await request(`${API_URL}/api/settings`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          reviewFormEnabled: nextVal,
-          isFeedbackEnabled: nextVal
-        }),
-        credentials: "include"
+        body: { reviewFormEnabled: nextVal, isFeedbackEnabled: nextVal },
       });
     } catch (err) {
-      console.error("Failed to update review form setting:", err);
+      setReviewFormEnabled(!nextVal);
+      setToastMessage(`⚠️ ${err.message}`);
+      setTimeout(() => setToastMessage(""), 4000);
     }
   };
 
-  const [selectedSortCategory, setSelectedSortCategory] = useState("");
+  const [selectedSortCategoryState, setSelectedSortCategory] = useState("");
+  const selectedSortCategory = selectedSortCategoryState || categoryOrder[0] || "";
   const [draggedCatIdx, setDraggedCatIdx] = useState(null);
   const [dragOverCatIdx, setDragOverCatIdx] = useState(null);
   const [draggedDishIdx, setDraggedDishIdx] = useState(null);
   const [dragOverDishIdx, setDragOverDishIdx] = useState(null);
 
-  useEffect(() => {
-    if (!selectedSortCategory && categoryOrder.length > 0) {
-      setSelectedSortCategory(categoryOrder[0]);
-    }
-  }, [categoryOrder, selectedSortCategory]);
 
   // Category creation states
   const [newCatKey, setNewCatKey]   = useState("");
@@ -317,7 +213,8 @@ export default function AdminDashboard({
   const [newDishDescRu, setNewDishDescRu] = useState("");
   const [newDishPrice, setNewDishPrice]   = useState("");
   const [newDishVolumePrices, setNewDishVolumePrices] = useState({});
-  const [newDishCat, setNewDishCat]       = useState("");
+  const [newDishCatState, setNewDishCat]  = useState("");
+  const newDishCat = newDishCatState || categoryOrder[0] || "";
   const [newDishImageFile, setNewDishImageFile] = useState(null);
   const [newDishImagePreview, setNewDishImagePreview] = useState("");
 
@@ -595,11 +492,6 @@ export default function AdminDashboard({
     }
   };
 
-  useEffect(() => {
-    if (!newDishCat && categoryOrder.length > 0) {
-      setNewDishCat(categoryOrder[0]);
-    }
-  }, [categoryOrder, newDishCat]);
 
   const handleCreateCategory = async (e) => {
     e.preventDefault();
@@ -1269,61 +1161,10 @@ export default function AdminDashboard({
         </div>
         
         {activeAdminSection === "calls" && (
-          <div>
-            <h3 style={{ margin: "0 0 16px", fontFamily: "'Georgia', serif" }}>მიმტანისა და ანგარიშის გამოძახება რეალურ დროში</h3>
-            <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
-              <button
-                onClick={() => {
-                  const now = new Date().toLocaleTimeString();
-                  setWaiterCalls(prev => [{ id: Date.now(), table: "3", type: "მიმტანი 💁‍♂️", time: now }, ...prev]);
-                }}
-                style={{ background: "rgba(180,120,40,0.1)", border: "1px solid rgba(180,120,40,0.25)", color: "#e8a030", borderRadius: 8, padding: "8px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
-              >
-                + მაგიდა 3 მიმტანი (სიმულაცია)
-              </button>
-              <button
-                onClick={() => {
-                  const now = new Date().toLocaleTimeString();
-                  setWaiterCalls(prev => [{ id: Date.now(), table: "5", type: "ანგარიში 🧾", time: now }, ...prev]);
-                }}
-                style={{ background: "rgba(180,120,40,0.1)", border: "1px solid rgba(180,120,40,0.25)", color: "#e8a030", borderRadius: 8, padding: "8px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
-              >
-                + მაგიდა 5 ანგარიში (სიმულაცია)
-              </button>
-              <button
-                onClick={() => setWaiterCalls([])}
-                style={{ background: "rgba(180,40,40,0.1)", border: "1px solid rgba(180,40,40,0.25)", color: "#e06060", borderRadius: 8, padding: "8px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer", marginLeft: "auto" }}
-              >
-                ყველას წაშლა
-              </button>
-            </div>
-
-            {waiterCalls.length === 0 ? (
-              <p style={{ color: "#8a6040", textAlign: "center", margin: "40px 0" }}>მაგიდებიდან აქტიური გამოძახება არ არის.</p>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {waiterCalls.map(call => (
-                  <div key={call.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(180,120,40,0.12)", borderRadius: 10, padding: 14 }}>
-                    <div>
-                      <span style={{ fontSize: 14, fontWeight: "bold" }}>მაგიდა {call.table}</span>
-                      <span style={{ background: "rgba(184,101,32,0.15)", color: "#e8a030", fontSize: 11, padding: "2px 8px", borderRadius: 10, marginLeft: 10 }}>
-                        {call.type === "Waiter 💁‍♂️" || call.type === "მიმტანი 💁‍♂️" ? "მიმტანი 💁‍♂️" : call.type === "Bill 🧾" || call.type === "ანგარიში 🧾" ? "ანგარიში 🧾" : call.type}
-                      </span>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <span style={{ fontSize: 12, color: "#8a6040" }}>{call.time}</span>
-                      <button
-                        onClick={() => setWaiterCalls(prev => prev.filter(c => c.id !== call.id))}
-                        style={{ background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.25)", color: "#4ade80", borderRadius: 6, padding: "4px 10px", fontSize: 11, cursor: "pointer" }}
-                      >
-                        დასრულება
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <CallsSection calls={waiterCalls} setCalls={setWaiterCalls} onError={(msg) => {
+            setToastMessage(`⚠️ ${msg}`);
+            setTimeout(() => setToastMessage(""), 4000);
+          }} />
         )}
 
         {activeAdminSection === "global" && (
@@ -1517,35 +1358,7 @@ export default function AdminDashboard({
           </div>
         )}
 
-        {activeAdminSection === "reviews" && (
-          <div>
-            <h3 style={{ margin: "0 0 16px", fontFamily: "'Georgia', serif" }}>სტუმრების შეფასებების ჟურნალი</h3>
-            {reviews.length === 0 ? (
-              <p style={{ color: "#8a6040", textAlign: "center", margin: "40px 0" }}>სტუმრების შეფასებები ჯერ არ არის შემოსული.</p>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                {reviews.map(rev => (
-                  <div key={rev.id || `${rev.date}-${rev.name}`} style={{ background: "rgba(0,0,0,0.2)", border: "1px solid rgba(180,120,40,0.12)", borderRadius: 12, padding: 16 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                      <div>
-                        <span style={{ fontWeight: "bold", fontSize: 14 }}>{rev.name}</span>
-                        <span style={{ fontSize: 11, color: "#8a6040", marginLeft: 10 }}>მაგიდა {rev.table}</span>
-                      </div>
-                      <div style={{ color: "#f59e0b" }}>
-                        {"★".repeat(rev.rating)}{"☆".repeat(5 - rev.rating)}
-                      </div>
-                    </div>
-                    <p style={{ color: "#cbd5e1", fontSize: 13, margin: "0 0 10px", lineHeight: 1.5 }}>{rev.comment}</p>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 10, color: "#8a6040" }}>
-                      <span>{rev.date}</span>
-                      <span style={{ color: "#4ade80" }}>📧 იმიტირებული იმეილი გაეგზავნა ადმინისტრატორს</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+        {activeAdminSection === "reviews" && <ReviewsSection reviews={reviews} />}
 
         {activeAdminSection === "availability" && (
           <div>
@@ -2631,4 +2444,4 @@ export default function AdminDashboard({
 
 // ══════════════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
-// ══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
