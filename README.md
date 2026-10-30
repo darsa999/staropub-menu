@@ -1,16 +1,48 @@
-# React + Vite
+# StaroPub Menu
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Digital menu for StaroPub (React 19 + Vite + Tailwind), deployed on Vercel. Menu
+data and admin authentication live on a separate backend hosted on Render.
 
-Currently, two official plugins are available:
+## Architecture
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```
+browser ──► Vercel
+            ├── static SPA (dist/)
+            ├── api/menu.js      GET  grouped menu, edge-cached (s-maxage=60, SWR 24h)
+            ├── api/catalog.js   alias of /api/menu
+            ├── api/settings.js  GET  public feature flags only · PUT/PATCH proxied to backend with caller's auth
+            ├── api/calls.js     POST waiter/bill/order calls (validated, rate-limited) · GET/DELETE admin only
+            ├── api/reviews.js   POST guest reviews (validated, rate-limited) · GET admin only
+            └── /api/*           rewritten to the Render backend (auth, categories, dishes, upload)
+```
 
-## React Compiler
+- `shared/menuTransform.js` — dish/category normalization, price parsing, Cloudinary
+  URLs. Used by both the functions and the browser bundle.
+- `api/_lib/upstream.js` — server-side fetch with timeouts, admin verification
+  (via the backend's `/auth/me`), rate limiting.
+- `src/services/api.js` — menu loading for guests; `src/services/adminApi.js` —
+  the single admin API client (throws on non-2xx, logs out on 401).
+- Routes: `/`, `/menu` (`#category-<id>` deep links), `/about`, `/admin`.
+  The `?table=N` query from table QR codes is kept across navigation.
+- The admin page, About page and Firebase are lazy-loaded chunks.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Development
 
-## Expanding the Oxlint configuration
+```bash
+npm install
+npm run dev        # Vite + the api/*.js functions running locally
+npm test           # Vitest unit tests (tests/)
+npm run lint       # oxlint
+npm run build
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+`npm run dev` talks to the production Render backend by default. Point it at
+another backend with `BACKEND_API_URL=http://localhost:4000/api npm run dev`.
+
+See `.env.example` for all environment variables.
+
+## Known backend limitations
+
+Waiter calls and reviews are stored inside the backend's settings document using
+read-modify-write, so two writes at the same instant can race. The proper fix is a
+dedicated `calls`/`reviews` collection with atomic inserts on the Render backend.
